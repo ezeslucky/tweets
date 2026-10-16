@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>TweetyTweets Companion</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: '#1d9bf0',
+            darkBg: '#0f1419',
+            darkCard: '#16181c',
+            darkBorder: '#2f3336',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Mobile app native touch feel & safe areas */
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #2f3336;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-black text-white antialiased flex flex-col h-screen overflow-hidden font-sans">
+
+  <!-- TOP APP BAR -->
+  <header class="bg-black/90 backdrop-blur-md border-b border-darkBorder px-4 py-3 flex items-center justify-between z-20 shrink-0">
+    <div class="flex items-center space-x-2">
+      <div class="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand">
+        <i data-lucide="twitter" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-sm tracking-tight flex items-center gap-1.5">
+          TweetyTweets
+          <span id="conn-pill" class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        </h1>
+        <p id="handle-badge" class="text-xs text-zinc-400">@ezeslucky</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center space-x-2">
+      <button onclick="refreshAll()" class="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition active:scale-95">
+        <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+      </button>
+      <button onclick="openConfigModal()" class="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition active:scale-95">
+        <i data-lucide="settings" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN SCROLLABLE CONTENT AREA -->
+  <main class="flex-1 overflow-y-auto custom-scrollbar p-4 pb-24">
+
+    <!-- TAB 1: QUEUE & SLOTS -->
+    <section id="tab-queue" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold">Today's Schedule</h2>
+          <p id="plan-date" class="text-xs text-zinc-400">Loading plan...</p>
+        </div>
+        <button onclick="makeNewPlan()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded-full font-medium transition active:scale-95 flex items-center gap-1">
+          <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i> Re-plan
+        </button>
+      </div>
+
+      <!-- Slots container -->
+      <div id="slots-list" class="space-y-3">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- TAB 2: SWIPE / RESEARCH -->
+    <section id="tab-research" class="space-y-4 hidden">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold">Research Swipe File</h2>
+          <p id="research-summary" class="text-xs text-zinc-400">Candidates from HN, Reddit & RSS</p>
+        </div>
+        <button onclick="collectResearch()" id="btn-collect-research" class="text-xs bg-brand hover:bg-sky-400 text-white px-3 py-1.5 rounded-full font-semibold transition active:scale-95 flex items-center gap-1">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Collect
+        </button>
+      </div>
+
+      <div id="research-items" class="space-y-3">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- TAB 3: VERIFY / PROOF -->
+    <section id="tab-verify" class="space-y-4 hidden">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold">Live Verification</h2>
+        <span class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full">Automated Proof</span>
+      </div>
+
+      <!-- Profile proof screenshot card -->
+      <div class="bg-darkCard border border-darkBorder rounded-xl overflow-hidden shadow-lg">
+        <div class="p-3 border-b border-darkBorder flex items-center justify-between bg-zinc-900/50">
+          <div class="flex items-center gap-2">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+            <span class="text-xs font-semibold">Latest Profile Timeline Read-back</span>
+          </div>
+          <button onclick="reloadShots()" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+          </button>
+        </div>
+        <div class="relative bg-zinc-950 min-h-[220px] flex items-center justify-center">
+          <img id="img-profile" src="" alt="Profile Verification" class="w-full object-cover max-h-[380px] hidden" onload="this.classList.remove('hidden')">
+          <div id="img-profile-loading" class="text-xs text-zinc-500 py-12 flex flex-col items-center gap-2">
+            <i data-lucide="image" class="w-6 h-6 text-zinc-600"></i>
+            Loading screenshot...
+          </div>
+        </div>
+        <div class="p-3 text-xs text-zinc-400 bg-zinc-900/30 flex items-center justify-between">
+          <span>Read directly from profile</span>
+          <a id="btn-view-profile-x" href="https://x.com/ezeslucky" target="_blank" class="text-brand hover:underline flex items-center gap-1">
+            Open on X <i data-lucide="external-link" class="w-3 h-3"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Composer screenshot card -->
+      <div class="bg-darkCard border border-darkBorder rounded-xl overflow-hidden shadow-lg">
+        <div class="p-3 border-b border-darkBorder flex items-center justify-between bg-zinc-900/50">
+          <div class="flex items-center gap-2">
+            <i data-lucide="edit-3" class="w-4 h-4 text-sky-400"></i>
+            <span class="text-xs font-semibold">Composer State Proof</span>
+          </div>
+        </div>
+        <div class="relative bg-zinc-950 min-h-[180px] flex items-center justify-center">
+          <img id="img-compose" src="" alt="Composer Proof" class="w-full object-cover max-h-[320px] hidden" onload="this.classList.remove('hidden')">
+          <div id="img-compose-loading" class="text-xs text-zinc-500 py-10 flex flex-col items-center gap-2">
+            <i data-lucide="image" class="w-6 h-6 text-zinc-600"></i>
+            Loading composer screenshot...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SYSTEM STATUS & SETTINGS -->
+    <section id="tab-status" class="space-y-4 hidden">
+      <h2 class="text-lg font-bold">Pipeline Health</h2>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-darkCard border border-darkBorder rounded-xl p-3">
+          <span class="text-xs text-zinc-400 block">Logged-in Handle</span>
+          <span id="stat-handle" class="text-sm font-bold text-white mt-0.5 block">@ezeslucky</span>
+        </div>
+        <div class="bg-darkCard border border-darkBorder rounded-xl p-3">
+          <span class="text-xs text-zinc-400 block">Character Budget</span>
+          <span id="stat-chars" class="text-sm font-bold text-emerald-400 mt-0.5 block">280 chars</span>
+        </div>
+        <div class="bg-darkCard border border-darkBorder rounded-xl p-3">
+          <span class="text-xs text-zinc-400 block">AI Update Day</span>
+          <span id="stat-day" class="text-sm font-bold text-sky-400 mt-0.5 block">Day 1</span>
+        </div>
+        <div class="bg-darkCard border border-darkBorder rounded-xl p-3">
+          <span class="text-xs text-zinc-400 block">Total Published</span>
+          <span id="stat-posts" class="text-sm font-bold text-zinc-200 mt-0.5 block">0</span>
+        </div>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="bg-darkCard border border-darkBorder rounded-xl p-4 space-y-3">
+        <h3 class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Manual Controls</h3>
+        
+        <button onclick="triggerQuickCheck()" class="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold rounded-lg transition active:scale-[0.98] flex items-center justify-center gap-2">
+          <i data-lucide="play-circle" class="w-4 h-4 text-emerald-400"></i> Run Schedule Due Gate Now
+        </button>
+        <button onclick="openComposeModal()" class="w-full py-2.5 px-4 bg-brand hover:bg-sky-400 text-xs font-semibold rounded-lg transition active:scale-[0.98] flex items-center justify-center gap-2">
+          <i data-lucide="send" class="w-4 h-4"></i> Compose New Post
+        </button>
+      </div>
+
+      <!-- Voice Calibration Reference -->
+      <div class="bg-darkCard border border-darkBorder rounded-xl p-4 space-y-2">
+        <h3 class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Voice Profile Rules</h3>
+        <ul class="text-xs text-zinc-400 space-y-1.5 list-disc list-inside">
+          <li>130–245 characters (under 280 ceiling)</li>
+          <li>2 beats separated by a blank line</li>
+          <li>Direct claim / statement opening</li>
+          <li>Zero engagement bait, zero hype, no emoji spam</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM TAB NAVIGATION -->
+  <nav class="bg-black/95 border-t border-darkBorder fixed bottom-0 left-0 right-0 px-2 py-2 flex justify-around items-center z-30">
+    <button onclick="switchTab('queue')" id="nav-queue" class="flex flex-col items-center py-1 px-3 text-brand transition active:scale-90">
+      <i data-lucide="list-todo" class="w-5 h-5"></i>
+      <span class="text-[10px] mt-1 font-medium">Queue</span>
+    </button>
+    <button onclick="switchTab('research')" id="nav-research" class="flex flex-col items-center py-1 px-3 text-zinc-400 hover:text-white transition active:scale-90">
+      <i data-lucide="newspaper" class="w-5 h-5"></i>
+      <span class="text-[10px] mt-1 font-medium">Research</span>
+    </button>
+    <button onclick="switchTab('verify')" id="nav-verify" class="flex flex-col items-center py-1 px-3 text-zinc-400 hover:text-white transition active:scale-90">
+      <i data-lucide="shield-check" class="w-5 h-5"></i>
+      <span class="text-[10px] mt-1 font-medium">Verify</span>
+    </button>
+    <button onclick="switchTab('status')" id="nav-status" class="flex flex-col items-center py-1 px-3 text-zinc-400 hover:text-white transition active:scale-90">
+      <i data-lucide="activity" class="w-5 h-5"></i>
+      <span class="text-[10px] mt-1 font-medium">Status</span>
+    </button>
+  </nav>
+
+  <!-- EDIT / FILL DRAFT MODAL -->
+  <div id="modal-edit" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-darkCard border border-darkBorder w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-4 space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-darkBorder pb-3">
+        <div>
+          <h3 class="font-bold text-sm" id="modal-slot-title">Edit Draft</h3>
+          <p class="text-xs text-zinc-400" id="modal-slot-sub">Slot 13:00</p>
+        </div>
+        <button onclick="closeModal('modal-edit')" class="p-1.5 text-zinc-400 hover:text-white rounded-full">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-2 flex-1">
+        <textarea id="modal-text" rows="6" maxlength="280" placeholder="Write draft in your voice..." class="w-full bg-zinc-900 border border-darkBorder rounded-xl p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand resize-none font-sans" oninput="updateCharCount()"></textarea>
+        <div class="flex items-center justify-between text-xs text-zinc-400 px-1">
+          <span id="modal-char-count">0 / 280 characters</span>
+          <span id="modal-char-remaining" class="text-emerald-400 font-mono">280 left</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-darkBorder">
+        <button onclick="saveDraft()" class="py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold rounded-xl transition active:scale-95">
+          Save Draft
+        </button>
+        <button onclick="postDraftNow(false)" class="py-2.5 px-4 bg-brand hover:bg-sky-400 text-white text-xs font-bold rounded-xl transition active:scale-95 flex items-center justify-center gap-1.5">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i> Publish Now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SERVER CONFIG MODAL -->
+  <div id="modal-config" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-darkCard border border-darkBorder w-full max-w-sm rounded-2xl p-4 space-y-4">
+      <div class="flex items-center justify-between border-b border-darkBorder pb-2">
+        <h3 class="font-bold text-sm">Server Endpoint</h3>
+        <button onclick="closeModal('modal-config')" class="p-1.5 text-zinc-400 hover:text-white rounded-full">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="space-y-2">
+        <label class="text-xs text-zinc-400">Backend API URL</label>
+        <input id="input-api-url" type="text" value="http://localhost:8000" class="w-full bg-zinc-900 border border-darkBorder rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-brand font-mono">
+        <p class="text-[11px] text-zinc-500">For phone over WiFi, use your PC's IP, e.g. <span class="text-zinc-400">http://192.168.1.X:8000</span></p>
+      </div>
+      <button onclick="saveConfig()" class="w-full py-2.5 bg-brand hover:bg-sky-400 text-white text-xs font-bold rounded-xl transition active:scale-95">
+        Save & Reconnect
+      </button>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-zinc-900 border border-darkBorder text-white text-xs py-2 px-4 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none z-50">
+    <i id="toast-icon" data-lucide="info" class="w-4 h-4 text-brand"></i>
+    <span id="toast-msg">Notification</span>
+  </div>
+
+  <script>
+    // State management
+    let API_BASE = localStorage.getItem('tweety_api_base') || (location.origin.includes('http') && !location.origin.includes(':8000') ? 'http://localhost:8000' : location.origin);
+    let currentPlan = null;
+    let editingSlot = null;
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-msg');
+      const icon = document.getElementById('toast-icon');
+      text.innerText = msg;
+      icon.setAttribute('data-lucide', isSuccess ? 'check-circle' : 'alert-circle');
+      icon.className = `w-4 h-4 ${isSuccess ? 'text-emerald-400' : 'text-rose-400'}`;
+      lucide.createIcons();
+      toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-2');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+      }, 3000);
+    }
+
+    async function apiFetch(endpoint, options = {}) {
+      const url = `${API_BASE}${endpoint}`;
+      try {
+        const res = await fetch(url, {
+          ...options,
+          headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: res.statusText }));
+          throw new Error(err.detail || 'API request failed');
+        }
+        document.getElementById('conn-pill').className = 'inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+        return await res.json();
+      } catch (e) {
+        document.getElementById('conn-pill').className = 'inline-block w-2 h-2 rounded-full bg-rose-500';
+        throw e;
+      }
+    }
+
+    async function loadStatus() {
+      try {
+        const st = await apiFetch('/api/status');
+        document.getElementById('handle-badge').innerText = `@${st.handle}`;
+        document.getElementById('stat-handle').innerText = `@${st.handle}`;
+        document.getElementById('stat-chars').innerText = `${st.max_chars} chars`;
+        document.getElementById('stat-day').innerText = `Day ${st.next_day}`;
+        document.getElementById('stat-posts').innerText = st.total_posts;
+      } catch (e) {
+        console.warn('Failed to load status:', e);
+      }
+    }
+
+    async function loadPlan() {
+      try {
+        const plan = await apiFetch('/api/plan');
+        currentPlan = plan;
+        document.getElementById('plan-date').innerText = `Plan for ${plan.date || 'Today'}`;
+        renderSlots(plan.slots || []);
+      } catch (e) {
+        document.getElementById('slots-list').innerHTML = `
+          <div class="bg-darkCard border border-darkBorder rounded-xl p-4 text-center text-xs text-zinc-400">
+            Failed to connect to backend server. Make sure <code class="text-brand">scripts/server.py</code> is running.
+          </div>`;
+      }
+    }
+
+    function renderSlots(slots) {
+      const container = document.getElementById('slots-list');
+      container.innerHTML = '';
+
+      if (!slots || slots.length === 0) {
+        container.innerHTML = `<p class="text-xs text-zinc-500 text-center py-6">No slots planned.</p>`;
+        return;
+      }
+
+      slots.forEach(s => {
+        const isPosted = s.posted;
+        const hasText = !!(s.text && s.text.trim());
+        const isAiUpdate = s.kind === 'ai_update';
+        
+        let badge = `<span class="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-medium">EMPTY</span>`;
+        if (isPosted) {
+          badge = `<span class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full font-semibold">POSTED</span>`;
+        } else if (hasText) {
+          badge = `<span class="text-[10px] bg-sky-950 text-sky-400 border border-sky-800 px-2 py-0.5 rounded-full font-semibold">READY</span>`;
+        }
+
+        const dueFormatted = s.due_at ? s.due_at.substring(11, 16) : s.slot;
+
+        const card = document.createElement('div');
+        card.className = "bg-darkCard border border-darkBorder rounded-xl p-3.5 space-y-2.5 transition";
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-sm font-bold text-white">${s.slot}</span>
+              <span class="text-[11px] text-zinc-500">due ~${dueFormatted}</span>
+              ${isAiUpdate ? `<span class="text-[9px] bg-purple-950 text-purple-300 border border-purple-800 px-1.5 py-0.5 rounded">AI UPDATE</span>` : ''}
+            </div>
+            ${badge}
+          </div>
+
+          <div class="text-xs text-zinc-300 bg-zinc-900/60 rounded-lg p-2.5 font-sans leading-relaxed border border-darkBorder/50">
+            ${hasText ? escapeHtml(s.text) : '<span class="italic text-zinc-600">Draft empty. Tap Edit to write or fill.</span>'}
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[10px] text-zinc-500 font-mono">${hasText ? s.text.length + ' chars' : ''}</span>
+            <div class="flex items-center gap-2">
+              ${!isPosted ? `
+                <button onclick="openEditModal('${s.slot}')" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded-lg transition active:scale-95 flex items-center gap-1">
+                  <i data-lucide="edit-2" class="w-3 h-3"></i> Edit
+                </button>
+                ${hasText ? `
+                  <button onclick="triggerSlotPost('${s.slot}')" class="text-xs bg-brand hover:bg-sky-400 text-white font-semibold px-3 py-1.5 rounded-lg transition active:scale-95 flex items-center gap-1">
+                    <i data-lucide="send" class="w-3 h-3"></i> Post
+                  </button>
+                ` : ''}
+              ` : `
+                ${s.tweet_url ? `
+                  <a href="${s.tweet_url}" target="_blank" class="text-xs text-brand hover:underline flex items-center gap-1">
+                    View on X <i data-lucide="external-link" class="w-3 h-3"></i>
+                  </a>
+                ` : ''}
+              `}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    async function loadResearch() {
+      try {
+        const data = await apiFetch('/api/research/latest');
+        const container = document.getElementById('research-items');
+        container.innerHTML = '';
+        document.getElementById('research-summary').innerText = `${data.items?.length || 0} stories collected (${data.date || ''})`;
+
+        (data.items || []).forEach(item => {
+          const card = document.createElement('div');
+          card.className = "bg-darkCard border border-darkBorder rounded-xl p-3 space-y-1.5";
+          card.innerHTML = `
+            <div class="flex items-center justify-between text-[11px] text-zinc-400">
+              <span class="font-medium text-brand truncate max-w-[150px]">${item.source}</span>
+              <span>${item.score || 0} pts &bull; ${item.comments || 0} comments</span>
+            </div>
+            <a href="${item.url}" target="_blank" class="text-xs font-semibold text-white hover:text-brand transition block leading-snug">
+              ${escapeHtml(item.title)}
+            </a>
+            <div class="flex justify-end pt-1">
+              <button onclick="useStoryForDraft(${JSON.stringify(escapeHtml(item.title)).replace(/"/g, '&quot;')})" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1">
+                <i data-lucide="sparkles" class="w-3 h-3 text-brand"></i> Use in Draft
+              </button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+        lucide.createIcons();
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    function reloadShots() {
+      const p = document.getElementById('img-profile');
+      const c = document.getElementById('img-compose');
+      const timestamp = new Date().getTime();
+      p.src = `${API_BASE}/api/shots/profile?t=${timestamp}`;
+      c.src = `${API_BASE}/api/shots/compose?t=${timestamp}`;
+    }
+
+    function openEditModal(slot) {
+      editingSlot = slot;
+      const s = currentPlan?.slots?.find(x => x.slot === slot);
+      document.getElementById('modal-slot-title').innerText = `Edit Draft - Slot ${slot}`;
+      document.getElementById('modal-slot-sub').innerText = s?.kind === 'ai_update' ? 'AI Daily Update Slot' : 'Standard Value Post';
+      document.getElementById('modal-text').value = s?.text || '';
+      updateCharCount();
+      document.getElementById('modal-edit').classList.remove('hidden');
+    }
+
+    function updateCharCount() {
+      const len = document.getElementById('modal-text').value.length;
+      document.getElementById('modal-char-count').innerText = `${len} / 280 characters`;
+      const rem = 280 - len;
+      const remEl = document.getElementById('modal-char-remaining');
+      remEl.innerText = `${rem} left`;
+      remEl.className = rem < 0 ? 'text-rose-400 font-mono font-bold' : (rem < 20 ? 'text-amber-400 font-mono' : 'text-emerald-400 font-mono');
+    }
+
+    async function saveDraft() {
+      const text = document.getElementById('modal-text').value;
+      if (!editingSlot) return;
+      try {
+        await apiFetch('/api/draft/fill', {
+          method: 'POST',
+          body: JSON.stringify({ slot: editingSlot, text })
+        });
+        showToast(`Slot ${editingSlot} draft saved!`);
+        closeModal('modal-edit');
+        loadPlan();
+      } catch (e) {
+        showToast(e.message, false);
+      }
+    }
+
+    async function postDraftNow(dryRun = false) {
+      if (!editingSlot) return;
+      const text = document.getElementById('modal-text').value;
+      if (!confirm(`Are you sure you want to ${dryRun ? 'test dry-run' : 'publish live to X'} now?`)) return;
+      
+      showToast('Publishing via browser session...', true);
+      closeModal('modal-edit');
+      try {
+        const res = await apiFetch('/api/post/trigger', {
+          method: 'POST',
+          body: JSON.stringify({ slot: editingSlot, text, dry_run: dryRun })
+        });
+        if (res.ok && res.result?.posted) {
+          showToast('Post published and verified on profile!');
+        } else {
+          showToast(res.error || 'Published with note, check verify tab', false);
+        }
+        loadPlan();
+        reloadShots();
+      } catch (e) {
+        showToast(e.message, false);
+      }
+    }
+
+    async function triggerSlotPost(slot) {
+      editingSlot = slot;
+      const s = currentPlan?.slots?.find(x => x.slot === slot);
+      if (s) {
+        document.getElementById('modal-text').value = s.text || '';
+        postDraftNow(false);
+      }
+    }
+
+    async function makeNewPlan() {
+      if (!confirm("Re-generate today's schedule slots with random jitter times?")) return;
+      try {
+        await apiFetch('/api/plan/make', { method: 'POST' });
+        showToast('Generated new slots plan!');
+        loadPlan();
+      } catch (e) {
+        showToast(e.message, false);
+      }
+    }
+
+    async function triggerQuickCheck() {
+      try {
+        const d = await apiFetch('/api/due');
+        if (d.idle) {
+          showToast('Schedule Gate: IDLE (No posts due right now)');
+        } else {
+          showToast(`Schedule Gate: Slot ${d.draft.slot} is DUE!`);
+        }
+      } catch (e) {
+        showToast(e.message, false);
+      }
+    }
+
+    function useStoryForDraft(title) {
+      switchTab('queue');
+      const emptySlot = currentPlan?.slots?.find(s => !s.posted && !s.text) || currentPlan?.slots?.[0];
+      if (emptySlot) {
+        openEditModal(emptySlot.slot);
+        document.getElementById('modal-text').value = `${title}\n\n`;
+        updateCharCount();
+      }
+    }
+
+    function switchTab(tab) {
+      ['queue', 'research', 'verify', 'status'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
+        const navBtn = document.getElementById(`nav-${t}`);
+        if (t === tab) {
+          navBtn.className = "flex flex-col items-center py-1 px-3 text-brand transition active:scale-90";
+        } else {
+          navBtn.className = "flex flex-col items-center py-1 px-3 text-zinc-400 hover:text-white transition active:scale-90";
+        }
+      });
+      if (tab === 'verify') reloadShots();
+      if (tab === 'research') loadResearch();
+      lucide.createIcons();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function openConfigModal() {
+      document.getElementById('input-api-url').value = API_BASE;
+      document.getElementById('modal-config').classList.remove('hidden');
+    }
+
+    function saveConfig() {
+      API_BASE = document.getElementById('input-api-url').value.trim().replace(/\/$/, '');
+      localStorage.setItem('tweety_api_base', API_BASE);
+      closeModal('modal-config');
+      showToast('API URL saved. Reconnecting...');
+      refreshAll();
+    }
+
+    function refreshAll() {
+      loadStatus();
+      loadPlan();
+      reloadShots();
+    }
+
+    function escapeHtml(text) {
+      const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'};
+      return (text || '').replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Initialize on launch
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      refreshAll();
+    });
+  </script>
+</body>
+</html>

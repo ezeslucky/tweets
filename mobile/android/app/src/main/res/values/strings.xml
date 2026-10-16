@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TweetyTweets</string>
+    <string name="title_activity_main">TweetyTweets</string>
+    <string name="package_name">com.tweetytweets.companion</string>
+    <string name="custom_url_scheme">com.tweetytweets.companion</string>
+</resources>
