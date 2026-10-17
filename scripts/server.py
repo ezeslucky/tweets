@@ -196,7 +196,54 @@ async def get_shot(name: str):
     p = SHOTS_DIR / name
     if not p.exists():
         raise HTTPException(status_code=404, detail="Screenshot not found")
-    return FileResponse(p, media_type="image/png")
+class PaymentConfigRequest(BaseModel):
+    paypal_client_id: Optional[str] = None
+    paypal_me_user: Optional[str] = None
+
+class PaymentCompleteRequest(BaseModel):
+    order_id: str
+    payer_email: Optional[str] = None
+    amount: Optional[str] = None
+    tier: Optional[str] = "supporter"
+
+@app.get("/api/payment/config")
+async def get_payment_config():
+    st = post.load_state()
+    cfg = settings.load()
+    return {
+        "paypal_client_id": cfg.get("paypal_client_id", "sb"),
+        "paypal_me_user": cfg.get("paypal_me_user", "ezeslucky"),
+        "is_pro": st.get("is_pro", False),
+        "payments": st.get("payments", [])
+    }
+
+@app.post("/api/payment/config")
+async def set_payment_config(req: PaymentConfigRequest):
+    c_path = ROOT_DIR / "config.json"
+    if c_path.exists():
+        cfg = json.loads(c_path.read_text(encoding="utf-8"))
+        if req.paypal_client_id is not None:
+            cfg["paypal_client_id"] = req.paypal_client_id.strip()
+        if req.paypal_me_user is not None:
+            cfg["paypal_me_user"] = req.paypal_me_user.strip()
+        c_path.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
+    return {"ok": True}
+
+@app.post("/api/payment/complete")
+async def record_payment(req: PaymentCompleteRequest):
+    st = post.load_state()
+    st["is_pro"] = True
+    payments = st.get("payments", [])
+    payments.append({
+        "order_id": req.order_id,
+        "payer_email": req.payer_email,
+        "amount": req.amount,
+        "tier": req.tier,
+        "at": datetime.now(timezone.utc).isoformat()
+    })
+    st["payments"] = payments
+    post.save_state(st)
+    return {"ok": True, "is_pro": True}
 
 # Serve mobile www if present
 if WWW_DIR.exists():

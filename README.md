@@ -9,6 +9,7 @@ them through a real logged-in browser, and proves each one actually went live.
 - **No paid scrapers.** Research comes from sources that are free and open.
 - **One dependency.** `websockets`. Everything else is the Python standard library.
 - **It verifies its own work.** Reading the profile back is the only accepted proof.
+- **Android Companion App.** Mobile queue viewer, live swipe file browser, manual publisher, and PayPal supporter checkout.
 
 ```
         ┌──────────┐   ┌────────┐   ┌───────────┐   ┌─────────┐   ┌────────┐
@@ -17,6 +18,12 @@ them through a real logged-in browser, and proves each one actually went live.
          HN, RSS,       agent        cron gate        real          read the
          Reddit, X      writes 4     wakes only       browser       profile
          ~150 items     drafts       when due         composer      back
+              │                                          │
+              ▼                                          ▼
+     ┌────────────────────────────────────────────────────────┐
+     │       Android Companion App (Capacitor + FastAPI)      │
+     │  Queue Monitor • Draft Editor • PayPal Pro Supporter   │
+     └────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -24,6 +31,7 @@ them through a real logged-in browser, and proves each one actually went live.
 ## Table of contents
 
 - [What it actually does](#what-it-actually-does)
+- [Android Companion App & Dashboard](#android-companion-app--dashboard)
 - [Requirements](#requirements)
 - [Setup](#setup)
 - [Step 0 — the interview (this is the point)](#step-0--the-interview-this-is-the-point)
@@ -63,6 +71,28 @@ Every day, unattended:
 4. **It knows it can be wrong.** The verification step documents exactly what the
    vision model is and isn't trustworthy for, because getting that wrong once
    caused a successfully-published post to be reported as a failure.
+
+---
+
+## Android Companion App & Dashboard
+
+A native mobile companion app built with **Capacitor** and a local **FastAPI** backend (`scripts/server.py`).
+
+- **Queue & Schedule**: View upcoming posting slots, live post status (`EMPTY`, `READY`, `POSTED`), and edit drafts with an interactive 280-char counter.
+- **Research Swipe File**: Browse candidate stories from Hacker News, Reddit, and RSS feeds with direct "Use in Draft" buttons.
+- **Verification Proof**: Inspect the latest live profile read-back and composer screenshots directly on your phone.
+- **PayPal Supporter Checkout**: Instant Pro / Coffee supporter tiers ($5, $19, $49) with direct PayPal.me or PayPal Smart Buttons integration.
+
+### Quick Start (Mobile / Dashboard)
+
+```bash
+# 1. Start the backend companion server (runs at http://0.0.0.0:8000)
+python scripts/server.py
+# (or double-click start_server.bat on Windows)
+
+# 2. Access on PC: open http://localhost:8000 in your browser
+# 3. Access on Android: install mobile/TweetyTweets-Companion.apk and connect over Wi-Fi
+```
 
 ---
 
@@ -379,8 +409,15 @@ README.md                 this file
 config.example.json       template config
 requirements.txt          one dependency
 LICENSE                   MIT
+start_server.bat          one-click companion server launcher
+
+mobile/                   Capacitor Android app and web dashboard
+  TweetyTweets-Companion.apk standalone compiled Android APK
+  www/index.html          mobile UI (Tailwind + Lucide + PayPal checkout)
+  android/                native Android Studio project
 
 scripts/
+  server.py               FastAPI REST backend for the mobile app & web UI
   settings.py             config loading, path + Chrome discovery, timezone
   browser.py              minimal CDP driver (launch, tabs, eval, screenshots)
   research.py             HN / RSS / Reddit / X collectors -> swipe/<date>.json

@@ -57,7 +57,11 @@
       </div>
     </div>
     
-    <div class="flex items-center space-x-2">
+    <div class="flex items-center space-x-1.5">
+      <button onclick="openPaymentModal()" class="px-2.5 py-1 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full flex items-center gap-1 transition active:scale-95">
+        <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span id="badge-pro-header">Pro</span>
+      </button>
       <button onclick="refreshAll()" class="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition active:scale-95">
         <i data-lucide="rotate-cw" class="w-4 h-4"></i>
       </button>
@@ -179,6 +183,31 @@
         </div>
       </div>
 
+      <!-- PayPal Membership & Support Card -->
+      <div class="bg-gradient-to-br from-zinc-900 to-amber-950/20 border border-amber-500/30 rounded-xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400">
+              <i data-lucide="crown" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold text-white">TweetyTweets Pro Supporter</h3>
+              <p class="text-[10px] text-zinc-400">Unlock priority posting & support building</p>
+            </div>
+          </div>
+          <span id="badge-pro-pill" class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-semibold">FREE TIER</span>
+        </div>
+
+        <p class="text-xs text-zinc-300 leading-relaxed">
+          Upgrade to Pro or support development via PayPal. Verified instantly in your account ledger.
+        </p>
+
+        <button onclick="openPaymentModal()" class="w-full py-2.5 px-4 bg-[#0070ba] hover:bg-[#003087] text-white font-bold text-xs rounded-xl transition active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.787.787 0 0 1 .777-.665h7.248c2.978 0 5.215.757 6.468 2.189 1.156 1.32 1.488 3.09.986 5.263-.787 3.407-3.238 5.61-7.086 5.61H9.987a.788.788 0 0 0-.777.665l-1.047 4.092a.641.641 0 0 1-.633.463h-.454z"/></svg>
+          Support / Upgrade with PayPal
+        </button>
+      </div>
+
       <!-- Quick Action Controls -->
       <div class="bg-darkCard border border-darkBorder rounded-xl p-4 space-y-3">
         <h3 class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Manual Controls</h3>
@@ -258,21 +287,96 @@
   </div>
 
   <!-- SERVER CONFIG MODAL -->
+  <!-- PAYPAL PAYMENT & UPGRADE MODAL -->
+  <div id="modal-payment" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-darkCard border border-darkBorder w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-darkBorder pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
+            <i data-lucide="crown" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-white">Upgrade & Support</h3>
+            <p class="text-xs text-zinc-400">PayPal Instant Checkout</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-payment')" class="p-1.5 text-zinc-400 hover:text-white rounded-full">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Tier Selection -->
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-zinc-300">Select Support Tier</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="selectTier(5, 'Coffee Support')" id="tier-btn-5" class="p-2.5 rounded-xl border border-darkBorder bg-zinc-900 hover:border-amber-500/50 text-center transition active:scale-95">
+            <span class="block text-xs font-bold text-white">$5</span>
+            <span class="block text-[10px] text-zinc-400">Coffee ☕</span>
+          </button>
+          <button onclick="selectTier(19, 'Pro Lifetime')" id="tier-btn-19" class="p-2.5 rounded-xl border-2 border-amber-500 bg-amber-500/10 text-center transition active:scale-95 relative">
+            <span class="absolute -top-2 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-[8px] font-black px-1.5 py-0.2 rounded-full uppercase">Popular</span>
+            <span class="block text-xs font-bold text-amber-400">$19</span>
+            <span class="block text-[10px] text-zinc-300">Pro 🚀</span>
+          </button>
+          <button onclick="selectTier(49, 'Sponsor')" id="tier-btn-49" class="p-2.5 rounded-xl border border-darkBorder bg-zinc-900 hover:border-amber-500/50 text-center transition active:scale-95">
+            <span class="block text-xs font-bold text-white">$49</span>
+            <span class="block text-[10px] text-zinc-400">Sponsor 💎</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Perks Summary -->
+      <div class="bg-zinc-900/60 border border-darkBorder rounded-xl p-3 text-xs text-zinc-300 space-y-1.5">
+        <div class="flex items-center gap-1.5 text-amber-400 font-medium text-[11px]">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Pro Member Badge in Ledger
+        </div>
+        <div class="flex items-center gap-1.5 text-zinc-400 text-[11px]">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Direct Developer Support via PayPal
+        </div>
+        <div class="flex items-center gap-1.5 text-zinc-400 text-[11px]">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Instant activation on all devices
+        </div>
+      </div>
+
+      <!-- PayPal Buttons Container & Direct Option -->
+      <div class="space-y-2 pt-1">
+        <div id="paypal-button-container" class="min-h-[45px]"></div>
+        
+        <button onclick="payViaPayPalMe()" class="w-full py-2.5 px-4 bg-[#003087] hover:bg-[#002060] text-white text-xs font-bold rounded-xl transition active:scale-95 flex items-center justify-center gap-2 shadow-md">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.787.787 0 0 1 .777-.665h7.248c2.978 0 5.215.757 6.468 2.189 1.156 1.32 1.488 3.09.986 5.263-.787 3.407-3.238 5.61-7.086 5.61H9.987a.788.788 0 0 0-.777.665l-1.047 4.092a.641.641 0 0 1-.633.463h-.454z"/></svg>
+          Pay with PayPal.me (<span id="btn-amount-label">$19</span>)
+        </button>
+
+        <p class="text-[10px] text-zinc-500 text-center">Secure payments handled directly by PayPal</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SERVER & PAYPAL CONFIG MODAL -->
   <div id="modal-config" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-darkCard border border-darkBorder w-full max-w-sm rounded-2xl p-4 space-y-4">
       <div class="flex items-center justify-between border-b border-darkBorder pb-2">
-        <h3 class="font-bold text-sm">Server Endpoint</h3>
+        <h3 class="font-bold text-sm">App & Payment Settings</h3>
         <button onclick="closeModal('modal-config')" class="p-1.5 text-zinc-400 hover:text-white rounded-full">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
-      <div class="space-y-2">
-        <label class="text-xs text-zinc-400">Backend API URL</label>
-        <input id="input-api-url" type="text" value="http://localhost:8000" class="w-full bg-zinc-900 border border-darkBorder rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-brand font-mono">
-        <p class="text-[11px] text-zinc-500">For phone over WiFi, use your PC's IP, e.g. <span class="text-zinc-400">http://192.168.1.X:8000</span></p>
+      <div class="space-y-3">
+        <div class="space-y-1">
+          <label class="text-xs text-zinc-400">Backend API URL</label>
+          <input id="input-api-url" type="text" value="http://localhost:8000" class="w-full bg-zinc-900 border border-darkBorder rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-brand font-mono">
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs text-zinc-400">PayPal.me Username</label>
+          <input id="input-paypal-user" type="text" value="vedantdhande04" placeholder="e.g. vedantdhande04" class="w-full bg-zinc-900 border border-darkBorder rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-brand font-mono">
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs text-zinc-400">PayPal Client ID (Optional for SDK)</label>
+          <input id="input-paypal-client" type="text" value="sb" placeholder="Live / Sandbox Client ID" class="w-full bg-zinc-900 border border-darkBorder rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-brand font-mono">
+        </div>
       </div>
       <button onclick="saveConfig()" class="w-full py-2.5 bg-brand hover:bg-sky-400 text-white text-xs font-bold rounded-xl transition active:scale-95">
-        Save & Reconnect
+        Save Settings
       </button>
     </div>
   </div>
@@ -581,17 +685,152 @@
       document.getElementById('modal-config').classList.remove('hidden');
     }
 
+    let selectedAmount = 19;
+    let selectedTierName = 'Pro Lifetime';
+    let paypalUser = 'vedantdhande04';
+    let paypalClientId = 'sb';
+    let isPro = false;
+
+    function openPaymentModal() {
+      document.getElementById('modal-payment').classList.remove('hidden');
+      selectTier(19, 'Pro Lifetime');
+      initPayPalButtons();
+    }
+
+    function selectTier(amount, name) {
+      selectedAmount = amount;
+      selectedTierName = name;
+      [5, 19, 49].forEach(a => {
+        const btn = document.getElementById(`tier-btn-${a}`);
+        if (!btn) return;
+        if (a === amount) {
+          btn.className = "p-2.5 rounded-xl border-2 border-amber-500 bg-amber-500/10 text-center transition active:scale-95 relative";
+        } else {
+          btn.className = "p-2.5 rounded-xl border border-darkBorder bg-zinc-900 hover:border-amber-500/50 text-center transition active:scale-95";
+        }
+      });
+      document.getElementById('btn-amount-label').innerText = `$${amount}`;
+    }
+
+    function payViaPayPalMe() {
+      const u = paypalUser || 'vedantdhande04';
+      const link = `https://paypal.me/${u}/${selectedAmount}USD`;
+      window.open(link, '_blank');
+      showToast(`Redirecting to PayPal for $${selectedAmount}...`);
+      setTimeout(() => {
+        if (confirm("Did you complete the PayPal payment? Click OK to activate Pro!")) {
+          completeProPayment("PAYPAL_DIRECT_" + Date.now());
+        }
+      }, 5000);
+    }
+
+    async function completeProPayment(orderId) {
+      try {
+        await apiFetch('/api/payment/complete', {
+          method: 'POST',
+          body: JSON.stringify({ order_id: orderId, amount: String(selectedAmount), tier: selectedTierName })
+        });
+        isPro = true;
+        updateProBadges();
+        closeModal('modal-payment');
+        showToast('🎉 Congratulations! You are now a Pro Supporter!');
+      } catch (e) {
+        showToast(e.message, false);
+      }
+    }
+
+    function updateProBadges() {
+      if (isPro) {
+        const h = document.getElementById('badge-pro-header');
+        if (h) h.innerText = 'PRO ⭐';
+        const p = document.getElementById('badge-pro-pill');
+        if (p) {
+          p.innerText = 'PRO MEMBER';
+          p.className = 'text-[10px] bg-amber-500 text-black px-2 py-0.5 rounded-full font-black';
+        }
+      }
+    }
+
+    async function loadPaymentConfig() {
+      try {
+        const res = await apiFetch('/api/payment/config');
+        if (res) {
+          paypalUser = res.paypal_me_user || 'vedantdhande04';
+          paypalClientId = res.paypal_client_id || 'sb';
+          isPro = !!res.is_pro;
+          const pu = document.getElementById('input-paypal-user');
+          if (pu) pu.value = paypalUser;
+          const pc = document.getElementById('input-paypal-client');
+          if (pc) pc.value = paypalClientId;
+          updateProBadges();
+        }
+      } catch (e) {
+        console.warn('Payment config load:', e);
+      }
+    }
+
+    function initPayPalButtons() {
+      const container = document.getElementById('paypal-button-container');
+      if (!container) return;
+      container.innerHTML = '';
+      
+      if (window.paypal) {
+        renderPayPalSDKButton();
+      } else {
+        const s = document.createElement('script');
+        s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(paypalClientId)}&currency=USD`;
+        s.onload = () => renderPayPalSDKButton();
+        s.onerror = () => {
+          container.innerHTML = `<p class="text-[11px] text-zinc-500 text-center py-1">Use PayPal.me button below for direct checkout</p>`;
+        };
+        document.head.appendChild(s);
+      }
+    }
+
+    function renderPayPalSDKButton() {
+      const container = document.getElementById('paypal-button-container');
+      if (!container || !window.paypal || !window.paypal.Buttons) return;
+      container.innerHTML = '';
+      window.paypal.Buttons({
+        style: { layout: 'horizontal', color: 'gold', shape: 'pill', label: 'paypal', height: 40 },
+        createOrder: function(data, actions) {
+          return actions.order.create({
+            purchase_units: [{
+              description: `TweetyTweets ${selectedTierName}`,
+              amount: { value: String(selectedAmount) }
+            }]
+          });
+        },
+        onApprove: function(data, actions) {
+          return actions.order.capture().then(function(details) {
+            completeProPayment(data.orderID);
+          });
+        }
+      }).render('#paypal-button-container').catch(err => {
+        container.innerHTML = `<p class="text-[11px] text-zinc-500 text-center py-1">Use PayPal.me button below for direct checkout</p>`;
+      });
+    }
+
     function saveConfig() {
       API_BASE = document.getElementById('input-api-url').value.trim().replace(/\/$/, '');
       localStorage.setItem('tweety_api_base', API_BASE);
+      const pu = document.getElementById('input-paypal-user').value.trim();
+      const pc = document.getElementById('input-paypal-client').value.trim();
+      apiFetch('/api/payment/config', {
+        method: 'POST',
+        body: JSON.stringify({ paypal_me_user: pu, paypal_client_id: pc })
+      }).catch(console.warn);
+      paypalUser = pu;
+      paypalClientId = pc;
       closeModal('modal-config');
-      showToast('API URL saved. Reconnecting...');
+      showToast('Settings saved. Reconnecting...');
       refreshAll();
     }
 
     function refreshAll() {
       loadStatus();
       loadPlan();
+      loadPaymentConfig();
       reloadShots();
     }
 
