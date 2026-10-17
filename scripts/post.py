@@ -119,6 +119,7 @@ async def wait_login(page: Session, timeout: float = 25.0) -> dict:
 
 
 async def _open(url: str) -> Session:
+    browser.ensure_chrome()
     ws = await browser.open_page(url)
     sess = Session(ws)
     page = await sess.__aenter__()
@@ -159,9 +160,11 @@ def require_session(expect: str | None = None) -> dict:
 
 FOCUS_JS = r"""
 (() => {
-  const el = document.querySelector('[data-testid="tweetTextarea_0"]');
+  const dialog = document.querySelector('[role="dialog"]');
+  const el = dialog ? dialog.querySelector('[data-testid="tweetTextarea_0"]') : document.querySelector('[data-testid="tweetTextarea_0"]');
   if (!el) return 'no-editor';
   el.focus();
+  el.click();
   try {
     const r = document.createRange();
     r.selectNodeContents(el);
@@ -173,8 +176,9 @@ FOCUS_JS = r"""
 
 COMPOSE_STATE_JS = r"""
 (() => {
-  const btn = document.querySelector('[data-testid="tweetButton"]');
-  const ed  = document.querySelector('[data-testid="tweetTextarea_0"]');
+  const dialog = document.querySelector('[role="dialog"]');
+  const btn = dialog ? dialog.querySelector('[data-testid="tweetButton"]') : document.querySelector('[data-testid="tweetButton"]');
+  const ed  = dialog ? dialog.querySelector('[data-testid="tweetTextarea_0"]') : document.querySelector('[data-testid="tweetTextarea_0"]');
   const toast = document.querySelector('[data-testid="toast"]');
   const txt = document.body ? document.body.innerText : '';
   return JSON.stringify({
@@ -183,7 +187,7 @@ COMPOSE_STATE_JS = r"""
     btn_found: !!btn,
     btn_disabled: btn ? (btn.getAttribute('aria-disabled') === 'true' || !!btn.disabled) : null,
     toast: toast ? (toast.innerText || '').replace(/\n/g,' ').slice(0,160) : null,
-    modal_open: !!document.querySelector('[aria-labelledby="modal-header"]'),
+    modal_open: !!document.querySelector('[aria-labelledby="modal-header"]') || !!dialog,
     sent: /Your post was sent/i.test(txt),
     error: ((txt.match(/(Something went wrong|Whoops|Try again|exceeded|too long)[^\n]{0,90}/i)||[''])[0]||'').trim(),
     url: location.href,
@@ -192,21 +196,27 @@ COMPOSE_STATE_JS = r"""
 """
 
 
-async def _insert_text(page: Session, text: str) -> str:
+async def _insert_text(page: Session, text: str, timeout: float = 25.0) -> str:
     """Insert into the contenteditable composer so React registers it.
 
     Setting innerText directly does NOT update X's React state and leaves the
     Post button disabled forever - so focus the editor, then use
     Input.insertText, which fires real input events.
     """
-    state = await page.eval(FOCUS_JS)
-    if state != "focused:true":
-        await asyncio.sleep(0.4)
-        await page.eval("document.querySelector('%s') && document.querySelector('%s').focus()"
-                        % (EDITOR, EDITOR))
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        state = await page.eval(FOCUS_JS)
+        if state == "focused:true":
+            break
+        await asyncio.sleep(0.5)
+
     await page.send("Input.insertText", text=text)
-    await asyncio.sleep(0.8)
-    return await page.eval("(document.querySelector('%s')||{}).innerText || ''" % EDITOR)
+    await asyncio.sleep(1.0)
+    return await page.eval("""(() => {
+        const dialog = document.querySelector('[role="dialog"]');
+        const ed = dialog ? dialog.querySelector('[data-testid="tweetTextarea_0"]') : document.querySelector('[data-testid="tweetTextarea_0"]');
+        return (ed || {}).innerText || '';
+    })()""")
 
 
 async def _attach_image(page: Session, path: Path) -> str:
@@ -228,7 +238,11 @@ async def _click_post(page: Session) -> str:
         await asyncio.sleep(1.0)
         st = json.loads(await page.eval(COMPOSE_STATE_JS))
         if st.get("btn_disabled") is False:
-            await page.eval("document.querySelector('%s').click()" % POST_BTN)
+            await page.eval("""(() => {
+                const dialog = document.querySelector('[role="dialog"]');
+                const btn = dialog ? dialog.querySelector('[data-testid="tweetButton"]') : document.querySelector('[data-testid="tweetButton"]');
+                if (btn) btn.click();
+            })()""")
             return "clicked"
     return "button never enabled"
 
