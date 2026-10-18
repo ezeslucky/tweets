@@ -28,7 +28,7 @@ import post
 import research
 import settings
 
-app = FastAPI(title="TweetyTweets Companion API", version="1.0.0")
+app = FastAPI(title="Tweets Companion API", version="1.0.0")
 
 # Enable CORS for Capacitor mobile apps and web frontends
 app.add_middleware(

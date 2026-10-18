@@ -1,4 +1,4 @@
-# tweetytweets
+# Tweets
 
 **An autonomous X/Twitter posting pipeline for your AI agent.**
 

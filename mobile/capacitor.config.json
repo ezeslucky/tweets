@@ -1,6 +1,6 @@
 {
   "appId": "com.tweetytweets.companion",
-  "appName": "TweetyTweets",
+  "appName": "Tweets",
   "webDir": "www",
   "server": {
     "androidScheme": "https",

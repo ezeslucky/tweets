@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b0e14">
-  <title>TweetyTweets Companion</title>
+  <title>Tweets Companion</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -211,7 +211,7 @@
       <div>
         <div class="flex items-center gap-2">
           <h1 class="font-bold text-sm tracking-tight flex items-center gap-1.5 text-[var(--text-primary)]">
-            TweetyTweets
+            Tweets
           </h1>
           <span id="conn-pill" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" title="Backend Server Active">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -457,7 +457,7 @@
               <i data-lucide="crown" class="w-5 h-5"></i>
             </div>
             <div>
-              <h3 class="text-xs font-bold text-[var(--text-primary)]">TweetyTweets Pro Supporter</h3>
+              <h3 class="text-xs font-bold text-[var(--text-primary)]">Tweets Pro Supporter</h3>
               <p class="text-[10px] text-[var(--text-secondary)]">Unlock priority features & support open-source AI tools</p>
             </div>
           </div>
@@ -1587,7 +1587,7 @@
         createOrder: function(data, actions) {
           return actions.order.create({
             purchase_units: [{
-              description: `TweetyTweets ${selectedTierName}`,
+              description: `Tweets ${selectedTierName}`,
               amount: { value: String(selectedAmount) }
             }]
           });
