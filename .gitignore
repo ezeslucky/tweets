@@ -22,6 +22,8 @@ __pycache__/
 .venv/
 venv/
 .env
+*.db
+tweets.db
 
 # os noise
 .DS_Store
