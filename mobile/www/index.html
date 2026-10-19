@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0b0e14">
-  <title>Tweets Companion</title>
+  <meta name="theme-color" content="#090d16">
+  <title>Tweets — Autonomous X Agent Companion</title>
 
-  <!-- Tailwind CSS -->
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -30,7 +30,7 @@
             }
           },
           fontFamily: {
-            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Inter', 'Helvetica', 'Arial', 'sans-serif'],
             mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
           }
         }
@@ -39,14 +39,14 @@
   </script>
 
   <style>
-    /* Design Tokens & CSS Variables for Dark / Light Modes */
+    /* CSS Variables for Dark & Light Themes */
     :root {
       --bg-app: #f8fafc;
-      --bg-header: rgba(248, 250, 252, 0.88);
+      --bg-header: rgba(248, 250, 252, 0.9);
       --bg-nav: rgba(248, 250, 252, 0.94);
-      --bg-card: #ffffff;
-      --bg-card-hover: #f1f5f9;
-      --bg-card-subtle: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #f1f5f9;
+      --bg-surface-subtle: #f8fafc;
       --bg-input: #f1f5f9;
       --border-subtle: #e2e8f0;
       --border-card: #e2e8f0;
@@ -56,35 +56,33 @@
       --text-muted: #94a3b8;
       --brand: #1d9bf0;
       --brand-hover: #0c8de4;
-      --brand-glow: rgba(29, 155, 240, 0.15);
-      --card-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.06), 0 1px 3px -1px rgba(15, 23, 42, 0.04);
-      --modal-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
-      --modal-overlay: rgba(15, 23, 42, 0.5);
+      --brand-subtle: rgba(29, 155, 240, 0.08);
+      --card-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
+      --modal-overlay: rgba(15, 23, 42, 0.6);
     }
 
     .dark {
-      --bg-app: #0b0e14;
-      --bg-header: rgba(11, 14, 20, 0.88);
-      --bg-nav: rgba(11, 14, 20, 0.94);
-      --bg-card: #151922;
-      --bg-card-hover: #1b212d;
-      --bg-card-subtle: #11151c;
-      --bg-input: #1a202c;
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-card: rgba(255, 255, 255, 0.09);
-      --border-hover: rgba(255, 255, 255, 0.18);
+      --bg-app: #090d16;
+      --bg-header: rgba(9, 13, 22, 0.9);
+      --bg-nav: rgba(9, 13, 22, 0.94);
+      --bg-surface: #111622;
+      --bg-surface-elevated: #171e2e;
+      --bg-surface-subtle: #0d121c;
+      --bg-input: #151b29;
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.16);
       --text-primary: #f8fafc;
       --text-secondary: #94a3b8;
       --text-muted: #64748b;
       --brand: #1d9bf0;
       --brand-hover: #38bdf8;
-      --brand-glow: rgba(29, 155, 240, 0.22);
-      --card-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.45);
-      --modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-      --modal-overlay: rgba(0, 0, 0, 0.75);
+      --brand-subtle: rgba(29, 155, 240, 0.14);
+      --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+      --modal-overlay: rgba(0, 0, 0, 0.8);
     }
 
-    /* Core Native Shell Properties */
+    /* Core Styles */
     html, body {
       background-color: var(--bg-app);
       color: var(--text-primary);
@@ -100,31 +98,16 @@
       padding-bottom: env(safe-area-inset-bottom, 0px);
     }
 
-    /* Smooth Theme Transition */
+    /* Smooth Transitions */
     .theme-transition,
     .theme-transition * {
-      transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                  border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                  color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                  box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
     }
 
-    /* Microinteractions & Animations */
-    @keyframes fadeInScale {
+    @keyframes fadeSlideIn {
       from {
         opacity: 0;
-        transform: scale(0.96) translateY(6px);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-      }
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(14px);
+        transform: translateY(8px);
       }
       to {
         opacity: 1;
@@ -132,40 +115,48 @@
       }
     }
 
-    @keyframes pulseGlow {
-      0%, 100% {
-        box-shadow: 0 0 0 0 var(--brand-glow);
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.97) translateY(4px);
       }
-      50% {
-        box-shadow: 0 0 0 6px var(--brand-glow);
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
       }
     }
 
-    .animate-enter {
-      animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    .tab-animate {
+      animation: fadeSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    .modal-enter {
-      animation: fadeInScale 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    .modal-animate {
+      animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* Interactive press feedback */
+    /* Microinteraction press effect */
     .btn-press {
-      transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), filter 0.15s ease, background-color 0.15s ease;
+      transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, border-color 0.15s ease;
     }
     .btn-press:active {
-      transform: scale(0.96);
+      transform: scale(0.97);
     }
 
-    .card-hover {
+    .card-lift {
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
     }
-    .card-hover:hover {
+    .card-lift:hover {
       border-color: var(--border-hover);
       box-shadow: var(--card-shadow);
     }
 
-    /* Reduced Motion Support */
+    /* Focus Visible Accessibility */
+    button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 2px;
+    }
+
+    /* Reduced Motion */
     @media (prefers-reduced-motion: reduce) {
       *, ::before, ::after {
         animation-duration: 0.01ms !important;
@@ -182,7 +173,7 @@
       scroll-behavior: auto !important;
     }
 
-    /* Custom subtle scrollbar */
+    /* Custom Scrollbar */
     .custom-scrollbar::-webkit-scrollbar {
       width: 5px;
       height: 5px;
@@ -201,137 +192,173 @@
 </head>
 <body class="flex flex-col h-screen overflow-hidden text-slate-900 dark:text-slate-100 font-sans">
 
-  <!-- TOP APP BAR / HEADER -->
-  <header class="bg-[var(--bg-header)] backdrop-blur-xl border-b border-[var(--border-subtle)] px-4 py-3 flex items-center justify-between z-30 shrink-0 sticky top-0 transition-colors">
-    <div class="flex items-center space-x-3">
-      <!-- App Brand Icon -->
-      <div class="w-9 h-9 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand shadow-sm">
-        <i data-lucide="twitter" class="w-5 h-5 fill-current"></i>
-      </div>
-      <div>
-        <div class="flex items-center gap-2">
-          <h1 class="font-bold text-sm tracking-tight flex items-center gap-1.5 text-[var(--text-primary)]">
-            Tweets
-          </h1>
-          <span id="conn-pill" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" title="Backend Server Active">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span id="conn-text" class="hidden sm:inline">Online</span>
-          </span>
+  <!-- ==================== TOP NAVIGATION HEADER ==================== -->
+  <header class="bg-[var(--bg-header)] backdrop-blur-xl border-b border-[var(--border-subtle)] px-4 py-3 z-30 shrink-0 sticky top-0 transition-colors">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      
+      <!-- Logo & Connection Status -->
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand shadow-sm shrink-0">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
         </div>
-        <p id="handle-badge" class="text-xs text-[var(--text-secondary)] font-mono">@ezeslucky</p>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-sm tracking-tight text-[var(--text-primary)]">Tweets</h1>
+            <span id="conn-pill" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" title="Connected to CDP & Backend">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span id="conn-text" class="hidden sm:inline">Online</span>
+            </span>
+          </div>
+          <p id="handle-badge" class="text-xs text-[var(--text-secondary)] font-mono">@ezeslucky</p>
+        </div>
       </div>
-    </div>
-    
-    <!-- Header Controls -->
-    <div class="flex items-center space-x-1.5">
-      <!-- Pro Badge Button -->
-      <button onclick="openPaymentModal()" class="px-2.5 py-1 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-full flex items-center gap-1.5 btn-press shadow-sm" aria-label="Supporter Status">
-        <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-500"></i>
-        <span id="badge-pro-header">Pro</span>
-      </button>
 
-      <!-- Quick Theme Switcher Button -->
-      <button onclick="cycleTheme()" id="btn-theme-toggle" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-card-hover)] btn-press" title="Switch Theme (Dark / Light / System)" aria-label="Toggle Theme">
-        <i id="theme-icon-indicator" data-lucide="moon" class="w-4 h-4"></i>
-      </button>
+      <!-- Desktop Nav Tabs (Visible on Tablet & Desktop) -->
+      <nav class="hidden md:flex items-center bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-1 gap-1">
+        <button onclick="switchTab('queue')" id="dnav-queue" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-brand text-white shadow-sm flex items-center gap-1.5 btn-press transition">
+          <i data-lucide="list-todo" class="w-3.5 h-3.5"></i>
+          <span>Queue</span>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-white/20 px-1 rounded">1</kbd>
+        </button>
+        <button onclick="switchTab('research')" id="dnav-research" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition">
+          <i data-lucide="newspaper" class="w-3.5 h-3.5"></i>
+          <span>Research</span>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">2</kbd>
+        </button>
+        <button onclick="switchTab('verify')" id="dnav-verify" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+          <span>Verify</span>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">3</kbd>
+        </button>
+        <button onclick="switchTab('status')" id="dnav-status" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition">
+          <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+          <span>Status</span>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">4</kbd>
+        </button>
+      </nav>
 
-      <!-- Refresh Data Button -->
-      <button onclick="refreshAll(true)" id="btn-refresh" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-card-hover)] btn-press" title="Refresh Dashboard" aria-label="Refresh Data">
-        <i id="icon-refresh" data-lucide="rotate-cw" class="w-4 h-4"></i>
-      </button>
+      <!-- Right Action Controls -->
+      <div class="flex items-center space-x-1.5">
+        <!-- Pro Supporter Badge Button -->
+        <button onclick="openPaymentModal()" class="px-2.5 py-1 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-full flex items-center gap-1.5 btn-press shadow-sm" aria-label="Supporter Status">
+          <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-500"></i>
+          <span id="badge-pro-header">Pro</span>
+        </button>
 
-      <!-- Settings Button -->
-      <button onclick="openSettingsModal()" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-card-hover)] btn-press" title="Open Settings" aria-label="Open Settings">
-        <i data-lucide="settings" class="w-4 h-4"></i>
-      </button>
+        <!-- Quick Theme Toggle -->
+        <button onclick="cycleTheme()" id="btn-theme-toggle" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Toggle Theme (Dark / Light / System)" aria-label="Toggle Theme">
+          <i id="theme-icon-indicator" data-lucide="moon" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Refresh Button -->
+        <button onclick="refreshAll(true)" id="btn-refresh" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Refresh Dashboard (R)" aria-label="Refresh Data">
+          <i id="icon-refresh" data-lucide="rotate-cw" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Settings Modal Button -->
+        <button onclick="openSettingsModal()" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Settings & Shortcuts (S)" aria-label="Open Settings">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- MAIN SCROLLABLE DASHBOARD VIEW -->
-  <main class="flex-1 overflow-y-auto custom-scrollbar p-4 pb-28 sm:pb-24 max-w-2xl w-full mx-auto">
+  <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+  <main class="flex-1 overflow-y-auto custom-scrollbar p-4 pb-28 md:pb-12 max-w-5xl w-full mx-auto">
 
     <!-- ==================== TAB 1: QUEUE & SCHEDULE ==================== -->
-    <section id="tab-queue" class="space-y-4 animate-enter">
-      <!-- Schedule Header Banner -->
-      <div class="flex items-center justify-between bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm">
+    <section id="tab-queue" class="space-y-4 tab-animate">
+      
+      <!-- Queue Header Summary Card -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 shadow-sm gap-3">
         <div>
           <div class="flex items-center gap-2">
             <i data-lucide="calendar" class="w-4 h-4 text-brand"></i>
-            <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Today's Schedule</h2>
+            <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Today's Posting Schedule</h2>
           </div>
-          <p id="plan-date" class="text-xs text-[var(--text-secondary)] mt-0.5">Loading plan...</p>
+          <p id="plan-date" class="text-xs text-[var(--text-secondary)] mt-0.5">Autonomous posting pipeline active</p>
         </div>
-        <button onclick="makeNewPlan()" id="btn-replan" class="text-xs bg-[var(--bg-input)] hover:bg-[var(--bg-card-hover)] text-[var(--text-primary)] border border-[var(--border-subtle)] px-3.5 py-1.5 rounded-full font-medium btn-press flex items-center gap-1.5 shadow-sm">
-          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand"></i> Re-plan
-        </button>
+
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <button onclick="openComposeStandalone()" class="text-xs bg-brand hover:bg-brand-hover text-white px-3.5 py-1.5 rounded-xl font-semibold btn-press flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> New Post
+          </button>
+          <button onclick="makeNewPlan()" id="btn-replan" class="text-xs bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] px-3.5 py-1.5 rounded-xl font-medium btn-press flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand"></i> Re-plan Slots
+          </button>
+        </div>
       </div>
 
-      <!-- Schedule Progress Bar -->
-      <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-xl p-3 shadow-sm flex items-center justify-between text-xs">
-        <div class="flex items-center gap-2">
-          <span class="text-[var(--text-secondary)]">Queue Progress:</span>
+      <!-- Real-Time Queue Progress Metric -->
+      <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-xl p-3.5 shadow-sm flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2.5">
+          <span class="text-[var(--text-secondary)] font-medium">Daily Slots Progress:</span>
           <span id="queue-progress-text" class="font-bold text-[var(--text-primary)] font-mono">0/4 posted</span>
         </div>
-        <div class="w-32 bg-[var(--bg-input)] rounded-full h-2 overflow-hidden border border-[var(--border-subtle)]">
+        <div class="w-36 bg-[var(--bg-input)] rounded-full h-2.5 overflow-hidden border border-[var(--border-subtle)]">
           <div id="queue-progress-bar" class="bg-brand h-full rounded-full transition-all duration-500" style="width: 25%"></div>
         </div>
       </div>
 
-      <!-- Slots List Container -->
-      <div id="slots-list" class="space-y-3.5">
+      <!-- Slots Grid (Responsive: 1 col on mobile, 2 cols on tablet/desktop) -->
+      <div id="slots-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Rendered via JS -->
       </div>
     </section>
 
     <!-- ==================== TAB 2: RESEARCH SWIPE FILE ==================== -->
-    <section id="tab-research" class="space-y-4 hidden animate-enter">
+    <section id="tab-research" class="space-y-4 hidden tab-animate">
+      
       <!-- Research Header -->
-      <div class="flex items-center justify-between bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 shadow-sm gap-3">
         <div>
           <div class="flex items-center gap-2">
             <i data-lucide="newspaper" class="w-4 h-4 text-brand"></i>
             <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Research Swipe File</h2>
           </div>
-          <p id="research-summary" class="text-xs text-[var(--text-secondary)] mt-0.5">Curated candidates from HN, Reddit & RSS</p>
+          <p id="research-summary" class="text-xs text-[var(--text-secondary)] mt-0.5">Top tech & AI stories from Hacker News, Reddit & RSS</p>
         </div>
-        <button onclick="collectResearch()" id="btn-collect-research" class="text-xs bg-brand hover:bg-brand-hover text-white px-3.5 py-1.5 rounded-full font-semibold btn-press flex items-center gap-1.5 shadow-sm">
-          <i data-lucide="compass" class="w-3.5 h-3.5"></i> Collect
+        <button onclick="collectResearch()" id="btn-collect-research" class="text-xs bg-brand hover:bg-brand-hover text-white px-4 py-2 rounded-xl font-semibold btn-press flex items-center gap-1.5 shadow-sm self-start sm:self-auto">
+          <i data-lucide="compass" class="w-3.5 h-3.5"></i> Scrape Fresh Stories
         </button>
       </div>
 
       <!-- Search & Filters Toolbar -->
-      <div class="space-y-2.5">
+      <div class="space-y-2.5 bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-3.5 shadow-sm">
+        
         <!-- Search Input -->
         <div class="relative">
           <i data-lucide="search" class="w-4 h-4 text-[var(--text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-          <input type="text" id="research-search" placeholder="Search stories, topics, keywords..." oninput="filterResearch()" class="w-full bg-[var(--bg-card)] border border-[var(--border-card)] rounded-xl py-2 pl-9 pr-8 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-brand transition shadow-sm">
+          <input type="text" id="research-search" placeholder="Search stories, LLMs, benchmarks, keywords... (Press / to focus)" oninput="filterResearch()" class="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl py-2 pl-9 pr-8 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-brand transition shadow-sm">
           <button onclick="clearResearchSearch()" id="research-search-clear" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
             <i data-lucide="x" class="w-3.5 h-3.5"></i>
           </button>
         </div>
 
-        <!-- Filter Pills & Sorting -->
-        <div class="flex items-center justify-between gap-2 overflow-x-auto custom-scrollbar pb-1">
+        <!-- Filter Pills & Sorting Bar -->
+        <div class="flex items-center justify-between gap-2 overflow-x-auto custom-scrollbar pt-1">
           <div class="flex items-center gap-1.5" id="source-filters">
             <button onclick="setResearchFilter('all')" data-source="all" class="filter-pill px-3 py-1 text-xs font-semibold rounded-full bg-brand text-white btn-press shadow-sm">
-              All
+              All Stories
             </button>
-            <button onclick="setResearchFilter('Hacker News')" data-source="Hacker News" class="filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-card)] border border-[var(--border-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press">
-              HN
+            <button onclick="setResearchFilter('Hacker News')" data-source="Hacker News" class="filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press">
+              Hacker News
             </button>
-            <button onclick="setResearchFilter('Reddit')" data-source="Reddit" class="filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-card)] border border-[var(--border-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press">
+            <button onclick="setResearchFilter('Reddit')" data-source="Reddit" class="filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press">
               Reddit
             </button>
-            <button onclick="setResearchFilter('RSS')" data-source="RSS" class="filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-card)] border border-[var(--border-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press">
-              RSS / Blogs
+            <button onclick="setResearchFilter('RSS')" data-source="RSS" class="filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press">
+              RSS Feeds
             </button>
           </div>
 
-          <!-- Sort selector -->
+          <!-- Sort dropdown -->
           <div class="flex items-center gap-1 text-[11px] text-[var(--text-muted)] shrink-0">
-            <i data-lucide="arrow-down-up" class="w-3 h-3"></i>
+            <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i>
             <select id="research-sort" onchange="filterResearch()" class="bg-transparent text-xs text-[var(--text-secondary)] focus:outline-none cursor-pointer">
-              <option value="score">Top Score</option>
+              <option value="score">Highest Points</option>
               <option value="comments">Most Comments</option>
               <option value="default">Default Order</option>
             </select>
@@ -339,195 +366,209 @@
         </div>
       </div>
 
-      <!-- Research Cards Container -->
-      <div id="research-items" class="space-y-3">
+      <!-- Research Cards Container (2 columns on tablet/desktop) -->
+      <div id="research-items" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
         <!-- Rendered via JS -->
       </div>
     </section>
 
     <!-- ==================== TAB 3: VERIFY & PROOF ==================== -->
-    <section id="tab-verify" class="space-y-4 hidden animate-enter">
-      <div class="flex items-center justify-between bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm">
+    <section id="tab-verify" class="space-y-4 hidden tab-animate">
+      
+      <!-- Verify Header -->
+      <div class="flex items-center justify-between bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 shadow-sm">
         <div>
           <div class="flex items-center gap-2">
             <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
-            <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Live Verification</h2>
+            <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Automated Verification Proof</h2>
           </div>
-          <p class="text-xs text-[var(--text-secondary)] mt-0.5">Automated proof via CDP profile read-back</p>
+          <p class="text-xs text-[var(--text-secondary)] mt-0.5">Read-back from profile DOM is the only accepted proof of publishing</p>
         </div>
         <span class="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
-          <i data-lucide="check" class="w-3 h-3"></i> Zero Doubt
+          <i data-lucide="check-circle" class="w-3 h-3"></i> Zero Hallucination
         </span>
       </div>
 
-      <!-- Profile Proof Card -->
-      <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl overflow-hidden shadow-sm card-hover">
-        <div class="p-3.5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-card-subtle)]">
-          <div class="flex items-center gap-2">
-            <i data-lucide="user-check" class="w-4 h-4 text-emerald-500"></i>
-            <span class="text-xs font-semibold text-[var(--text-primary)]">Latest Profile Timeline Read-back</span>
+      <!-- Screenshots (Side-by-side on desktop) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Profile Proof Card -->
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl overflow-hidden shadow-sm card-lift flex flex-col">
+          <div class="p-3.5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-surface-subtle)]">
+            <div class="flex items-center gap-2">
+              <i data-lucide="user-check" class="w-4 h-4 text-emerald-500"></i>
+              <span class="text-xs font-semibold text-[var(--text-primary)]">Profile Timeline Read-Back</span>
+            </div>
+            <button onclick="reloadShots()" class="text-xs text-[var(--text-secondary)] hover:text-brand flex items-center gap-1 btn-press">
+              <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+            </button>
           </div>
-          <button onclick="reloadShots()" class="text-xs text-[var(--text-secondary)] hover:text-brand flex items-center gap-1 btn-press">
-            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Reload
-          </button>
-        </div>
-        <div class="relative bg-black/95 min-h-[220px] flex items-center justify-center overflow-hidden">
-          <img id="img-profile" src="" alt="Profile Verification" class="w-full object-contain max-h-[380px] hidden" onload="this.classList.remove('hidden'); document.getElementById('img-profile-loading').classList.add('hidden')">
-          <div id="img-profile-loading" class="text-xs text-zinc-400 py-12 flex flex-col items-center gap-2">
-            <i data-lucide="image" class="w-6 h-6 text-zinc-500 animate-pulse"></i>
-            Loading proof screenshot...
+          
+          <div class="relative bg-black min-h-[240px] flex items-center justify-center overflow-hidden flex-1">
+            <img id="img-profile" src="" alt="Profile Verification Screenshot" class="w-full object-contain max-h-[380px] hidden" onload="this.classList.remove('hidden'); document.getElementById('img-profile-loading').classList.add('hidden')">
+            <div id="img-profile-loading" class="text-xs text-zinc-400 py-12 flex flex-col items-center gap-2">
+              <i data-lucide="image" class="w-6 h-6 text-zinc-500 animate-pulse"></i>
+              Loading profile screenshot...
+            </div>
+          </div>
+          
+          <div class="p-3.5 text-xs text-[var(--text-secondary)] bg-[var(--bg-surface-subtle)] flex items-center justify-between border-t border-[var(--border-subtle)]">
+            <span class="flex items-center gap-1.5">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-500"></i> Verified via Chrome CDP
+            </span>
+            <a id="btn-view-profile-x" href="https://x.com/ezeslucky" target="_blank" class="text-brand hover:underline font-semibold flex items-center gap-1">
+              Open Profile on X <i data-lucide="external-link" class="w-3 h-3"></i>
+            </a>
           </div>
         </div>
-        <div class="p-3.5 text-xs text-[var(--text-secondary)] bg-[var(--bg-card-subtle)] flex items-center justify-between border-t border-[var(--border-subtle)]">
-          <span class="flex items-center gap-1.5">
-            <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-500"></i> Verified on real profile DOM
-          </span>
-          <a id="btn-view-profile-x" href="https://x.com/ezeslucky" target="_blank" class="text-brand hover:underline font-semibold flex items-center gap-1">
-            Open on X <i data-lucide="external-link" class="w-3 h-3"></i>
-          </a>
-        </div>
-      </div>
 
-      <!-- Composer Proof Card -->
-      <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl overflow-hidden shadow-sm card-hover">
-        <div class="p-3.5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-card-subtle)]">
-          <div class="flex items-center gap-2">
-            <i data-lucide="edit-3" class="w-4 h-4 text-sky-500"></i>
-            <span class="text-xs font-semibold text-[var(--text-primary)]">Browser Composer State Proof</span>
+        <!-- Composer State Proof Card -->
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl overflow-hidden shadow-sm card-lift flex flex-col">
+          <div class="p-3.5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-surface-subtle)]">
+            <div class="flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-4 h-4 text-sky-500"></i>
+              <span class="text-xs font-semibold text-[var(--text-primary)]">Browser Composer State Proof</span>
+            </div>
           </div>
-        </div>
-        <div class="relative bg-black/95 min-h-[180px] flex items-center justify-center overflow-hidden">
-          <img id="img-compose" src="" alt="Composer Proof" class="w-full object-contain max-h-[320px] hidden" onload="this.classList.remove('hidden'); document.getElementById('img-compose-loading').classList.add('hidden')">
-          <div id="img-compose-loading" class="text-xs text-zinc-400 py-10 flex flex-col items-center gap-2">
-            <i data-lucide="image" class="w-6 h-6 text-zinc-500 animate-pulse"></i>
-            Loading composer screenshot...
+          
+          <div class="relative bg-black min-h-[240px] flex items-center justify-center overflow-hidden flex-1">
+            <img id="img-compose" src="" alt="Composer State Proof" class="w-full object-contain max-h-[380px] hidden" onload="this.classList.remove('hidden'); document.getElementById('img-compose-loading').classList.add('hidden')">
+            <div id="img-compose-loading" class="text-xs text-zinc-400 py-12 flex flex-col items-center gap-2">
+              <i data-lucide="image" class="w-6 h-6 text-zinc-500 animate-pulse"></i>
+              Loading composer screenshot...
+            </div>
+          </div>
+          
+          <div class="p-3.5 text-xs text-[var(--text-secondary)] bg-[var(--bg-surface-subtle)] border-t border-[var(--border-subtle)] flex items-center justify-between">
+            <span>Captured prior to DOM click event</span>
+            <span class="text-sky-500 font-mono text-[11px]">Port 9222 Active</span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ==================== TAB 4: SYSTEM STATUS & HEALTH ==================== -->
-    <section id="tab-status" class="space-y-4 hidden animate-enter">
-      <div class="flex items-center justify-between bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm">
+    <!-- ==================== TAB 4: SYSTEM STATUS & PIPELINE HEALTH ==================== -->
+    <section id="tab-status" class="space-y-4 hidden tab-animate">
+      
+      <!-- Status Header -->
+      <div class="flex items-center justify-between bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 shadow-sm">
         <div>
           <div class="flex items-center gap-2">
             <i data-lucide="activity" class="w-4 h-4 text-brand"></i>
-            <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Pipeline Health</h2>
+            <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Pipeline Health & Metrics</h2>
           </div>
-          <p class="text-xs text-[var(--text-secondary)] mt-0.5">Real-time status of agent & CDP session</p>
+          <p class="text-xs text-[var(--text-secondary)] mt-0.5">Automated sidecar cron gates and session telemetry</p>
         </div>
-        <button onclick="triggerQuickCheck()" class="text-xs bg-[var(--bg-input)] hover:bg-[var(--bg-card-hover)] text-[var(--text-primary)] border border-[var(--border-subtle)] px-3 py-1.5 rounded-full font-medium btn-press flex items-center gap-1.5">
-          <i data-lucide="play" class="w-3.5 h-3.5 text-emerald-500"></i> Ping Gate
+        <button onclick="triggerQuickCheck()" class="text-xs bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] px-3.5 py-1.5 rounded-xl font-medium btn-press flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="play" class="w-3.5 h-3.5 text-emerald-500"></i> Check Due Gate
         </button>
       </div>
 
-      <!-- Metrics 4-Grid -->
-      <div class="grid grid-cols-2 gap-3">
-        <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-3.5 shadow-sm card-hover">
+      <!-- 4-Metric Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm card-lift">
           <span class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
             <i data-lucide="user" class="w-3.5 h-3.5 text-brand"></i> Account
           </span>
-          <span id="stat-handle" class="text-sm font-bold text-[var(--text-primary)] mt-1 block font-mono">@ezeslucky</span>
+          <span id="stat-handle" class="text-base font-bold text-[var(--text-primary)] mt-1.5 block font-mono">@ezeslucky</span>
         </div>
-        <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-3.5 shadow-sm card-hover">
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm card-lift">
           <span class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
             <i data-lucide="gauge" class="w-3.5 h-3.5 text-emerald-500"></i> Character Limit
           </span>
-          <span id="stat-chars" class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 block font-mono">280 chars</span>
+          <span id="stat-chars" class="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1.5 block font-mono">280 chars</span>
         </div>
-        <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-3.5 shadow-sm card-hover">
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm card-lift">
           <span class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
-            <i data-lucide="zap" class="w-3.5 h-3.5 text-purple-500"></i> AI Update Series
+            <i data-lucide="zap" class="w-3.5 h-3.5 text-purple-500"></i> AI Update Day
           </span>
-          <span id="stat-day" class="text-sm font-bold text-purple-600 dark:text-purple-400 mt-1 block font-mono">Day 1</span>
+          <span id="stat-day" class="text-base font-bold text-purple-600 dark:text-purple-400 mt-1.5 block font-mono">Day 1</span>
         </div>
-        <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-3.5 shadow-sm card-hover">
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm card-lift">
           <span class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
-            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-sky-500"></i> Verified Posts
+            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-sky-500"></i> Total Verified
           </span>
-          <span id="stat-posts" class="text-sm font-bold text-sky-600 dark:text-sky-400 mt-1 block font-mono">0</span>
+          <span id="stat-posts" class="text-base font-bold text-sky-600 dark:text-sky-400 mt-1.5 block font-mono">2</span>
         </div>
       </div>
 
       <!-- Pro Supporter Card -->
-      <div class="bg-gradient-to-br from-amber-500/10 via-[var(--bg-card)] to-amber-500/5 border border-amber-500/30 rounded-2xl p-4.5 space-y-3.5 shadow-sm">
+      <div class="bg-gradient-to-br from-amber-500/10 via-[var(--bg-surface)] to-amber-500/5 border border-amber-500/30 rounded-2xl p-5 space-y-3.5 shadow-sm">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500 shadow-sm">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500 shadow-sm shrink-0">
               <i data-lucide="crown" class="w-5 h-5"></i>
             </div>
             <div>
-              <h3 class="text-xs font-bold text-[var(--text-primary)]">Tweets Pro Supporter</h3>
-              <p class="text-[10px] text-[var(--text-secondary)]">Unlock priority features & support open-source AI tools</p>
+              <h3 class="text-sm font-bold text-[var(--text-primary)]">Tweets Pro Supporter</h3>
+              <p class="text-xs text-[var(--text-secondary)]">Unlock priority posting ledger & support open-source autonomous agent tools</p>
             </div>
           </div>
-          <span id="badge-pro-pill" class="text-[10px] bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-full font-semibold">FREE TIER</span>
+          <span id="badge-pro-pill" class="text-xs bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 px-3 py-0.5 rounded-full font-bold">FREE TIER</span>
         </div>
 
         <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
-          Upgrade to Pro or support development via PayPal. Verified directly in your personal account ledger.
+          Upgrade to Pro or support development via PayPal. Verified directly in your personal account ledger with instantaneous badge activation.
         </p>
 
-        <button onclick="openPaymentModal()" class="w-full py-2.5 px-4 bg-[#0070ba] hover:bg-[#003087] text-white font-bold text-xs rounded-xl btn-press flex items-center justify-center gap-2 shadow-md">
+        <button onclick="openPaymentModal()" class="w-full sm:w-auto py-2.5 px-6 bg-[#0070ba] hover:bg-[#003087] text-white font-bold text-xs rounded-xl btn-press flex items-center justify-center gap-2 shadow-md">
           <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.787.787 0 0 1 .777-.665h7.248c2.978 0 5.215.757 6.468 2.189 1.156 1.32 1.488 3.09.986 5.263-.787 3.407-3.238 5.61-7.086 5.61H9.987a.788.788 0 0 0-.777.665l-1.047 4.092a.641.641 0 0 1-.633.463h-.454z"/></svg>
           Support / Upgrade with PayPal
         </button>
       </div>
 
-      <!-- Quick Action Controls -->
-      <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-4 space-y-2.5 shadow-sm">
-        <h3 class="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Manual Controls</h3>
-        
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="triggerQuickCheck()" class="py-2.5 px-3 bg-[var(--bg-input)] hover:bg-[var(--bg-card-hover)] text-xs font-semibold rounded-xl text-[var(--text-primary)] border border-[var(--border-subtle)] btn-press flex items-center justify-center gap-1.5 shadow-sm">
-            <i data-lucide="play-circle" class="w-4 h-4 text-emerald-500"></i> Check Due Gate
-          </button>
-          <button onclick="openComposeStandalone()" class="py-2.5 px-3 bg-brand hover:bg-brand-hover text-white text-xs font-semibold rounded-xl btn-press flex items-center justify-center gap-1.5 shadow-sm">
-            <i data-lucide="send" class="w-4 h-4"></i> New Freeform Post
-          </button>
-        </div>
-      </div>
-
-      <!-- Voice Calibration Reference -->
-      <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-4 space-y-2 shadow-sm">
+      <!-- Calibrated Voice Profile Rules -->
+      <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 space-y-2.5 shadow-sm">
         <h3 class="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
-          <i data-lucide="mic" class="w-3.5 h-3.5 text-brand"></i> Calibrated Voice Rules
+          <i data-lucide="mic" class="w-3.5 h-3.5 text-brand"></i> Calibrated Voice Profile Rules
         </h3>
-        <ul class="text-xs text-[var(--text-secondary)] space-y-1.5 list-disc list-inside">
-          <li>130–245 characters (strictly bounded by 280 max ceiling)</li>
-          <li>2 beats separated by a single blank line</li>
-          <li>Direct claim / statement opening hook</li>
-          <li>Zero engagement bait, zero hashtag spam, grounded builder tone</li>
-        </ul>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[var(--text-secondary)]">
+          <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="font-bold text-[var(--text-primary)] block mb-1">Character Ceiling</span>
+            130–245 characters (bounded strictly under 280 free limit).
+          </div>
+          <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="font-bold text-[var(--text-primary)] block mb-1">Rhythm & Beats</span>
+            2 distinct beats separated by a single clean blank line.
+          </div>
+          <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="font-bold text-[var(--text-primary)] block mb-1">Opening Hook</span>
+            Direct claim or contrarian builder statement opening.
+          </div>
+          <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="font-bold text-[var(--text-primary)] block mb-1">Tone & Integrity</span>
+            Zero engagement bait, zero hashtag spam, grounded builder tone.
+          </div>
+        </div>
       </div>
     </section>
 
   </main>
 
-  <!-- ==================== BOTTOM TAB NAVIGATION ==================== -->
-  <nav class="bg-[var(--bg-nav)] backdrop-blur-xl border-t border-[var(--border-subtle)] fixed bottom-0 left-0 right-0 px-3 py-2 flex justify-around items-center z-30 transition-colors">
-    <button onclick="switchTab('queue')" id="nav-queue" class="nav-tab flex flex-col items-center py-1 px-4 text-brand font-semibold rounded-xl transition btn-press">
+  <!-- ==================== MOBILE BOTTOM NAVIGATION ==================== -->
+  <nav class="md:hidden bg-[var(--bg-nav)] backdrop-blur-xl border-t border-[var(--border-subtle)] fixed bottom-0 left-0 right-0 px-2 py-2 flex justify-around items-center z-30 transition-colors">
+    <button onclick="switchTab('queue')" id="nav-queue" class="nav-tab flex flex-col items-center py-1 px-3 text-brand font-semibold rounded-xl transition btn-press">
       <div class="relative">
         <i data-lucide="list-todo" class="w-5 h-5"></i>
         <span class="nav-dot absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand"></span>
       </div>
       <span class="text-[10px] mt-1">Queue</span>
     </button>
-    <button onclick="switchTab('research')" id="nav-research" class="nav-tab flex flex-col items-center py-1 px-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press">
+    <button onclick="switchTab('research')" id="nav-research" class="nav-tab flex flex-col items-center py-1 px-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press">
       <div class="relative">
         <i data-lucide="newspaper" class="w-5 h-5"></i>
         <span class="nav-dot hidden absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand"></span>
       </div>
       <span class="text-[10px] mt-1">Research</span>
     </button>
-    <button onclick="switchTab('verify')" id="nav-verify" class="nav-tab flex flex-col items-center py-1 px-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press">
+    <button onclick="switchTab('verify')" id="nav-verify" class="nav-tab flex flex-col items-center py-1 px-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press">
       <div class="relative">
         <i data-lucide="shield-check" class="w-5 h-5"></i>
         <span class="nav-dot hidden absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand"></span>
       </div>
       <span class="text-[10px] mt-1">Verify</span>
     </button>
-    <button onclick="switchTab('status')" id="nav-status" class="nav-tab flex flex-col items-center py-1 px-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press">
+    <button onclick="switchTab('status')" id="nav-status" class="nav-tab flex flex-col items-center py-1 px-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press">
       <div class="relative">
         <i data-lucide="activity" class="w-5 h-5"></i>
         <span class="nav-dot hidden absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand"></span>
@@ -536,24 +577,38 @@
     </button>
   </nav>
 
-  <!-- ==================== MODALS & OVERLAYS ==================== -->
+  <!-- ==================== MODALS & DIALOGS ==================== -->
 
-  <!-- 1. DRAFT EDITOR MODAL -->
+  <!-- 1. DRAFT EDITOR MODAL (WITH LIVE TWEET PREVIEW TOGGLE) -->
   <div id="modal-edit" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
-    <div class="bg-[var(--bg-card)] border border-[var(--border-card)] w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl p-5 space-y-4 max-h-[92vh] flex flex-col shadow-2xl modal-enter">
-      <!-- Modal Header -->
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full sm:max-w-xl rounded-t-3xl sm:rounded-2xl p-5 space-y-4 max-h-[92vh] flex flex-col shadow-2xl modal-animate">
+      
+      <!-- Modal Header with Tabbed Preview Toggle -->
       <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
         <div>
           <h3 class="font-bold text-sm text-[var(--text-primary)]" id="modal-slot-title">Edit Draft</h3>
           <p class="text-xs text-[var(--text-secondary)] font-mono" id="modal-slot-sub">Slot 13:00</p>
         </div>
-        <button onclick="closeModal('modal-edit')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-card-hover)] btn-press">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+        
+        <div class="flex items-center gap-2">
+          <!-- Editor / Tweet Preview Mode Switcher -->
+          <div class="bg-[var(--bg-input)] border border-[var(--border-subtle)] p-0.5 rounded-lg flex items-center text-xs">
+            <button onclick="setEditorView('edit')" id="btn-view-edit" class="px-2.5 py-1 rounded-md font-semibold bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm">
+              Write
+            </button>
+            <button onclick="setEditorView('preview')" id="btn-view-preview" class="px-2.5 py-1 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+              Tweet Preview
+            </button>
+          </div>
+          
+          <button onclick="closeModal('modal-edit')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-surface-elevated)] btn-press" aria-label="Close modal">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
       </div>
 
-      <!-- Editor Textarea -->
-      <div class="space-y-2 flex-1">
+      <!-- Editor Input View -->
+      <div id="editor-view-input" class="space-y-2.5 flex-1">
         <textarea id="modal-text" rows="5" maxlength="280" placeholder="Write post in your authentic voice (2 beats separated by blank line)..." class="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-3.5 text-xs sm:text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-brand resize-none font-sans leading-relaxed custom-scrollbar transition" oninput="updateCharCount()"></textarea>
         
         <!-- Live Character & Hook Meters -->
@@ -566,40 +621,72 @@
                 <path id="char-ring" class="text-brand transition-all duration-200" stroke-width="4" stroke-dasharray="100, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
               </svg>
             </div>
-            <span id="modal-char-count" class="text-[var(--text-secondary)] font-mono">0 / 280</span>
+            <span id="modal-char-count" class="text-[var(--text-secondary)] font-mono font-medium">0 / 280</span>
           </div>
           <span id="modal-char-remaining" class="text-emerald-500 font-mono font-bold text-xs">280 left</span>
         </div>
 
-        <!-- Formatting Helper Chips -->
+        <!-- Quick Helper Chips -->
         <div class="flex items-center gap-1.5 pt-1 overflow-x-auto custom-scrollbar">
-          <button onclick="insertTemplate('hook')" class="text-[10px] bg-[var(--bg-input)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full border border-[var(--border-subtle)] btn-press shrink-0">
+          <button onclick="insertTemplate('hook')" class="text-[10px] bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full border border-[var(--border-subtle)] btn-press shrink-0">
             + Hook Template
           </button>
-          <button onclick="insertTemplate('bullets')" class="text-[10px] bg-[var(--bg-input)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full border border-[var(--border-subtle)] btn-press shrink-0">
+          <button onclick="insertTemplate('bullets')" class="text-[10px] bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full border border-[var(--border-subtle)] btn-press shrink-0">
             + AI Update Bullets
           </button>
-          <button onclick="insertTemplate('break')" class="text-[10px] bg-[var(--bg-input)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full border border-[var(--border-subtle)] btn-press shrink-0">
+          <button onclick="insertTemplate('break')" class="text-[10px] bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full border border-[var(--border-subtle)] btn-press shrink-0">
             + 2-Beat Blank Line
           </button>
         </div>
       </div>
 
+      <!-- Live Tweet Simulator View -->
+      <div id="editor-view-preview" class="space-y-3 hidden flex-1">
+        <div class="bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-2xl p-4 space-y-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-full bg-brand/20 border border-brand/30 flex items-center justify-center text-brand font-bold text-sm shrink-0">
+              𝕏
+            </div>
+            <div>
+              <div class="flex items-center gap-1">
+                <span class="font-bold text-xs text-[var(--text-primary)]">Aurobindo</span>
+                <i data-lucide="badge-check" class="w-3.5 h-3.5 text-brand fill-brand"></i>
+                <span class="text-xs text-[var(--text-muted)] font-mono">@ezeslucky</span>
+              </div>
+              <span class="text-[11px] text-[var(--text-muted)]">Now · via TweetyTweets CDP</span>
+            </div>
+          </div>
+
+          <div id="live-simulated-tweet" class="text-xs sm:text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">
+            <!-- Simulated text -->
+          </div>
+
+          <!-- Tweet Action Bar Icons -->
+          <div class="flex items-center justify-between text-[var(--text-muted)] text-xs pt-2 border-t border-[var(--border-subtle)]">
+            <span class="flex items-center gap-1"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i> 0</span>
+            <span class="flex items-center gap-1"><i data-lucide="repeat" class="w-3.5 h-3.5"></i> 0</span>
+            <span class="flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5"></i> 0</span>
+            <span class="flex items-center gap-1"><i data-lucide="bookmark" class="w-3.5 h-3.5"></i></span>
+            <span class="flex items-center gap-1"><i data-lucide="share" class="w-3.5 h-3.5"></i></span>
+          </div>
+        </div>
+      </div>
+
       <!-- Action Buttons -->
       <div class="grid grid-cols-2 gap-2.5 pt-3 border-t border-[var(--border-subtle)]">
-        <button onclick="saveDraft()" class="py-2.5 px-4 bg-[var(--bg-input)] hover:bg-[var(--bg-card-hover)] text-[var(--text-primary)] text-xs font-semibold rounded-xl border border-[var(--border-subtle)] btn-press shadow-sm">
+        <button onclick="saveDraft()" class="py-2.5 px-4 bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] text-xs font-semibold rounded-xl border border-[var(--border-subtle)] btn-press shadow-sm">
           Save Draft
         </button>
         <button onclick="postDraftNow(false)" id="btn-modal-publish" class="py-2.5 px-4 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded-xl btn-press flex items-center justify-center gap-1.5 shadow-md">
-          <i data-lucide="send" class="w-3.5 h-3.5"></i> Publish Now
+          <i data-lucide="send" class="w-3.5 h-3.5"></i> Publish Live Now
         </button>
       </div>
     </div>
   </div>
 
-  <!-- 2. SLOT SELECTOR MODAL (WHEN CLICKING "USE IN DRAFT" ON RESEARCH) -->
+  <!-- 2. RESEARCH SLOT PICKER MODAL -->
   <div id="modal-slot-picker" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-[var(--bg-card)] border border-[var(--border-card)] w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl modal-enter">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl modal-animate">
       <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
         <div class="flex items-center gap-2">
           <i data-lucide="calendar-plus" class="w-4 h-4 text-brand"></i>
@@ -610,7 +697,7 @@
         </button>
       </div>
 
-      <p class="text-xs text-[var(--text-secondary)]" id="slot-picker-preview">Choose which queue slot should receive this story hook:</p>
+      <p class="text-xs text-[var(--text-secondary)]">Choose which queue slot should receive this story hook:</p>
 
       <div id="slot-picker-list" class="space-y-2">
         <!-- Rendered dynamically -->
@@ -620,33 +707,31 @@
 
   <!-- 3. SETTINGS & PREFERENCES MODAL -->
   <div id="modal-settings" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-[var(--bg-card)] border border-[var(--border-card)] w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar modal-enter">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar modal-animate">
+      
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
         <div class="flex items-center gap-2">
           <i data-lucide="sliders" class="w-4 h-4 text-brand"></i>
           <h3 class="font-bold text-sm text-[var(--text-primary)]">Settings & Preferences</h3>
         </div>
-        <button onclick="closeModal('modal-settings')" class="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-card-hover)]">
+        <button onclick="closeModal('modal-settings')" class="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-surface-elevated)]">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
 
-      <!-- Appearance: Dark / Light / System Mode -->
+      <!-- Appearance: Dark / Light / System -->
       <div class="space-y-2">
         <label class="text-xs font-semibold text-[var(--text-primary)] block">Appearance Theme</label>
         <div class="grid grid-cols-3 gap-2">
-          <!-- Dark -->
           <button onclick="setTheme('dark')" id="theme-btn-dark" class="p-3 rounded-xl border border-[var(--border-subtle)] flex flex-col items-center gap-1.5 btn-press transition">
             <i data-lucide="moon" class="w-4 h-4 text-sky-400"></i>
             <span class="text-xs font-semibold">Dark</span>
           </button>
-          <!-- Light -->
           <button onclick="setTheme('light')" id="theme-btn-light" class="p-3 rounded-xl border border-[var(--border-subtle)] flex flex-col items-center gap-1.5 btn-press transition">
             <i data-lucide="sun" class="w-4 h-4 text-amber-500"></i>
             <span class="text-xs font-semibold">Light</span>
           </button>
-          <!-- System -->
           <button onclick="setTheme('system')" id="theme-btn-system" class="p-3 rounded-xl border border-[var(--border-subtle)] flex flex-col items-center gap-1.5 btn-press transition">
             <i data-lucide="laptop" class="w-4 h-4 text-brand"></i>
             <span class="text-xs font-semibold">System</span>
@@ -654,19 +739,19 @@
         </div>
       </div>
 
-      <!-- Animation Preferences -->
+      <!-- Motion & Animation Preferences -->
       <div class="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
-        <label class="text-xs font-semibold text-[var(--text-primary)] block">Motion & Animations</label>
+        <label class="text-xs font-semibold text-[var(--text-primary)] block">Motion & Performance</label>
         <div class="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)]">
           <div>
-            <span class="text-xs font-medium text-[var(--text-primary)] block">Smooth Animations</span>
-            <span class="text-[10px] text-[var(--text-secondary)]">Screen transitions and microinteractions</span>
+            <span class="text-xs font-medium text-[var(--text-primary)] block">Smooth Microinteractions</span>
+            <span class="text-[10px] text-[var(--text-secondary)]">Card entry transitions and tactile feedback</span>
           </div>
           <input type="checkbox" id="toggle-animations" checked onchange="toggleMotion(this.checked)" class="w-4 h-4 accent-brand cursor-pointer">
         </div>
       </div>
 
-      <!-- Backend Server Configuration -->
+      <!-- Backend Connection -->
       <div class="space-y-2.5 pt-2 border-t border-[var(--border-subtle)]">
         <label class="text-xs font-semibold text-[var(--text-primary)] block">Backend API Connection</label>
         <div class="space-y-2">
@@ -680,7 +765,7 @@
         </div>
       </div>
 
-      <!-- PayPal Integration Details -->
+      <!-- PayPal Integration -->
       <div class="space-y-2.5 pt-2 border-t border-[var(--border-subtle)]">
         <label class="text-xs font-semibold text-[var(--text-primary)] block">PayPal Configuration</label>
         <div class="space-y-2">
@@ -688,10 +773,17 @@
             <span class="text-[10px] text-[var(--text-secondary)]">PayPal.me Handle</span>
             <input id="input-paypal-user" type="text" value="ezeslucky" placeholder="e.g. ezeslucky" class="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-2.5 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-brand">
           </div>
-          <div class="space-y-1">
-            <span class="text-[10px] text-[var(--text-secondary)]">PayPal Client ID (Optional)</span>
-            <input id="input-paypal-client" type="text" value="sb" placeholder="Live / Sandbox Client ID" class="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-2.5 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-brand">
-          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Shortcuts Cheat Sheet -->
+      <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-1.5">
+        <span class="font-bold text-[var(--text-primary)] block text-[11px] uppercase tracking-wider">Keyboard Shortcuts</span>
+        <div class="grid grid-cols-2 gap-1 text-[11px]">
+          <div><kbd class="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono">1-4</kbd> Switch Tabs</div>
+          <div><kbd class="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono">/</kbd> Focus Search</div>
+          <div><kbd class="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono">R</kbd> Refresh Data</div>
+          <div><kbd class="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono">Esc</kbd> Close Dialogs</div>
         </div>
       </div>
 
@@ -704,18 +796,18 @@
 
   <!-- 4. PAYPAL PAYMENT & UPGRADE MODAL -->
   <div id="modal-payment" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
-    <div class="bg-[var(--bg-card)] border border-[var(--border-card)] w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4 max-h-[90vh] flex flex-col shadow-2xl modal-enter">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4 max-h-[90vh] flex flex-col shadow-2xl modal-animate">
       <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
         <div class="flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
             <i data-lucide="crown" class="w-4 h-4"></i>
           </div>
           <div>
-            <h3 class="font-bold text-sm text-[var(--text-primary)]">Upgrade & Support</h3>
+            <h3 class="font-bold text-sm text-[var(--text-primary)]">Upgrade to Pro</h3>
             <p class="text-xs text-[var(--text-secondary)]">PayPal Instant Checkout</p>
           </div>
         </div>
-        <button onclick="closeModal('modal-payment')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-card-hover)]">
+        <button onclick="closeModal('modal-payment')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-surface-elevated)]">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
@@ -746,14 +838,14 @@
           <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Pro Member Badge in Ledger
         </div>
         <div class="flex items-center gap-1.5 text-[var(--text-secondary)] text-[11px]">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i> Direct Support for Autonomous Pipeline
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i> Direct Support for Autonomous Posting Pipeline
         </div>
         <div class="flex items-center gap-1.5 text-[var(--text-secondary)] text-[11px]">
           <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i> Instant activation on all devices
         </div>
       </div>
 
-      <!-- PayPal Checkout Container -->
+      <!-- PayPal Buttons Container & Direct Option -->
       <div class="space-y-2 pt-1">
         <div id="paypal-button-container" class="min-h-[45px]"></div>
         
@@ -768,16 +860,16 @@
   </div>
 
   <!-- ==================== TOAST NOTIFICATION CONTAINER ==================== -->
-  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-[var(--bg-card)] border border-[var(--border-card)] text-[var(--text-primary)] text-xs py-2.5 px-4 rounded-2xl shadow-2xl flex items-center gap-2.5 transition-all duration-300 opacity-0 pointer-events-none -translate-y-4 z-50 max-w-sm w-11/12 sm:w-auto">
+  <div id="toast" class="fixed bottom-20 md:bottom-6 left-1/2 md:left-auto md:right-6 -translate-x-1/2 md:translate-x-0 bg-[var(--bg-surface)] border border-[var(--border-card)] text-[var(--text-primary)] text-xs py-2.5 px-4 rounded-2xl shadow-2xl flex items-center gap-2.5 transition-all duration-300 opacity-0 pointer-events-none translate-y-4 z-50 max-w-sm w-11/12 sm:w-auto">
     <div id="toast-icon-wrap" class="w-6 h-6 rounded-full flex items-center justify-center shrink-0">
       <i id="toast-icon" data-lucide="info" class="w-3.5 h-3.5"></i>
     </div>
     <span id="toast-msg" class="flex-1 font-medium leading-snug">Notification</span>
   </div>
 
-  <!-- ==================== JAVASCRIPT APPLICATION CORE ==================== -->
+  <!-- ==================== CORE JAVASCRIPT APPLICATION ==================== -->
   <script>
-    // -------------------------------------------------- State
+    // -------------------------------------------------- Application State
     let API_BASE = localStorage.getItem('tweety_api_base') || (location.origin.includes('http') && !location.origin.includes(':8000') ? 'http://localhost:8000' : location.origin);
     let currentPlan = null;
     let editingSlot = null;
@@ -792,11 +884,9 @@
     let isPro = false;
     let currentThemeMode = localStorage.getItem('tweety_theme') || 'system';
 
-    // -------------------------------------------------- Theme Management (Dark / Light / System)
+    // -------------------------------------------------- Theme Engine
     function initTheme() {
       applyTheme(currentThemeMode, false);
-
-      // Listen for system appearance change
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
         if (currentThemeMode === 'system') {
           applyTheme('system', true);
@@ -804,23 +894,25 @@
       });
     }
 
-    function setTheme(mode) {
+    function setTheme(mode, notify = false) {
       currentThemeMode = mode;
       localStorage.setItem('tweety_theme', mode);
       applyTheme(mode, true);
-      showToast(`Theme updated to ${mode.charAt(0).toUpperCase() + mode.slice(1)} Mode`);
+      if (notify) {
+        showToast(`Theme changed to ${mode.charAt(0).toUpperCase() + mode.slice(1)} Mode`);
+      }
     }
 
     function cycleTheme() {
       const modes = ['dark', 'light', 'system'];
       const next = modes[(modes.indexOf(currentThemeMode) + 1) % modes.length];
-      setTheme(next);
+      setTheme(next, true);
     }
 
     function applyTheme(mode, animate = true) {
       if (animate) {
         document.documentElement.classList.add('theme-transition');
-        setTimeout(() => document.documentElement.classList.remove('theme-transition'), 300);
+        setTimeout(() => document.documentElement.classList.remove('theme-transition'), 250);
       }
 
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -829,14 +921,13 @@
       if (isDark) {
         document.documentElement.classList.add('dark');
         document.documentElement.setAttribute('data-theme', 'dark');
-        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0b0e14');
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#090d16');
       } else {
         document.documentElement.classList.remove('dark');
         document.documentElement.setAttribute('data-theme', 'light');
         document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f8fafc');
       }
 
-      // Update Header Indicator Icon
       const icon = document.getElementById('theme-icon-indicator');
       if (icon) {
         if (mode === 'system') icon.setAttribute('data-lucide', 'laptop');
@@ -844,7 +935,6 @@
         else icon.setAttribute('data-lucide', 'moon');
       }
 
-      // Update Settings Modal Theme Buttons Active Ring
       ['dark', 'light', 'system'].forEach(m => {
         const btn = document.getElementById(`theme-btn-${m}`);
         if (!btn) return;
@@ -867,7 +957,7 @@
       }
     }
 
-    // -------------------------------------------------- Toast System
+    // -------------------------------------------------- Toast Notifications
     let toastTimeout = null;
     function showToast(msg, type = 'success') {
       const toast = document.getElementById('toast');
@@ -890,12 +980,12 @@
 
       lucide.createIcons();
 
-      toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-4');
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
       toast.classList.add('opacity-100', 'translate-y-0');
 
       if (toastTimeout) clearTimeout(toastTimeout);
       toastTimeout = setTimeout(() => {
-        toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
         toast.classList.remove('opacity-100', 'translate-y-0');
       }, 3400);
     }
@@ -922,7 +1012,6 @@
 
     function setConnStatus(online) {
       const pill = document.getElementById('conn-pill');
-      const txt = document.getElementById('conn-text');
       if (online) {
         pill.className = 'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
         pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span><span id="conn-text" class="hidden sm:inline">Online</span>`;
@@ -934,16 +1023,16 @@
 
     async function testConnection() {
       const resEl = document.getElementById('test-latency-result');
-      resEl.innerText = 'Testing...';
+      resEl.innerText = 'Testing latency...';
       const start = performance.now();
       try {
         await apiFetch('/api/status');
         const elapsed = Math.round(performance.now() - start);
-        resEl.innerText = `${elapsed}ms (Healthy)`;
+        resEl.innerText = `${elapsed}ms (Active)`;
         resEl.className = 'text-[11px] text-emerald-500 font-mono';
         showToast(`Connected to backend in ${elapsed}ms!`, 'success');
       } catch (e) {
-        resEl.innerText = 'Failed';
+        resEl.innerText = 'Unreachable';
         resEl.className = 'text-[11px] text-rose-500 font-mono';
         showToast('Connection failed: ' + e.message, 'error');
       }
@@ -975,15 +1064,15 @@
         
         const d = plan.date ? new Date(plan.date + 'T00:00:00') : new Date();
         const dateStr = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-        document.getElementById('plan-date').innerText = `Schedule for ${dateStr}`;
+        document.getElementById('plan-date').innerText = `Schedule for ${dateStr} · Autonomous posting pipeline`;
         renderSlots(plan.slots || []);
       } catch (e) {
         container.innerHTML = `
-          <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-6 text-center text-xs space-y-2 shadow-sm">
+          <div class="col-span-full bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-6 text-center text-xs space-y-2 shadow-sm">
             <i data-lucide="alert-triangle" class="w-8 h-8 text-amber-500 mx-auto"></i>
             <p class="font-bold text-[var(--text-primary)]">Cannot connect to server</p>
             <p class="text-[var(--text-secondary)]">Start the server with <code class="text-brand font-mono">python scripts/server.py</code></p>
-            <button onclick="refreshAll(true)" class="mt-2 px-3.5 py-1.5 bg-brand text-white rounded-full text-xs font-semibold btn-press">
+            <button onclick="refreshAll(true)" class="mt-2 px-3.5 py-1.5 bg-brand text-white rounded-xl text-xs font-semibold btn-press">
               Retry Connection
             </button>
           </div>`;
@@ -996,7 +1085,7 @@
       container.innerHTML = '';
 
       if (!slots || slots.length === 0) {
-        container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-8">No queue slots planned for today.</p>`;
+        container.innerHTML = `<div class="col-span-full text-center py-12 text-xs text-[var(--text-muted)]">No queue slots planned for today. Click "Re-plan Slots" to generate today's schedule.</div>`;
         return;
       }
 
@@ -1019,7 +1108,7 @@
         } else if (hasText) {
           badgeHtml = `
             <span class="inline-flex items-center gap-1 text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 px-2 py-0.5 rounded-full font-bold">
-              <i data-lucide="sparkle" class="w-3 h-3"></i> READY
+              <i data-lucide="sparkles" class="w-3 h-3"></i> READY
             </span>`;
         } else {
           badgeHtml = `
@@ -1031,37 +1120,39 @@
         const dueFormatted = s.due_at ? s.due_at.substring(11, 16) : s.slot;
 
         const card = document.createElement('div');
-        card.className = "bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-4 space-y-3 shadow-sm card-hover";
+        card.className = "bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-sm card-lift flex flex-col justify-between";
         card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="w-7 h-7 rounded-lg bg-[var(--bg-input)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-primary)] font-mono font-bold text-xs">
-                ${idx + 1}
-              </div>
-              <div>
-                <div class="flex items-center gap-1.5">
-                  <span class="font-mono text-sm font-bold text-[var(--text-primary)]">${s.slot}</span>
-                  ${isAiUpdate ? `<span class="text-[9px] bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20 px-1.5 py-0.2 rounded font-semibold">AI UPDATE</span>` : `<span class="text-[9px] bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20 px-1.5 py-0.2 rounded font-medium">VALUE POST</span>`}
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-[var(--bg-input)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-primary)] font-mono font-bold text-xs">
+                  ${idx + 1}
                 </div>
-                <span class="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
-                  <i data-lucide="clock" class="w-3 h-3"></i> due ~${dueFormatted}
-                </span>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-mono text-sm font-bold text-[var(--text-primary)]">${s.slot}</span>
+                    ${isAiUpdate ? `<span class="text-[9px] bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20 px-1.5 py-0.2 rounded font-semibold">AI UPDATE</span>` : `<span class="text-[9px] bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20 px-1.5 py-0.2 rounded font-medium">VALUE POST</span>`}
+                  </div>
+                  <span class="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
+                    <i data-lucide="clock" class="w-3 h-3"></i> due ~${dueFormatted}
+                  </span>
+                </div>
               </div>
+              ${badgeHtml}
             </div>
-            ${badgeHtml}
+
+            <div class="text-xs text-[var(--text-primary)] bg-[var(--bg-surface-subtle)] rounded-xl p-3 font-sans leading-relaxed border border-[var(--border-subtle)] whitespace-pre-wrap min-h-[72px]">
+              ${hasText ? escapeHtml(s.text) : '<span class="italic text-[var(--text-muted)] flex items-center gap-1"><i data-lucide="pencil-line" class="w-3.5 h-3.5"></i> Slot empty. Click Edit to write or pick from Research.</span>'}
+            </div>
           </div>
 
-          <div class="text-xs text-[var(--text-primary)] bg-[var(--bg-card-subtle)] rounded-xl p-3 font-sans leading-relaxed border border-[var(--border-subtle)] whitespace-pre-wrap">
-            ${hasText ? escapeHtml(s.text) : '<span class="italic text-[var(--text-muted)] flex items-center gap-1"><i data-lucide="pencil-line" class="w-3.5 h-3.5"></i> Slot empty. Click Edit to draft or pick research.</span>'}
-          </div>
-
-          <div class="flex items-center justify-between pt-1">
+          <div class="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)]">
             <span class="text-[10px] text-[var(--text-muted)] font-mono font-medium">
-              ${hasText ? `${s.text.length}/280 chars` : ''}
+              ${hasText ? `${s.text.length}/280 chars` : '0 chars'}
             </span>
             <div class="flex items-center gap-2">
               ${!isPosted ? `
-                <button onclick="openEditModal('${s.slot}')" class="text-xs bg-[var(--bg-input)] hover:bg-[var(--bg-card-hover)] text-[var(--text-primary)] px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] font-medium btn-press flex items-center gap-1 shadow-sm">
+                <button onclick="openEditModal('${s.slot}')" class="text-xs bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] font-medium btn-press flex items-center gap-1 shadow-sm">
                   <i data-lucide="edit-2" class="w-3 h-3 text-brand"></i> Edit
                 </button>
                 ${hasText ? `
@@ -1076,7 +1167,7 @@
                   </a>
                 ` : `
                   <span class="text-xs text-emerald-500 flex items-center gap-1">
-                    <i data-lucide="check" class="w-3 h-3"></i> Verified
+                    <i data-lucide="check" class="w-3 h-3"></i> Verified Live
                   </span>
                 `}
               `}
@@ -1092,21 +1183,21 @@
     async function loadResearch() {
       const container = document.getElementById('research-items');
       container.innerHTML = `
-        <div class="space-y-3">
-          <div class="h-24 bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl animate-pulse"></div>
-          <div class="h-24 bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl animate-pulse"></div>
+        <div class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <div class="h-28 bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl animate-pulse"></div>
+          <div class="h-28 bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl animate-pulse"></div>
         </div>`;
       try {
         const data = await apiFetch('/api/research/latest');
         rawResearchItems = data.items || [];
-        document.getElementById('research-summary').innerText = `${rawResearchItems.length} stories collected (${data.date || 'Today'})`;
+        document.getElementById('research-summary').innerText = `${rawResearchItems.length} developer stories collected (${data.date || 'Today'})`;
         filterResearch();
       } catch (e) {
         container.innerHTML = `
-          <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-6 text-center text-xs text-[var(--text-secondary)] space-y-2">
+          <div class="col-span-full bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-8 text-center text-xs text-[var(--text-secondary)] space-y-2">
             <i data-lucide="newspaper" class="w-8 h-8 text-[var(--text-muted)] mx-auto"></i>
             <p class="font-bold">No research collected yet</p>
-            <p>Click "Collect" to scrape latest developer stories.</p>
+            <p>Click "Scrape Fresh Stories" to collect the latest tech stories.</p>
           </div>`;
         lucide.createIcons();
       }
@@ -1118,7 +1209,7 @@
         if (b.getAttribute('data-source') === source) {
           b.className = "filter-pill px-3 py-1 text-xs font-semibold rounded-full bg-brand text-white btn-press shadow-sm";
         } else {
-          b.className = "filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-card)] border border-[var(--border-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press";
+          b.className = "filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press";
         }
       });
       filterResearch();
@@ -1138,12 +1229,10 @@
       if (clearBtn) clearBtn.classList.toggle('hidden', query.length === 0);
 
       let filtered = rawResearchItems.filter(item => {
-        // Source filter
         if (currentSourceFilter === 'Hacker News' && !item.source?.includes('Hacker News') && !item.source?.includes('HN')) return false;
         if (currentSourceFilter === 'Reddit' && !item.source?.includes('Reddit') && !item.source?.includes('r/')) return false;
         if (currentSourceFilter === 'RSS' && (item.source?.includes('Reddit') || item.source?.includes('Hacker News'))) return false;
 
-        // Query filter
         if (query) {
           const matchTitle = (item.title || '').toLowerCase().includes(query);
           const matchSource = (item.source || '').toLowerCase().includes(query);
@@ -1152,7 +1241,6 @@
         return true;
       });
 
-      // Sorting
       if (sort === 'score') {
         filtered.sort((a, b) => (b.score || 0) - (a.score || 0));
       } else if (sort === 'comments') {
@@ -1168,9 +1256,9 @@
 
       if (!items || items.length === 0) {
         container.innerHTML = `
-          <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-6 text-center text-xs text-[var(--text-muted)] space-y-1">
+          <div class="col-span-full bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-8 text-center text-xs text-[var(--text-muted)] space-y-1">
             <i data-lucide="search-x" class="w-6 h-6 mx-auto text-[var(--text-muted)]"></i>
-            <p>No research stories match your filters.</p>
+            <p>No research stories match your filters or query.</p>
           </div>`;
         lucide.createIcons();
         return;
@@ -1185,27 +1273,29 @@
         }
 
         const card = document.createElement('div');
-        card.className = "bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-4 space-y-2.5 shadow-sm card-hover";
+        card.className = "bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 space-y-2.5 shadow-sm card-lift flex flex-col justify-between";
         card.innerHTML = `
-          <div class="flex items-center justify-between text-[11px]">
-            <span class="font-semibold px-2 py-0.5 rounded-full border text-[10px] ${badgeColor}">
-              ${escapeHtml(item.source)}
-            </span>
-            <span class="text-[var(--text-muted)] font-mono flex items-center gap-1.5">
-              <span>🔥 ${item.score || 0} pts</span>
-              <span>💬 ${item.comments || 0}</span>
-            </span>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-semibold px-2 py-0.5 rounded-full border text-[10px] ${badgeColor}">
+                ${escapeHtml(item.source)}
+              </span>
+              <span class="text-[var(--text-muted)] font-mono flex items-center gap-1.5">
+                <span>🔥 ${item.score || 0} pts</span>
+                <span>💬 ${item.comments || 0}</span>
+              </span>
+            </div>
+
+            <a href="${item.url}" target="_blank" class="text-xs sm:text-sm font-semibold text-[var(--text-primary)] hover:text-brand transition block leading-snug">
+              ${escapeHtml(item.title)}
+            </a>
           </div>
 
-          <a href="${item.url}" target="_blank" class="text-xs sm:text-sm font-semibold text-[var(--text-primary)] hover:text-brand transition block leading-snug">
-            ${escapeHtml(item.title)}
-          </a>
-
-          <div class="flex items-center justify-between pt-1 border-t border-[var(--border-subtle)] text-xs">
-            <a href="${item.url}" target="_blank" class="text-[11px] text-[var(--text-muted)] hover:text-brand flex items-center gap-1">
+          <div class="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)] text-xs">
+            <a href="${item.url}" target="_blank" class="text-[11px] text-[var(--text-muted)] hover:text-brand flex items-center gap-1 font-medium">
               Read source <i data-lucide="external-link" class="w-3 h-3"></i>
             </a>
-            <button onclick="promptUseInDraft(${JSON.stringify(escapeHtml(item.title)).replace(/"/g, '&quot;')})" class="text-xs bg-brand/10 hover:bg-brand/20 text-brand px-3 py-1 rounded-lg font-semibold btn-press flex items-center gap-1">
+            <button onclick="promptUseInDraft(${JSON.stringify(escapeHtml(item.title)).replace(/"/g, '&quot;')})" class="text-xs bg-brand/10 hover:bg-brand/20 text-brand px-3 py-1.5 rounded-xl font-semibold btn-press flex items-center gap-1">
               <i data-lucide="sparkles" class="w-3 h-3"></i> Use in Draft
             </button>
           </div>
@@ -1219,28 +1309,28 @@
       const btn = document.getElementById('btn-collect-research');
       btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Scraping...`;
       btn.disabled = true;
-      showToast('Collecting 100+ daily dev stories from HN, Reddit & RSS...', 'info');
+      showToast('Scraping 100+ developer stories from Hacker News, Reddit & RSS...', 'info');
       try {
         await apiFetch('/api/research/latest');
-        showToast('Research swipe file refreshed successfully!', 'success');
+        showToast('Research swipe file updated with fresh stories!', 'success');
         await loadResearch();
       } catch (e) {
-        showToast('Research collect failed: ' + e.message, 'error');
+        showToast('Research scrape failed: ' + e.message, 'error');
       } finally {
-        btn.innerHTML = `<i data-lucide="compass" class="w-3.5 h-3.5"></i> Collect`;
+        btn.innerHTML = `<i data-lucide="compass" class="w-3.5 h-3.5"></i> Scrape Fresh Stories`;
         btn.disabled = false;
         lucide.createIcons();
       }
     }
 
-    // -------------------------------------------------- Slot Picker for Research Hooks
+    // -------------------------------------------------- Research Hook Insertion
     function promptUseInDraft(title) {
       pendingResearchHook = title;
       const list = document.getElementById('slot-picker-list');
       list.innerHTML = '';
 
       if (!currentPlan?.slots || currentPlan.slots.length === 0) {
-        showToast('No slots in today plan. Re-planning...', 'info');
+        showToast('No slots planned. Creating plan...', 'info');
         makeNewPlan();
         return;
       }
@@ -1278,9 +1368,10 @@
     function openEditModal(slot) {
       editingSlot = slot;
       const s = currentPlan?.slots?.find(x => x.slot === slot);
-      document.getElementById('modal-slot-title').innerText = `Edit Slot ${slot}`;
-      document.getElementById('modal-slot-sub').innerText = s?.kind === 'ai_update' ? 'AI Daily Update Slot' : 'Standard Value Post Slot';
+      document.getElementById('modal-slot-title').innerText = `Edit Draft — Slot ${slot}`;
+      document.getElementById('modal-slot-sub').innerText = s?.kind === 'ai_update' ? 'Daily AI Update Slot' : 'Standard Value Post Slot';
       document.getElementById('modal-text').value = s?.text || '';
+      setEditorView('edit');
       updateCharCount();
       document.getElementById('modal-edit').classList.remove('hidden');
     }
@@ -1290,6 +1381,28 @@
       const emptySlot = currentPlan?.slots?.find(s => !s.posted && !s.text) || currentPlan?.slots?.[0];
       if (emptySlot) {
         openEditModal(emptySlot.slot);
+      }
+    }
+
+    function setEditorView(view) {
+      const editView = document.getElementById('editor-view-input');
+      const previewView = document.getElementById('editor-view-preview');
+      const btnEdit = document.getElementById('btn-view-edit');
+      const btnPreview = document.getElementById('btn-view-preview');
+      const simText = document.getElementById('live-simulated-tweet');
+
+      if (view === 'edit') {
+        editView.classList.remove('hidden');
+        previewView.classList.add('hidden');
+        btnEdit.className = "px-2.5 py-1 rounded-md font-semibold bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm";
+        btnPreview.className = "px-2.5 py-1 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)]";
+      } else {
+        const val = document.getElementById('modal-text').value;
+        simText.innerText = val || '(Post draft is currently empty)';
+        editView.classList.add('hidden');
+        previewView.classList.remove('hidden');
+        btnPreview.className = "px-2.5 py-1 rounded-md font-semibold bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm";
+        btnEdit.className = "px-2.5 py-1 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)]";
       }
     }
 
@@ -1377,7 +1490,7 @@
       } catch (e) {
         showToast('Publish failed: ' + e.message, 'error');
       } finally {
-        btn.innerHTML = `<i data-lucide="send" class="w-3.5 h-3.5"></i> Publish Now`;
+        btn.innerHTML = `<i data-lucide="send" class="w-3.5 h-3.5"></i> Publish Live Now`;
         btn.disabled = false;
         lucide.createIcons();
       }
@@ -1431,21 +1544,33 @@
       c.src = `${API_BASE}/api/shots/compose?t=${timestamp}`;
     }
 
-    // -------------------------------------------------- Tab Switching
+    // -------------------------------------------------- Responsive Tab Switching
     function switchTab(tab) {
       ['queue', 'research', 'verify', 'status'].forEach(t => {
         const sec = document.getElementById(`tab-${t}`);
         sec.classList.toggle('hidden', t !== tab);
 
-        const navBtn = document.getElementById(`nav-${t}`);
-        const dot = navBtn.querySelector('.nav-dot');
+        // Mobile Nav
+        const mNavBtn = document.getElementById(`nav-${t}`);
+        if (mNavBtn) {
+          const dot = mNavBtn.querySelector('.nav-dot');
+          if (t === tab) {
+            mNavBtn.className = "nav-tab flex flex-col items-center py-1 px-3 text-brand font-semibold rounded-xl transition btn-press";
+            if (dot) dot.classList.remove('hidden');
+          } else {
+            mNavBtn.className = "nav-tab flex flex-col items-center py-1 px-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press";
+            if (dot) dot.classList.add('hidden');
+          }
+        }
 
-        if (t === tab) {
-          navBtn.className = "nav-tab flex flex-col items-center py-1 px-4 text-brand font-semibold rounded-xl transition btn-press";
-          if (dot) dot.classList.remove('hidden');
-        } else {
-          navBtn.className = "nav-tab flex flex-col items-center py-1 px-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press";
-          if (dot) dot.classList.add('hidden');
+        // Desktop Nav
+        const dNavBtn = document.getElementById(`dnav-${t}`);
+        if (dNavBtn) {
+          if (t === tab) {
+            dNavBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-brand text-white shadow-sm flex items-center gap-1.5 btn-press transition";
+          } else {
+            dNavBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition";
+          }
         }
       });
 
@@ -1461,7 +1586,6 @@
     function openSettingsModal() {
       document.getElementById('input-api-url').value = API_BASE;
       document.getElementById('input-paypal-user').value = paypalUser;
-      document.getElementById('input-paypal-client').value = paypalClientId;
       applyTheme(currentThemeMode, false);
       document.getElementById('modal-settings').classList.remove('hidden');
     }
@@ -1471,21 +1595,19 @@
       localStorage.setItem('tweety_api_base', API_BASE);
       
       const pu = document.getElementById('input-paypal-user').value.trim();
-      const pc = document.getElementById('input-paypal-client').value.trim();
       
       apiFetch('/api/payment/config', {
         method: 'POST',
-        body: JSON.stringify({ paypal_me_user: pu, paypal_client_id: pc })
+        body: JSON.stringify({ paypal_me_user: pu })
       }).catch(console.warn);
 
       paypalUser = pu;
-      paypalClientId = pc;
       closeModal('modal-settings');
       showToast('Settings saved. Refreshing dashboard...', 'success');
       refreshAll(true);
     }
 
-    // -------------------------------------------------- PayPal Pro Supporter System
+    // -------------------------------------------------- PayPal Pro Support System
     function openPaymentModal() {
       document.getElementById('modal-payment').classList.remove('hidden');
       selectTier(19, 'Pro Lifetime');
@@ -1541,7 +1663,7 @@
         const p = document.getElementById('badge-pro-pill');
         if (p) {
           p.innerText = 'PRO MEMBER';
-          p.className = 'text-[10px] bg-amber-500 text-black px-2.5 py-0.5 rounded-full font-black';
+          p.className = 'text-xs bg-amber-500 text-black px-2.5 py-0.5 rounded-full font-black';
         }
       }
     }
@@ -1618,7 +1740,38 @@
       reloadShots();
     }
 
-    // -------------------------------------------------- Launch Initialization
+    // -------------------------------------------------- Keyboard Shortcuts
+    window.addEventListener('keydown', e => {
+      // Ignore if typing inside input or textarea
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+        if (e.key === 'Escape') {
+          closeModal('modal-edit');
+          closeModal('modal-slot-picker');
+          closeModal('modal-settings');
+          closeModal('modal-payment');
+        }
+        return;
+      }
+
+      if (e.key === '1') switchTab('queue');
+      else if (e.key === '2') switchTab('research');
+      else if (e.key === '3') switchTab('verify');
+      else if (e.key === '4') switchTab('status');
+      else if (e.key === 'r' || e.key === 'R') refreshAll(true);
+      else if (e.key === 's' || e.key === 'S') openSettingsModal();
+      else if (e.key === '/') {
+        e.preventDefault();
+        switchTab('research');
+        document.getElementById('research-search')?.focus();
+      } else if (e.key === 'Escape') {
+        closeModal('modal-edit');
+        closeModal('modal-slot-picker');
+        closeModal('modal-settings');
+        closeModal('modal-payment');
+      }
+    });
+
+    // -------------------------------------------------- Initialize
     window.addEventListener('DOMContentLoaded', () => {
       initTheme();
       const motionPref = localStorage.getItem('tweety_motion');
