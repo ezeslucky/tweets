@@ -31,7 +31,12 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import os
+import threading
+
 import browser
+import database
+import research_catalog
 import settings
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -166,6 +171,109 @@ def rss(feeds: dict[str, str] | None = None, hours: int = DEFAULT_WINDOW,
                 break
         status[name] = f"ok ({n} in window)"
     return items, status
+
+
+def fetch_single_feed(feed_id: str, name: str, url: str, category: str = "RSS",
+                      hours: int = DEFAULT_WINDOW, per_feed: int = 15) -> tuple[list[dict], str]:
+    """Parse a single RSS 2.0 or Atom feed using the stdlib."""
+    cutoff = _now() - timedelta(hours=hours)
+    items: list[dict] = []
+    try:
+        xml_text = get(url, timeout=12)
+        root = ET.fromstring(xml_text)
+    except Exception as err:
+        return [], f"FAIL {type(err).__name__}: {str(err)[:60]}"
+
+    n = 0
+    for node in root.iter():
+        if _localname(node.tag) not in ("item", "entry"):
+            continue
+        title = link = when = summary = ""
+        for child in node:
+            ln = _localname(child.tag)
+            if ln == "title" and not title:
+                title = strip_html(child.text or "")
+            elif ln == "link" and not link:
+                link = (child.get("href") or child.text or "").strip()
+            elif ln in ("pubdate", "published", "updated", "date") and not when:
+                when = (child.text or "").strip()
+            elif ln in ("description", "summary", "content") and not summary:
+                summary = strip_html(child.text or "")[:400]
+        if not link:
+            continue
+        dt = _parse_dt(when)
+        if dt and dt < cutoff:
+            continue
+        items.append({
+            "source": f"rss:{name}",
+            "source_id": feed_id,
+            "category": category,
+            "title": title,
+            "url": link,
+            "score": 0,
+            "comments": 0,
+            "created": dt.isoformat() if dt else when,
+            "extra": {"feed": name, "summary": summary, "category": category},
+        })
+        n += 1
+        if n >= per_feed:
+            break
+    return items, f"ok ({n})"
+
+
+def linkedin_posts(access_token: str | None = None, limit: int = 25) -> tuple[list[dict], str]:
+    """Fetch recent LinkedIn updates using authorized LinkedIn REST API.
+    
+    Adheres strictly to official LinkedIn developer terms: uses an authorized Bearer
+    token. In the absence of an authorized token, returns an informative Setup Required
+    status rather than attempting unauthorized web scraping or bypassing protections.
+    """
+    token = access_token or os.getenv("LINKEDIN_ACCESS_TOKEN")
+    if not token:
+        return [], "Setup Required: LinkedIn access token is not configured (set LINKEDIN_ACCESS_TOKEN)"
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "LinkedIn-Version": "202304",
+        "X-Restli-Protocol-Version": "2.0.0",
+        "User-Agent": browser.UA,
+    }
+    url = f"https://api.linkedin.com/rest/posts?q=author&count={limit}"
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8", "replace"))
+    except urllib.error.HTTPError as err:
+        return [], f"LinkedIn API Error ({err.code}): {err.reason}"
+    except Exception as err:
+        return [], f"LinkedIn Request Failed: {type(err).__name__} ({str(err)[:60]})"
+
+    items: list[dict] = []
+    elements = data.get("elements", [])
+    for el in elements:
+        text = el.get("commentary", "") or (el.get("specificContent", {}).get("com.linkedin.ugc.ShareContent", {}).get("shareCommentary", {}).get("text", ""))
+        first_line = text.split("\n")[0][:120] if text else "LinkedIn Post"
+        post_id = el.get("id", "")
+        post_url = f"https://www.linkedin.com/feed/update/{post_id}" if post_id else "https://www.linkedin.com"
+        created_time = el.get("createdAt")
+        dt_str = datetime.fromtimestamp(created_time / 1000, tz=timezone.utc).isoformat() if created_time else _now().isoformat()
+
+        items.append({
+            "source": "linkedin",
+            "source_id": "linkedin",
+            "category": "Professional",
+            "title": first_line,
+            "url": post_url,
+            "score": 0,
+            "comments": 0,
+            "created": dt_str,
+            "extra": {
+                "author": el.get("author", "LinkedIn User"),
+                "text": text,
+                "post_id": post_id,
+            }
+        })
+    return items, f"ok ({len(items)})"
 
 
 REDDIT_JS = r"""
@@ -323,43 +431,214 @@ def rank_key(it: dict) -> tuple:
     return (-(eng * weight), age_h)
 
 
-def collect(hours: int = DEFAULT_WINDOW, skip: tuple[str, ...] = ()) -> dict:
-    items: list[dict] = []
-    status: dict[str, str] = {}
+# ------------------------------------------------------------------ collection concurrency & customization
 
-    if "hn" not in skip:
-        try:
-            got = hn(points=150, hours=hours)
-            items += got
-            status["hn"] = f"ok ({len(got)})"
-        except Exception as err:
-            status["hn"] = f"FAIL {type(err).__name__}: {str(err)[:80]}"
-    if "rss" not in skip:
-        got, st = rss(hours=hours)
-        items += got
-        status.update({f"rss:{k}": v for k, v in st.items()})
-    if "reddit" not in skip:
-        got = reddit(t="day")
-        items += got
-        status["reddit"] = f"ok ({len(got)})"
-    if "x" not in skip:
-        got = x_search()
-        items += got
-        status["x"] = f"ok ({len(got)})" if got else "EMPTY (needs login?)"
+_COLLECT_LOCK = threading.Lock()
+_ACTIVE_JOB_ID: str | None = None
+_ACTIVE_JOB_START: str | None = None
 
-    items = dedupe(items)
-    items.sort(key=rank_key)
+def is_collecting() -> bool:
+    return _COLLECT_LOCK.locked()
+
+def get_active_job_id() -> str | None:
+    return _ACTIVE_JOB_ID
+
+def get_active_job_info() -> dict | None:
+    if not is_collecting():
+        return None
     return {
-        "generated_at": _now().isoformat(),
-        "window_hours": hours,
-        "counts": {"total": len(items),
-                   **{s: sum(1 for i in items
-                             if i["source"] == s or i["source"].startswith(s + ":"))
-                      for s in ("hn", "rss", "reddit", "x")}},
-        "status": status,
-        "items": items,
+        "job_id": _ACTIVE_JOB_ID,
+        "started_at": _ACTIVE_JOB_START,
+        "status": "running"
     }
 
+
+def collect_customized(
+    user_id: str = "guest",
+    enabled_sources: list[str] | None = None,
+    custom_feeds: list[dict] | None = None,
+    hours: int = DEFAULT_WINDOW,
+    job_id: str | None = None,
+) -> dict:
+    global _ACTIVE_JOB_ID, _ACTIVE_JOB_START
+    acquired = _COLLECT_LOCK.acquire(blocking=False)
+    if not acquired:
+        return {
+            "error": "A research collection job is currently in progress",
+            "active_job_id": _ACTIVE_JOB_ID,
+            "status": "running",
+            "busy": True
+        }
+
+    the_job_id = job_id or f"job_{int(datetime.now().timestamp() * 1000)}"
+    _ACTIVE_JOB_ID = the_job_id
+    _ACTIVE_JOB_START = _now().isoformat()
+
+    try:
+        # Load user prefs if not provided
+        if enabled_sources is None:
+            prefs = database.get_user_research_preferences(user_id)
+            enabled_sources = prefs.get("selected_sources") or research_catalog.get_default_source_ids()
+            if custom_feeds is None:
+                custom_feeds = prefs.get("custom_feeds") or []
+
+        database.create_research_job(the_job_id, user_id, enabled_sources or [])
+        database.update_research_job(the_job_id, status="running")
+
+        source_set = set(enabled_sources or [])
+        items: list[dict] = []
+        status: dict[str, str] = {}
+        completed_sources: list[str] = []
+        failed_sources: list[str] = []
+
+        # 1. Hacker News
+        if "hn" in source_set:
+            try:
+                hn_items = hn(points=100, hours=hours)
+                for h in hn_items:
+                    h["source_id"] = "hn"
+                    h["category"] = "Developer Communities"
+                items.extend(hn_items)
+                status["hn"] = f"ok ({len(hn_items)})"
+                completed_sources.append("hn")
+            except Exception as err:
+                status["hn"] = f"FAIL {type(err).__name__}: {str(err)[:70]}"
+                failed_sources.append("hn")
+
+        # 2. LinkedIn
+        if "linkedin" in source_set or "linkedin_official" in source_set or "linkedin_articles" in source_set:
+            li_items, li_status = linkedin_posts()
+            items.extend(li_items)
+            status["linkedin"] = li_status
+            if "Setup Required" in li_status or "FAIL" in li_status or "Error" in li_status:
+                failed_sources.append("linkedin")
+            else:
+                completed_sources.append("linkedin")
+
+        # 3. Reddit
+        if "reddit" in source_set:
+            try:
+                rd_items = reddit(t="day")
+                for r in rd_items:
+                    r["source_id"] = "reddit"
+                    r["category"] = "Developer Communities"
+                items.extend(rd_items)
+                status["reddit"] = f"ok ({len(rd_items)})"
+                completed_sources.append("reddit")
+            except Exception as err:
+                status["reddit"] = f"FAIL {type(err).__name__}: {str(err)[:70]}"
+                failed_sources.append("reddit")
+
+        # 4. Catalog RSS feeds
+        all_catalog = {s["id"]: s for s in research_catalog.get_all_sources()}
+        for src_id in source_set:
+            if src_id in ("hn", "linkedin", "linkedin_official", "linkedin_articles", "reddit", "x"):
+                continue
+            cat_entry = all_catalog.get(src_id)
+            feed_url = cat_entry.get("feed_url") or cat_entry.get("url") if cat_entry else None
+            if not cat_entry or cat_entry.get("type") != "rss" or not feed_url:
+                continue
+            feed_items, feed_st = fetch_single_feed(
+                feed_id=src_id,
+                name=cat_entry.get("name", src_id),
+                url=feed_url,
+                category=cat_entry.get("category", "Tech News"),
+                hours=hours
+            )
+            items.extend(feed_items)
+            status[src_id] = feed_st
+            if feed_st.startswith("ok"):
+                completed_sources.append(src_id)
+            else:
+                failed_sources.append(src_id)
+
+        # 5. Custom RSS Feeds
+        if custom_feeds:
+            for cf in custom_feeds:
+                cf_name = cf.get("name") or "Custom Feed"
+                cf_url = cf.get("url") or ""
+                if not cf_url:
+                    continue
+                cf_id = f"custom:{re.sub(r'[^a-zA-Z0-9]', '', cf_name).lower()}"
+                feed_items, feed_st = fetch_single_feed(
+                    feed_id=cf_id,
+                    name=cf_name,
+                    url=cf_url,
+                    category="Custom RSS",
+                    hours=hours
+                )
+                items.extend(feed_items)
+                status[cf_id] = feed_st
+                if feed_st.startswith("ok"):
+                    completed_sources.append(cf_id)
+                else:
+                    failed_sources.append(cf_id)
+
+        total_found = len(items)
+        items = dedupe(items)
+        items.sort(key=rank_key)
+
+        # Save to database
+        save_res = database.save_research_stories(user_id=user_id, stories=items)
+        new_count = save_res.get("inserted", 0)
+
+        # Build response payload
+        result = {
+            "job_id": the_job_id,
+            "generated_at": _now().isoformat(),
+            "window_hours": hours,
+            "counts": {
+                "total": len(items),
+                "new": new_count,
+                "hn": sum(1 for i in items if i.get("source_id") == "hn" or i.get("source") == "hn"),
+                "linkedin": sum(1 for i in items if i.get("source_id") == "linkedin" or i.get("source") == "linkedin"),
+                "reddit": sum(1 for i in items if (i.get("source") or "").startswith("reddit")),
+                "rss": sum(1 for i in items if (i.get("source") or "").startswith("rss:")),
+            },
+            "status": status,
+            "items": items,
+        }
+
+        # Also write swipe file for backward compatibility
+        try:
+            swipe_file = SWIPE / f"{datetime.now():%Y-%m-%d}.json"
+            swipe_file.parent.mkdir(parents=True, exist_ok=True)
+            swipe_file.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+        except Exception as e:
+            print(f"Warning: failed to write swipe file: {e}", file=sys.stderr)
+
+        database.update_research_job(
+            the_job_id,
+            status="completed",
+            stories_found=total_found,
+            new_stories=new_count,
+            sources_completed=completed_sources,
+            sources_failed=failed_sources,
+        )
+        return result
+    except Exception as err:
+        database.update_research_job(
+            the_job_id,
+            status="failed",
+            error_message=str(err)
+        )
+        raise
+    finally:
+        _ACTIVE_JOB_ID = None
+        _COLLECT_LOCK.release()
+
+
+def collect(hours: int = DEFAULT_WINDOW, skip: tuple[str, ...] = ()) -> dict:
+    """Collect latest material. If customized sources are available, uses collect_customized."""
+    all_defaults = [s for s in ("hn", "rss", "reddit", "x") if s not in skip]
+    enabled = []
+    if "hn" not in skip:
+        enabled.append("hn")
+    if "reddit" not in skip:
+        enabled.append("reddit")
+    if "rss" not in skip:
+        enabled.extend([s["id"] for s in research_catalog.get_all_sources() if s.get("is_default") and s.get("type") == "rss"])
+    return collect_customized(user_id="system", enabled_sources=enabled, hours=hours)
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,

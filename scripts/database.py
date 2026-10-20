@@ -131,12 +131,58 @@ def init_db() -> None:
                 );
                 """)
 
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS research_stories (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    canonical_url TEXT UNIQUE NOT NULL,
+                    title TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    source_id TEXT,
+                    category TEXT,
+                    score INTEGER DEFAULT 0,
+                    comments INTEGER DEFAULT 0,
+                    created_at TEXT,
+                    collected_at TEXT NOT NULL,
+                    extra TEXT
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS research_jobs (
+                    job_id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    sources_requested TEXT,
+                    sources_completed TEXT,
+                    sources_failed TEXT,
+                    stories_found INTEGER DEFAULT 0,
+                    new_stories INTEGER DEFAULT 0,
+                    error_message TEXT,
+                    created_at TEXT NOT NULL,
+                    finished_at TEXT
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_research_preferences (
+                    user_id TEXT PRIMARY KEY,
+                    selected_sources TEXT NOT NULL,
+                    custom_feeds TEXT,
+                    topics TEXT,
+                    updated_at TEXT NOT NULL
+                );
+                """)
+
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(razorpay_order_id);")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);")
                 conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_x_user_id ON users(x_user_id);")
                 conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users(LOWER(username));")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_research_stories_source ON research_stories(source);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_research_stories_collected ON research_stories(collected_at);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_research_jobs_user ON research_jobs(user_id);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_research_jobs_status ON research_jobs(status);")
 
                 # Automatic schema migrations for multi-currency support
                 cur = conn.cursor()
@@ -816,5 +862,359 @@ def delete_session(session_token: str) -> None:
         try:
             with conn:
                 conn.execute("DELETE FROM sessions WHERE session_token = ?", (session_token,))
+        finally:
+            conn.close()
+
+# =========================================================================
+# Research Swipe Stories, Background Jobs & Customer Preferences
+# =========================================================================
+
+def _canonical_url(raw_url: str) -> str:
+    if not raw_url:
+        return ""
+    clean = raw_url.strip().split("#")[0].split("?")[0].rstrip("/").lower()
+    return clean
+
+def save_research_stories(
+    stories: Optional[List[Dict[str, Any]]] = None,
+    user_id: Optional[str] = None,
+    **kwargs
+) -> Dict[str, int]:
+    """Persist and deduplicate newly discovered research stories into the database.
+    
+    Returns dictionary with inserted count and total processed.
+    """
+    if stories is None and "stories" in kwargs:
+        stories = kwargs["stories"]
+    elif stories is None and isinstance(user_id, list):
+        stories = user_id
+    stories = stories or []
+
+    if not stories:
+        return {"inserted": 0, "total": 0}
+    init_db()
+    new_count = 0
+    now_str = _now_iso()
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                for s in stories:
+                    raw_url = s.get("url") or ""
+                    canon = _canonical_url(raw_url)
+                    if not canon:
+                        continue
+
+                    title = (s.get("title") or "").strip()
+                    source = s.get("source") or "unknown"
+                    source_id = s.get("source_id") or source
+                    category = s.get("category") or "Technology"
+                    score = int(s.get("score") or 0)
+                    comments = int(s.get("comments") or 0)
+                    created_at = s.get("created") or s.get("created_at") or now_str
+                    extra_json = json.dumps(s.get("extra") or {}, ensure_ascii=False)
+
+                    # Check existence
+                    cur = conn.cursor()
+                    cur.execute("SELECT id FROM research_stories WHERE canonical_url = ?", (canon,))
+                    row = cur.fetchone()
+                    if row:
+                        # Update existing metrics
+                        conn.execute("""
+                            UPDATE research_stories SET
+                                score = MAX(score, ?),
+                                comments = MAX(comments, ?),
+                                collected_at = ?
+                            WHERE canonical_url = ?
+                        """, (score, comments, now_str, canon))
+                    else:
+                        conn.execute("""
+                            INSERT INTO research_stories (
+                                canonical_url, title, source, source_id, category,
+                                score, comments, created_at, collected_at, extra
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            canon, title, source, source_id, category,
+                            score, comments, created_at, now_str, extra_json
+                        ))
+                        new_count += 1
+            return {"inserted": new_count, "total": len(stories)}
+        finally:
+            conn.close()
+
+def get_research_stories(
+    source_filter: Optional[str] = None,
+    search_query: Optional[str] = None,
+    limit: int = 60,
+    offset: int = 0,
+    user_id: Optional[str] = None,
+    source: Optional[str] = None,
+    search: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    # Alias support
+    source_filter = source or source_filter
+    search_query = search or search_query
+    """Retrieve filtered research stories from database."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            query_parts = ["SELECT * FROM research_stories WHERE 1=1"]
+            params: List[Any] = []
+
+            if source_filter and source_filter.lower() != "all":
+                sf = source_filter.lower()
+                if sf == "hacker news" or sf == "hn":
+                    query_parts.append("AND (LOWER(source) = 'hn' OR LOWER(source) LIKE 'hn:%')")
+                elif sf == "reddit":
+                    query_parts.append("AND LOWER(source) LIKE 'reddit%'")
+                elif sf == "rss" or sf == "rss feeds":
+                    query_parts.append("AND (LOWER(source) LIKE 'rss%' OR LOWER(source) NOT LIKE 'reddit%' AND LOWER(source) NOT LIKE 'linkedin%' AND LOWER(source) != 'hn')")
+                elif sf == "linkedin":
+                    query_parts.append("AND LOWER(source) LIKE 'linkedin%'")
+                else:
+                    query_parts.append("AND (LOWER(source) = ? OR LOWER(source_id) = ?)")
+                    params.extend([sf, sf])
+
+            if search_query:
+                sq = f"%{search_query.strip().lower()}%"
+                query_parts.append("AND (LOWER(title) LIKE ? OR LOWER(source) LIKE ?)")
+                params.extend([sq, sq])
+
+            query_parts.append("ORDER BY score DESC, id DESC LIMIT ? OFFSET ?")
+            params.extend([limit, offset])
+
+            cursor.execute(" ".join(query_parts), params)
+            rows = cursor.fetchall()
+
+            out = []
+            for r in rows:
+                item = dict(r)
+                if item.get("extra"):
+                    try:
+                        item["extra"] = json.loads(item["extra"])
+                    except Exception:
+                        item["extra"] = {}
+                item["url"] = item.get("canonical_url")
+                item["created"] = item.get("created_at")
+                out.append(item)
+            return out
+        finally:
+            conn.close()
+
+def get_research_stories_count(user_id: Optional[str] = None) -> Dict[str, int]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) AS total FROM research_stories")
+            row = cur.fetchone()
+            total = int(row["total"] or 0) if row else 0
+
+            cur.execute("SELECT COUNT(*) AS c FROM research_stories WHERE source = 'hn' OR source_id = 'hn'")
+            hn_c = int(cur.fetchone()["c"] or 0)
+
+            cur.execute("SELECT COUNT(*) AS c FROM research_stories WHERE source LIKE 'linkedin%' OR source_id = 'linkedin'")
+            li_c = int(cur.fetchone()["c"] or 0)
+
+            cur.execute("SELECT COUNT(*) AS c FROM research_stories WHERE source LIKE 'reddit%' OR source_id LIKE 'reddit%'")
+            rd_c = int(cur.fetchone()["c"] or 0)
+
+            cur.execute("SELECT COUNT(*) AS c FROM research_stories WHERE source LIKE 'rss%'")
+            rss_c = int(cur.fetchone()["c"] or 0)
+
+            return {
+                "total": total,
+                "hn": hn_c,
+                "linkedin": li_c,
+                "reddit": rd_c,
+                "rss": rss_c,
+            }
+        finally:
+            conn.close()
+
+def create_research_job(job_id: str, user_id: str, sources_requested: List[str]) -> None:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            now_str = _now_iso()
+            with conn:
+                conn.execute("""
+                    INSERT INTO research_jobs (
+                        job_id, user_id, status, sources_requested,
+                        sources_completed, sources_failed, stories_found,
+                        new_stories, error_message, created_at, finished_at
+                    ) VALUES (?, ?, 'running', ?, '[]', '{}', 0, 0, NULL, ?, NULL)
+                    ON CONFLICT(job_id) DO UPDATE SET
+                        status = 'running',
+                        sources_requested = excluded.sources_requested;
+                """, (job_id, user_id, json.dumps(sources_requested), now_str))
+        finally:
+            conn.close()
+
+def update_research_job(
+    job_id: str,
+    status: str,
+    sources_completed: Optional[List[str]] = None,
+    sources_failed: Optional[Dict[str, str]] = None,
+    stories_found: int = 0,
+    new_stories: int = 0,
+    error_message: str = "",
+) -> None:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            now_str = _now_iso()
+            with conn:
+                conn.execute("""
+                    UPDATE research_jobs SET
+                        status = ?,
+                        sources_completed = COALESCE(?, sources_completed),
+                        sources_failed = COALESCE(?, sources_failed),
+                        stories_found = ?,
+                        new_stories = ?,
+                        error_message = ?,
+                        finished_at = CASE WHEN ? IN ('completed', 'failed') THEN ? ELSE finished_at END
+                    WHERE job_id = ?
+                """, (
+                    status,
+                    json.dumps(sources_completed) if sources_completed is not None else None,
+                    json.dumps(sources_failed) if sources_failed is not None else None,
+                    stories_found,
+                    new_stories,
+                    error_message,
+                    status,
+                    now_str,
+                    job_id,
+                ))
+        finally:
+            conn.close()
+
+def get_research_job(job_id: str) -> Optional[Dict[str, Any]]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM research_jobs WHERE job_id = ?", (job_id,))
+            row = cur.fetchone()
+            if not row:
+                return None
+            res = dict(row)
+            for k in ("sources_requested", "sources_completed", "sources_failed"):
+                if res.get(k):
+                    try:
+                        res[k] = json.loads(res[k])
+                    except Exception:
+                        pass
+            return res
+        finally:
+            conn.close()
+
+def get_latest_research_job(user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            if user_id:
+                cur.execute("SELECT * FROM research_jobs WHERE user_id = ? ORDER BY created_at DESC LIMIT 1", (user_id,))
+            else:
+                cur.execute("SELECT * FROM research_jobs ORDER BY created_at DESC LIMIT 1")
+            row = cur.fetchone()
+            if not row:
+                return None
+            res = dict(row)
+            for k in ("sources_requested", "sources_completed", "sources_failed"):
+                if res.get(k):
+                    try:
+                        res[k] = json.loads(res[k])
+                    except Exception:
+                        pass
+            return res
+        finally:
+            conn.close()
+
+def get_user_research_preferences(user_id: str) -> Dict[str, Any]:
+    """Retrieve saved source preferences for a customer, falling back to catalog defaults."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM user_research_preferences WHERE user_id = ?", (user_id,))
+            row = cur.fetchone()
+            if row:
+                data = dict(row)
+                return {
+                    "user_id": user_id,
+                    "selected_sources": json.loads(data.get("selected_sources") or "[]"),
+                    "custom_feeds": json.loads(data.get("custom_feeds") or "[]"),
+                    "topics": json.loads(data.get("topics") or "[]"),
+                    "updated_at": data.get("updated_at"),
+                }
+            
+            # Default fallback
+            from research_catalog import get_default_source_ids
+            return {
+                "user_id": user_id,
+                "selected_sources": get_default_source_ids(),
+                "custom_feeds": [],
+                "topics": ["AI", "Developer Tools", "Systems", "Web"],
+                "updated_at": _now_iso(),
+            }
+        finally:
+            conn.close()
+
+def save_user_research_preferences(
+    user_id: str,
+    selected_sources: List[str],
+    custom_feeds: Optional[List[Dict[str, str]]] = None,
+    topics: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Persist user-specific source selections and custom feeds."""
+    init_db()
+    now_str = _now_iso()
+    feeds_list = custom_feeds or []
+    topics_list = topics or []
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    INSERT INTO user_research_preferences (
+                        user_id, selected_sources, custom_feeds, topics, updated_at
+                    ) VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        selected_sources = excluded.selected_sources,
+                        custom_feeds = excluded.custom_feeds,
+                        topics = excluded.topics,
+                        updated_at = excluded.updated_at;
+                """, (
+                    user_id,
+                    json.dumps(selected_sources),
+                    json.dumps(feeds_list),
+                    json.dumps(topics_list),
+                    now_str,
+                ))
+            return get_user_research_preferences(user_id)
+        finally:
+            conn.close()
+
+def reset_user_research_preferences(user_id: str) -> Dict[str, Any]:
+    """Reset user preferences to factory defaults."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("DELETE FROM user_research_preferences WHERE user_id = ?", (user_id,))
+            return get_user_research_preferences(user_id)
         finally:
             conn.close()

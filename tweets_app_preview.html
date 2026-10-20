@@ -1,0 +1,3233 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#090d16">
+  <title>T — Autonomous Agent Companion</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Razorpay Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: '#1d9bf0',
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#1d9bf0',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Inter', 'Helvetica', 'Arial', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* CSS Variables for Dark & Light Themes */
+    :root {
+      --bg-app: #f8fafc;
+      --bg-header: rgba(248, 250, 252, 0.9);
+      --bg-nav: rgba(248, 250, 252, 0.94);
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #f1f5f9;
+      --bg-surface-subtle: #f8fafc;
+      --bg-input: #f1f5f9;
+      --border-subtle: #e2e8f0;
+      --border-card: #e2e8f0;
+      --border-hover: #cbd5e1;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --brand: #1d9bf0;
+      --brand-hover: #0c8de4;
+      --brand-subtle: rgba(29, 155, 240, 0.08);
+      --card-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
+      --modal-overlay: rgba(15, 23, 42, 0.6);
+    }
+
+    .dark {
+      --bg-app: #090d16;
+      --bg-header: rgba(9, 13, 22, 0.9);
+      --bg-nav: rgba(9, 13, 22, 0.94);
+      --bg-surface: #111622;
+      --bg-surface-elevated: #171e2e;
+      --bg-surface-subtle: #0d121c;
+      --bg-input: #151b29;
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.16);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --brand: #1d9bf0;
+      --brand-hover: #38bdf8;
+      --brand-subtle: rgba(29, 155, 240, 0.14);
+      --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+      --modal-overlay: rgba(0, 0, 0, 0.8);
+    }
+
+    /* Core Styles */
+    html, body {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Smooth Transitions */
+    .theme-transition,
+    .theme-transition * {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+    }
+
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.97) translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .tab-animate {
+      animation: fadeSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .modal-animate {
+      animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Microinteraction press effect */
+    .btn-press {
+      transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .btn-press:active {
+      transform: scale(0.97);
+    }
+
+    .card-lift {
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card-lift:hover {
+      border-color: var(--border-hover);
+      box-shadow: var(--card-shadow);
+    }
+
+    /* Focus Visible Accessibility */
+    button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 2px;
+    }
+
+    /* Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    .reduced-motion * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    /* Custom Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden text-slate-900 dark:text-slate-100 font-sans">
+
+  <!-- ==================== AUTHENTICATION & ONBOARDING OVERLAY ==================== -->
+  <div id="auth-view" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-app)] overflow-y-auto transition-opacity duration-300">
+    <div class="max-w-md w-full mx-auto my-auto relative">
+      
+      <!-- Top Brand Ambient Accent Glow -->
+      <div class="absolute -top-16 left-1/2 -translate-x-1/2 w-64 h-64 bg-brand/15 rounded-full blur-3xl pointer-events-none -z-10"></div>
+
+      <!-- Theme Switcher for Login Screens -->
+      <div class="flex justify-end mb-3">
+        <button onclick="cycleTheme()" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Toggle Theme" aria-label="Toggle Theme">
+          <i data-lucide="moon" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- ================= PANEL 1: LOGIN (X ONLY) ================= -->
+      <div id="auth-panel-login" class="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-7 sm:p-9 shadow-2xl transition-all duration-300">
+        <!-- Reusable Geometric T Logo Component -->
+        <div class="w-16 h-16 rounded-2xl bg-brand/10 border border-brand/25 flex items-center justify-center text-brand shadow-lg mx-auto mb-6">
+          <svg class="w-9 h-9 text-brand" viewBox="0 0 32 32" fill="none" aria-label="T Logo">
+            <path d="M4 6.5C4 5.67 4.67 5 5.5 5H26.5C27.33 5 28 5.67 28 6.5V11C28 11.83 27.33 12.5 26.5 12.5H19.5V26.5C19.5 27.33 18.83 28 18 28H14C13.17 28 12.5 27.33 12.5 26.5V12.5H5.5C4.67 12.5 4 11.83 4 11V6.5Z" fill="currentColor"/>
+            <path d="M5.5 5H26.5C27.33 5 28 5.67 28 6.5V8.5L25 10H7L4 8.5V6.5C4 5.67 4.67 5 5.5 5Z" fill="white" fill-opacity="0.3"/>
+            <path d="M16 12.5V28" stroke="white" stroke-opacity="0.25" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)] text-center mb-2">Welcome to T</h1>
+        <p class="text-sm text-[var(--text-secondary)] text-center mb-7 leading-relaxed">Sign in with your X account to get started.</p>
+
+        <!-- Inline Error Banner -->
+        <div id="auth-error-banner" class="hidden mb-6 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 text-xs font-medium flex items-center gap-2.5">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-500"></i>
+          <span id="auth-error-text" class="flex-1">Authorization failed. Please try again.</span>
+        </div>
+
+        <!-- Primary Button: Continue with X -->
+        <button onclick="loginWithX()" id="btn-login-x" class="w-full py-4 px-6 rounded-2xl bg-[var(--text-primary)] text-[var(--bg-app)] font-bold text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl hover:opacity-90 active:scale-[0.98] transition-all">
+          <!-- Official X Icon -->
+          <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          <span id="btn-login-x-text">Continue with X</span>
+          <i id="btn-login-x-spinner" data-lucide="loader-2" class="w-4 h-4 animate-spin hidden"></i>
+        </button>
+
+        <!-- Security / Protocol Note -->
+        <div class="mt-8 pt-5 border-t border-[var(--border-subtle)] text-center">
+          <p class="text-[11px] text-[var(--text-muted)] flex items-center justify-center gap-1.5">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-brand"></i>
+            <span>Secure X OAuth 2.0 PKCE • No passwords or secrets required</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- ================= PANEL 2: USERNAME ONBOARDING ================= -->
+      <div id="auth-panel-username" class="hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-7 sm:p-9 shadow-2xl transition-all duration-300">
+        <!-- Reusable Geometric T Logo -->
+        <div class="w-14 h-14 rounded-2xl bg-brand/10 border border-brand/25 flex items-center justify-center text-brand shadow-md mx-auto mb-5">
+          <svg class="w-8 h-8 text-brand" viewBox="0 0 32 32" fill="none" aria-label="T Logo">
+            <path d="M4 6.5C4 5.67 4.67 5 5.5 5H26.5C27.33 5 28 5.67 28 6.5V11C28 11.83 27.33 12.5 26.5 12.5H19.5V26.5C19.5 27.33 18.83 28 18 28H14C13.17 28 12.5 27.33 12.5 26.5V12.5H5.5C4.67 12.5 4 11.83 4 11V6.5Z" fill="currentColor"/>
+            <path d="M5.5 5H26.5C27.33 5 28 5.67 28 6.5V8.5L25 10H7L4 8.5V6.5C4 5.67 4.67 5 5.5 5Z" fill="white" fill-opacity="0.3"/>
+            <path d="M16 12.5V28" stroke="white" stroke-opacity="0.25" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <h2 class="text-2xl font-extrabold tracking-tight text-[var(--text-primary)] text-center mb-2">Choose your username</h2>
+        <p class="text-xs sm:text-sm text-[var(--text-secondary)] text-center mb-6 leading-relaxed">
+          Set up your handle for your autonomous persona.
+        </p>
+
+        <!-- Username Form -->
+        <form onsubmit="event.preventDefault(); submitUsernameOnboarding();" class="space-y-4">
+          <div>
+            <label for="input-onboarding-username" class="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Username</label>
+            <div class="relative flex items-center">
+              <span class="absolute left-4 text-brand font-bold text-base select-none pointer-events-none">@</span>
+              <input type="text" id="input-onboarding-username" placeholder="Enter your username" maxlength="15" autocomplete="off" spellcheck="false" class="w-full pl-9 pr-14 py-3.5 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] font-semibold text-sm focus:outline-none focus:border-brand transition" oninput="handleUsernameInput(this.value)" />
+              <span id="username-char-count" class="absolute right-4 text-xs text-[var(--text-muted)] font-mono">0/15</span>
+            </div>
+            <!-- Feedback / Validation Message -->
+            <div id="username-feedback" class="mt-2 text-xs text-[var(--text-muted)] min-h-[18px] flex items-center gap-1.5 transition-colors"></div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="btn-submit-username" class="w-full py-3.5 px-6 rounded-2xl bg-brand hover:bg-brand-hover text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg btn-press transition">
+            <span id="btn-submit-username-text">Continue</span>
+            <i id="btn-submit-username-icon" data-lucide="arrow-right" class="w-4 h-4"></i>
+            <i id="btn-submit-username-spinner" data-lucide="loader-2" class="w-4 h-4 animate-spin hidden"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- ================= PANEL 3: ALL SET / WELCOME ================= -->
+      <div id="auth-panel-welcome" class="hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-7 sm:p-9 shadow-2xl transition-all duration-300 text-center">
+        <!-- T Logo with Animated Emerald Badge -->
+        <div class="relative w-16 h-16 rounded-2xl bg-brand/10 border border-brand/25 flex items-center justify-center text-brand shadow-lg mx-auto mb-6">
+          <svg class="w-9 h-9 text-brand" viewBox="0 0 32 32" fill="none" aria-label="T Logo">
+            <path d="M4 6.5C4 5.67 4.67 5 5.5 5H26.5C27.33 5 28 5.67 28 6.5V11C28 11.83 27.33 12.5 26.5 12.5H19.5V26.5C19.5 27.33 18.83 28 18 28H14C13.17 28 12.5 27.33 12.5 26.5V12.5H5.5C4.67 12.5 4 11.83 4 11V6.5Z" fill="currentColor"/>
+            <path d="M5.5 5H26.5C27.33 5 28 5.67 28 6.5V8.5L25 10H7L4 8.5V6.5C4 5.67 4.67 5 5.5 5Z" fill="white" fill-opacity="0.3"/>
+            <path d="M16 12.5V28" stroke="white" stroke-opacity="0.25" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md border-2 border-[var(--bg-card)]">
+            <i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
+          </span>
+        </div>
+
+        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)] mb-2">You're all set!</h2>
+        <p class="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed">Your account is ready. Let's get started.</p>
+
+        <!-- Account Badge Preview -->
+        <div class="my-6 p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-subtle)] flex items-center justify-center gap-2">
+          <span class="text-xs text-[var(--text-secondary)] font-medium">Signed in as</span>
+          <span id="welcome-username-badge" class="text-xs font-mono font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-md">@username</span>
+        </div>
+
+        <!-- Primary Button: Start App -->
+        <button onclick="startAppDashboard()" id="btn-start-app" class="w-full py-4 px-6 rounded-2xl bg-brand hover:bg-brand-hover text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl btn-press transition">
+          <span id="btn-start-app-text">Start App</span>
+          <i id="btn-start-app-icon" data-lucide="sparkles" class="w-4 h-4"></i>
+          <i id="btn-start-app-spinner" data-lucide="loader-2" class="w-4 h-4 animate-spin hidden"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== TOP NAVIGATION HEADER ==================== -->
+  <header class="bg-[var(--bg-header)] backdrop-blur-xl border-b border-[var(--border-subtle)] px-4 py-3 z-30 shrink-0 sticky top-0 transition-colors">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      
+      <!-- Logo & Connection Status -->
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand shadow-sm shrink-0">
+          <svg class="w-5 h-5 text-brand" viewBox="0 0 32 32" fill="none" aria-label="T Logo">
+            <path d="M4 6.5C4 5.67 4.67 5 5.5 5H26.5C27.33 5 28 5.67 28 6.5V11C28 11.83 27.33 12.5 26.5 12.5H19.5V26.5C19.5 27.33 18.83 28 18 28H14C13.17 28 12.5 27.33 12.5 26.5V12.5H5.5C4.67 12.5 4 11.83 4 11V6.5Z" fill="currentColor"/>
+            <path d="M5.5 5H26.5C27.33 5 28 5.67 28 6.5V8.5L25 10H7L4 8.5V6.5C4 5.67 4.67 5 5.5 5Z" fill="white" fill-opacity="0.3"/>
+            <path d="M16 12.5V28" stroke="white" stroke-opacity="0.25" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-sm tracking-tight text-[var(--text-primary)]">T</h1>
+            <span id="conn-pill" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" title="Connected to CDP & Backend">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span id="conn-text" class="hidden sm:inline">Online</span>
+            </span>
+          </div>
+          <p id="handle-badge" class="text-xs text-[var(--text-secondary)] font-mono">@ezeslucky</p>
+        </div>
+      </div>
+
+      <!-- Desktop Nav Tabs (Visible on Tablet & Desktop) -->
+      <nav class="hidden md:flex items-center bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-1 gap-1">
+        <button onclick="switchTab('queue')" id="dnav-queue" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-brand text-white shadow-sm flex items-center gap-1.5 btn-press transition">
+          <i data-lucide="list-todo" class="w-3.5 h-3.5"></i>
+          <span>Queue</span>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-white/20 px-1 rounded">1</kbd>
+        </button>
+        <button onclick="switchTab('research')" id="dnav-research" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition">
+          <i data-lucide="newspaper" class="w-3.5 h-3.5"></i>
+          <span>Research</span>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">2</kbd>
+        </button>
+        <button onclick="switchTab('verify')" id="dnav-verify" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+          <span>Verify</span>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">3</kbd>
+        </button>
+        <button onclick="switchTab('status')" id="dnav-status" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition">
+          <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+          <span>Status</span>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">4</kbd>
+        </button>
+      </nav>
+
+      <!-- Right Action Controls -->
+      <div class="flex items-center space-x-1.5">
+        <!-- Subscription / Pricing Badge Button -->
+        <button onclick="openPricingModal()" id="btn-sub-header" class="px-2.5 py-1 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-full flex items-center gap-1.5 btn-press shadow-sm" aria-label="Subscription Status">
+          <i id="icon-sub-header" data-lucide="crown" class="w-3.5 h-3.5 text-amber-500"></i>
+          <span id="badge-pro-header">Plans</span>
+        </button>
+
+        <!-- Quick Theme Toggle -->
+        <button onclick="cycleTheme()" id="btn-theme-toggle" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Toggle Theme (Dark / Light / System)" aria-label="Toggle Theme">
+          <i id="theme-icon-indicator" data-lucide="moon" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Refresh Button -->
+        <button onclick="refreshAll(true)" id="btn-refresh" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Refresh Dashboard (R)" aria-label="Refresh Data">
+          <i id="icon-refresh" data-lucide="rotate-cw" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Settings Modal Button -->
+        <button onclick="openSettingsModal()" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Settings & Shortcuts (S)" aria-label="Open Settings">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Sign Out Button -->
+        <button onclick="handleSignOutClick()" id="btn-signout-header" class="p-2 text-[var(--text-secondary)] hover:text-rose-500 rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Sign Out of X" aria-label="Sign Out">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+  <main class="flex-1 overflow-y-auto custom-scrollbar p-4 pb-28 md:pb-12 max-w-5xl w-full mx-auto">
+
+    <!-- ==================== TAB 1: QUEUE & SCHEDULE ==================== -->
+    <section id="tab-queue" class="space-y-4 tab-animate">
+      
+      <!-- Queue Header Summary Card -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 shadow-sm gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <i data-lucide="calendar" class="w-4 h-4 text-brand"></i>
+            <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Today's Posting Schedule</h2>
+          </div>
+          <p id="plan-date" class="text-xs text-[var(--text-secondary)] mt-0.5">Autonomous posting pipeline active</p>
+        </div>
+
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <button onclick="openComposeStandalone()" class="text-xs bg-brand hover:bg-brand-hover text-white px-3.5 py-1.5 rounded-xl font-semibold btn-press flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> New Post
+          </button>
+          <button onclick="makeNewPlan()" id="btn-replan" class="text-xs bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] px-3.5 py-1.5 rounded-xl font-medium btn-press flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand"></i> Re-plan Slots
+          </button>
+        </div>
+      </div>
+
+      <!-- Subscription / Trial Status Alert Banner -->
+      <div id="banner-sub-alert" class="hidden rounded-2xl p-4 border text-xs shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition"></div>
+
+      <!-- Real-Time Queue Progress Metric -->
+      <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-xl p-3.5 shadow-sm flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2.5">
+          <span class="text-[var(--text-secondary)] font-medium">Daily Slots Progress:</span>
+          <span id="queue-progress-text" class="font-bold text-[var(--text-primary)] font-mono">0/4 posted</span>
+        </div>
+        <div class="w-36 bg-[var(--bg-input)] rounded-full h-2.5 overflow-hidden border border-[var(--border-subtle)]">
+          <div id="queue-progress-bar" class="bg-brand h-full rounded-full transition-all duration-500" style="width: 25%"></div>
+        </div>
+      </div>
+
+      <!-- Slots Grid (Responsive: 1 col on mobile, 2 cols on tablet/desktop) -->
+      <div id="slots-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: RESEARCH SWIPE FILE ==================== -->
+    <section id="tab-research" class="space-y-4 hidden tab-animate">
+      
+      <!-- Research Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 shadow-sm gap-3">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <i data-lucide="newspaper" class="w-4 h-4 text-brand"></i>
+            <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Research Swipe File</h2>
+            <button id="btn-live-toggle" onclick="toggleLiveUpdates()" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border border-[var(--border-subtle)] bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition btn-press" title="Toggle 1-second live story updates">
+              <span id="live-indicator-dot" class="w-2 h-2 rounded-full bg-neutral-400"></span>
+              <span id="live-indicator-text">Live: OFF</span>
+            </button>
+          </div>
+          <p id="research-summary" class="text-xs text-[var(--text-secondary)] mt-0.5">Curating stories across 131+ tech, AI, startup & engineering sources</p>
+        </div>
+        <div class="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button onclick="openCustomizeSourcesModal()" id="btn-customize-sources" class="text-xs bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-3 py-2 rounded-xl font-semibold btn-press flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-brand"></i>
+            <span id="btn-sources-count-text">Customize Sources (39)</span>
+          </button>
+          <button onclick="collectResearch()" id="btn-collect-research" class="text-xs bg-brand hover:bg-brand-hover text-white px-4 py-2 rounded-xl font-semibold btn-press flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="compass" class="w-3.5 h-3.5"></i> Scrape Fresh Stories
+          </button>
+        </div>
+      </div>
+
+      <!-- Real-time Job Progress Indicator -->
+      <div id="research-job-progress" class="hidden bg-brand/10 border border-brand/20 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-xs transition">
+        <div class="flex items-center gap-2.5">
+          <div class="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin shrink-0"></div>
+          <div>
+            <p id="job-progress-msg" class="font-semibold text-brand">Scraping fresh stories from selected sources...</p>
+            <p id="job-progress-sub" class="text-[11px] text-[var(--text-secondary)]">Deduplicating via canonical URLs and indexing in database</p>
+          </div>
+        </div>
+        <span id="job-progress-status" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brand/20 text-brand shrink-0">Running</span>
+      </div>
+
+      <!-- Search & Filters Toolbar -->
+      <div class="space-y-2.5 bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-3.5 shadow-sm">
+        
+        <!-- Search Input -->
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-[var(--text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="research-search" placeholder="Search stories, LLMs, benchmarks, keywords... (Press / to focus)" oninput="filterResearch()" class="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl py-2 pl-9 pr-8 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-brand transition shadow-sm">
+          <button onclick="clearResearchSearch()" id="research-search-clear" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <!-- Filter Pills & Sorting Bar -->
+        <div class="flex items-center justify-between gap-2 overflow-x-auto custom-scrollbar pt-1">
+          <div class="flex items-center gap-1.5 shrink-0" id="source-filters">
+            <button onclick="setResearchFilter('all')" data-source="all" class="filter-pill px-3 py-1 text-xs font-semibold rounded-full bg-brand text-white btn-press shadow-sm">
+              All Stories
+            </button>
+            <button onclick="setResearchFilter('Hacker News')" data-source="Hacker News" class="filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press">
+              Hacker News
+            </button>
+            <button onclick="setResearchFilter('Reddit')" data-source="Reddit" class="filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press">
+              Reddit
+            </button>
+            <button onclick="setResearchFilter('RSS')" data-source="RSS" class="filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press">
+              RSS Feeds
+            </button>
+            <button onclick="setResearchFilter('LinkedIn')" data-source="LinkedIn" class="filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press flex items-center gap-1">
+              <svg class="w-3 h-3 text-[#0a66c2]" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+              LinkedIn
+            </button>
+          </div>
+
+          <!-- Sort dropdown -->
+          <div class="flex items-center gap-1 text-[11px] text-[var(--text-muted)] shrink-0">
+            <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i>
+            <select id="research-sort" onchange="filterResearch()" class="bg-transparent text-xs text-[var(--text-secondary)] focus:outline-none cursor-pointer">
+              <option value="score">Highest Points</option>
+              <option value="comments">Most Comments</option>
+              <option value="default">Default Order</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Research Cards Container (2 columns on tablet/desktop) -->
+      <div id="research-items" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: VERIFY & PROOF ==================== -->
+    <section id="tab-verify" class="space-y-4 hidden tab-animate">
+      
+      <!-- Verify Header -->
+      <div class="flex items-center justify-between bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 shadow-sm">
+        <div>
+          <div class="flex items-center gap-2">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+            <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Automated Verification Proof</h2>
+          </div>
+          <p class="text-xs text-[var(--text-secondary)] mt-0.5">Read-back from profile DOM is the only accepted proof of publishing</p>
+        </div>
+        <span class="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+          <i data-lucide="check-circle" class="w-3 h-3"></i> Zero Hallucination
+        </span>
+      </div>
+
+      <!-- Screenshots (Side-by-side on desktop) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Profile Proof Card -->
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl overflow-hidden shadow-sm card-lift flex flex-col">
+          <div class="p-3.5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-surface-subtle)]">
+            <div class="flex items-center gap-2">
+              <i data-lucide="user-check" class="w-4 h-4 text-emerald-500"></i>
+              <span class="text-xs font-semibold text-[var(--text-primary)]">Profile Timeline Read-Back</span>
+            </div>
+            <button onclick="reloadShots()" class="text-xs text-[var(--text-secondary)] hover:text-brand flex items-center gap-1 btn-press">
+              <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+            </button>
+          </div>
+          
+          <div class="relative bg-black min-h-[240px] flex items-center justify-center overflow-hidden flex-1">
+            <img id="img-profile" src="" alt="Profile Verification Screenshot" class="w-full object-contain max-h-[380px] hidden" onload="this.classList.remove('hidden'); document.getElementById('img-profile-loading').classList.add('hidden')">
+            <div id="img-profile-loading" class="text-xs text-zinc-400 py-12 flex flex-col items-center gap-2">
+              <i data-lucide="image" class="w-6 h-6 text-zinc-500 animate-pulse"></i>
+              Loading profile screenshot...
+            </div>
+          </div>
+          
+          <div class="p-3.5 text-xs text-[var(--text-secondary)] bg-[var(--bg-surface-subtle)] flex items-center justify-between border-t border-[var(--border-subtle)]">
+            <span class="flex items-center gap-1.5">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-500"></i> Verified via Chrome CDP
+            </span>
+            <a id="btn-view-profile-x" href="https://x.com/ezeslucky" target="_blank" class="text-brand hover:underline font-semibold flex items-center gap-1">
+              Open Profile on X <i data-lucide="external-link" class="w-3 h-3"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Composer State Proof Card -->
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl overflow-hidden shadow-sm card-lift flex flex-col">
+          <div class="p-3.5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-surface-subtle)]">
+            <div class="flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-4 h-4 text-sky-500"></i>
+              <span class="text-xs font-semibold text-[var(--text-primary)]">Browser Composer State Proof</span>
+            </div>
+          </div>
+          
+          <div class="relative bg-black min-h-[240px] flex items-center justify-center overflow-hidden flex-1">
+            <img id="img-compose" src="" alt="Composer State Proof" class="w-full object-contain max-h-[380px] hidden" onload="this.classList.remove('hidden'); document.getElementById('img-compose-loading').classList.add('hidden')">
+            <div id="img-compose-loading" class="text-xs text-zinc-400 py-12 flex flex-col items-center gap-2">
+              <i data-lucide="image" class="w-6 h-6 text-zinc-500 animate-pulse"></i>
+              Loading composer screenshot...
+            </div>
+          </div>
+          
+          <div class="p-3.5 text-xs text-[var(--text-secondary)] bg-[var(--bg-surface-subtle)] border-t border-[var(--border-subtle)] flex items-center justify-between">
+            <span>Captured prior to DOM click event</span>
+            <span class="text-sky-500 font-mono text-[11px]">Port 9222 Active</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: SYSTEM STATUS & PIPELINE HEALTH ==================== -->
+    <section id="tab-status" class="space-y-4 hidden tab-animate">
+      
+      <!-- Status Header -->
+      <div class="flex items-center justify-between bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 shadow-sm">
+        <div>
+          <div class="flex items-center gap-2">
+            <i data-lucide="activity" class="w-4 h-4 text-brand"></i>
+            <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Pipeline Health & Metrics</h2>
+          </div>
+          <p class="text-xs text-[var(--text-secondary)] mt-0.5">Automated sidecar cron gates and session telemetry</p>
+        </div>
+        <button onclick="triggerQuickCheck()" class="text-xs bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] px-3.5 py-1.5 rounded-xl font-medium btn-press flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="play" class="w-3.5 h-3.5 text-emerald-500"></i> Check Due Gate
+        </button>
+      </div>
+
+      <!-- 4-Metric Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm card-lift">
+          <span class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
+            <i data-lucide="user" class="w-3.5 h-3.5 text-brand"></i> Account
+          </span>
+          <span id="stat-handle" class="text-base font-bold text-[var(--text-primary)] mt-1.5 block font-mono">@ezeslucky</span>
+        </div>
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm card-lift">
+          <span class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
+            <i data-lucide="gauge" class="w-3.5 h-3.5 text-emerald-500"></i> Character Limit
+          </span>
+          <span id="stat-chars" class="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1.5 block font-mono">280 chars</span>
+        </div>
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm card-lift">
+          <span class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
+            <i data-lucide="zap" class="w-3.5 h-3.5 text-purple-500"></i> AI Update Day
+          </span>
+          <span id="stat-day" class="text-base font-bold text-purple-600 dark:text-purple-400 mt-1.5 block font-mono">Day 1</span>
+        </div>
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm card-lift">
+          <span class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-sky-500"></i> Total Verified
+          </span>
+          <span id="stat-posts" class="text-base font-bold text-sky-600 dark:text-sky-400 mt-1.5 block font-mono">2</span>
+        </div>
+      </div>
+
+      <!-- Subscription & Access Plan Card -->
+      <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-5 space-y-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-sm shrink-0">
+              <i data-lucide="crown" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-[var(--text-primary)]">Subscription & Access Plan</h3>
+              <p id="sub-plan-name" class="text-xs text-[var(--text-secondary)]">Checking plan status...</p>
+            </div>
+          </div>
+          <span id="badge-sub-status" class="text-xs bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-subtle)] px-3 py-1 rounded-full font-bold uppercase tracking-wider">
+            Loading
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+          <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)] space-y-1">
+            <span class="text-[var(--text-muted)] block text-[10px] uppercase font-semibold">Active Period & Remaining</span>
+            <span id="sub-period-text" class="font-bold text-[var(--text-primary)] font-mono block truncate">--</span>
+          </div>
+          <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)] space-y-1">
+            <span class="text-[var(--text-muted)] block text-[10px] uppercase font-semibold">Payment Gateway & Currency</span>
+            <div class="flex items-center gap-1.5 font-bold text-[var(--text-primary)]">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span> Razorpay (INR)
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+          <button onclick="openPricingModal()" class="py-2 px-4 bg-brand hover:bg-brand-hover text-white font-semibold text-xs rounded-xl btn-press flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Change / Upgrade Plan
+          </button>
+          <button onclick="openHistoryModal()" class="py-2 px-4 bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] font-medium text-xs rounded-xl btn-press flex items-center gap-1.5">
+            <i data-lucide="receipt" class="w-3.5 h-3.5 text-[var(--text-secondary)]"></i> Invoices & Receipts
+          </button>
+        </div>
+      </div>
+
+      <!-- Calibrated Voice Profile Rules -->
+      <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 space-y-2.5 shadow-sm">
+        <h3 class="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="mic" class="w-3.5 h-3.5 text-brand"></i> Calibrated Voice Profile Rules
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[var(--text-secondary)]">
+          <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="font-bold text-[var(--text-primary)] block mb-1">Character Ceiling</span>
+            130–245 characters (bounded strictly under 280 free limit).
+          </div>
+          <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="font-bold text-[var(--text-primary)] block mb-1">Rhythm & Beats</span>
+            2 distinct beats separated by a single clean blank line.
+          </div>
+          <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="font-bold text-[var(--text-primary)] block mb-1">Opening Hook</span>
+            Direct claim or contrarian builder statement opening.
+          </div>
+          <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="font-bold text-[var(--text-primary)] block mb-1">Tone & Integrity</span>
+            Zero engagement bait, zero hashtag spam, grounded builder tone.
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MOBILE BOTTOM NAVIGATION ==================== -->
+  <nav class="md:hidden bg-[var(--bg-nav)] backdrop-blur-xl border-t border-[var(--border-subtle)] fixed bottom-0 left-0 right-0 px-2 py-2 flex justify-around items-center z-30 transition-colors">
+    <button onclick="switchTab('queue')" id="nav-queue" class="nav-tab flex flex-col items-center py-1 px-3 text-brand font-semibold rounded-xl transition btn-press">
+      <div class="relative">
+        <i data-lucide="list-todo" class="w-5 h-5"></i>
+        <span class="nav-dot absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand"></span>
+      </div>
+      <span class="text-[10px] mt-1">Queue</span>
+    </button>
+    <button onclick="switchTab('research')" id="nav-research" class="nav-tab flex flex-col items-center py-1 px-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press">
+      <div class="relative">
+        <i data-lucide="newspaper" class="w-5 h-5"></i>
+        <span class="nav-dot hidden absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand"></span>
+      </div>
+      <span class="text-[10px] mt-1">Research</span>
+    </button>
+    <button onclick="switchTab('verify')" id="nav-verify" class="nav-tab flex flex-col items-center py-1 px-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press">
+      <div class="relative">
+        <i data-lucide="shield-check" class="w-5 h-5"></i>
+        <span class="nav-dot hidden absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand"></span>
+      </div>
+      <span class="text-[10px] mt-1">Verify</span>
+    </button>
+    <button onclick="switchTab('status')" id="nav-status" class="nav-tab flex flex-col items-center py-1 px-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press">
+      <div class="relative">
+        <i data-lucide="activity" class="w-5 h-5"></i>
+        <span class="nav-dot hidden absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand"></span>
+      </div>
+      <span class="text-[10px] mt-1">Status</span>
+    </button>
+  </nav>
+
+  <!-- ==================== MODALS & DIALOGS ==================== -->
+
+  <!-- 1. DRAFT EDITOR MODAL (WITH LIVE TWEET PREVIEW TOGGLE) -->
+  <div id="modal-edit" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full sm:max-w-xl rounded-t-3xl sm:rounded-2xl p-5 space-y-4 max-h-[92vh] flex flex-col shadow-2xl modal-animate">
+      
+      <!-- Modal Header with Tabbed Preview Toggle -->
+      <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+        <div>
+          <h3 class="font-bold text-sm text-[var(--text-primary)]" id="modal-slot-title">Edit Draft</h3>
+          <p class="text-xs text-[var(--text-secondary)] font-mono" id="modal-slot-sub">Slot 13:00</p>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <!-- Editor / Tweet Preview Mode Switcher -->
+          <div class="bg-[var(--bg-input)] border border-[var(--border-subtle)] p-0.5 rounded-lg flex items-center text-xs">
+            <button onclick="setEditorView('edit')" id="btn-view-edit" class="px-2.5 py-1 rounded-md font-semibold bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm">
+              Write
+            </button>
+            <button onclick="setEditorView('preview')" id="btn-view-preview" class="px-2.5 py-1 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+              Tweet Preview
+            </button>
+          </div>
+          
+          <button onclick="closeModal('modal-edit')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-surface-elevated)] btn-press" aria-label="Close modal">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Editor Input View -->
+      <div id="editor-view-input" class="space-y-2.5 flex-1">
+        <textarea id="modal-text" rows="5" maxlength="280" placeholder="Write post in your authentic voice (2 beats separated by blank line)..." class="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-3.5 text-xs sm:text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-brand resize-none font-sans leading-relaxed custom-scrollbar transition" oninput="updateCharCount()"></textarea>
+        
+        <!-- Live Character & Hook Meters -->
+        <div class="flex items-center justify-between text-xs px-1">
+          <div class="flex items-center gap-2">
+            <!-- Circular Progress Meter -->
+            <div class="relative w-5 h-5 flex items-center justify-center">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <path class="text-[var(--border-subtle)]" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path id="char-ring" class="text-brand transition-all duration-200" stroke-width="4" stroke-dasharray="100, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+            </div>
+            <span id="modal-char-count" class="text-[var(--text-secondary)] font-mono font-medium">0 / 280</span>
+          </div>
+          <span id="modal-char-remaining" class="text-emerald-500 font-mono font-bold text-xs">280 left</span>
+        </div>
+
+        <!-- Quick Helper Chips -->
+        <div class="flex items-center gap-1.5 pt-1 overflow-x-auto custom-scrollbar">
+          <button onclick="insertTemplate('hook')" class="text-[10px] bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full border border-[var(--border-subtle)] btn-press shrink-0">
+            + Hook Template
+          </button>
+          <button onclick="insertTemplate('bullets')" class="text-[10px] bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full border border-[var(--border-subtle)] btn-press shrink-0">
+            + AI Update Bullets
+          </button>
+          <button onclick="insertTemplate('break')" class="text-[10px] bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full border border-[var(--border-subtle)] btn-press shrink-0">
+            + 2-Beat Blank Line
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Tweet Simulator View -->
+      <div id="editor-view-preview" class="space-y-3 hidden flex-1">
+        <div class="bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-2xl p-4 space-y-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-full bg-brand/20 border border-brand/30 flex items-center justify-center text-brand font-bold text-sm shrink-0">
+              𝕏
+            </div>
+            <div>
+              <div class="flex items-center gap-1">
+                <span class="font-bold text-xs text-[var(--text-primary)]">Aurobindo</span>
+                <i data-lucide="badge-check" class="w-3.5 h-3.5 text-brand fill-brand"></i>
+                <span class="text-xs text-[var(--text-muted)] font-mono">@ezeslucky</span>
+              </div>
+              <span class="text-[11px] text-[var(--text-muted)]">Now · via TweetyTweets CDP</span>
+            </div>
+          </div>
+
+          <div id="live-simulated-tweet" class="text-xs sm:text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">
+            <!-- Simulated text -->
+          </div>
+
+          <!-- Tweet Action Bar Icons -->
+          <div class="flex items-center justify-between text-[var(--text-muted)] text-xs pt-2 border-t border-[var(--border-subtle)]">
+            <span class="flex items-center gap-1"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i> 0</span>
+            <span class="flex items-center gap-1"><i data-lucide="repeat" class="w-3.5 h-3.5"></i> 0</span>
+            <span class="flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5"></i> 0</span>
+            <span class="flex items-center gap-1"><i data-lucide="bookmark" class="w-3.5 h-3.5"></i></span>
+            <span class="flex items-center gap-1"><i data-lucide="share" class="w-3.5 h-3.5"></i></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-2 gap-2.5 pt-3 border-t border-[var(--border-subtle)]">
+        <button onclick="saveDraft()" class="py-2.5 px-4 bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] text-xs font-semibold rounded-xl border border-[var(--border-subtle)] btn-press shadow-sm">
+          Save Draft
+        </button>
+        <button onclick="postDraftNow(false)" id="btn-modal-publish" class="py-2.5 px-4 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded-xl btn-press flex items-center justify-center gap-1.5 shadow-md">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i> Publish Live Now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. RESEARCH SLOT PICKER MODAL -->
+  <div id="modal-slot-picker" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl modal-animate">
+      <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="calendar-plus" class="w-4 h-4 text-brand"></i>
+          <h3 class="font-bold text-sm text-[var(--text-primary)]">Select Slot to Fill</h3>
+        </div>
+        <button onclick="closeModal('modal-slot-picker')" class="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-[var(--text-secondary)]">Choose which queue slot should receive this story hook:</p>
+
+      <div id="slot-picker-list" class="space-y-2">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. SETTINGS & PREFERENCES MODAL -->
+  <div id="modal-settings" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar modal-animate">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="sliders" class="w-4 h-4 text-brand"></i>
+          <h3 class="font-bold text-sm text-[var(--text-primary)]">Settings & Preferences</h3>
+        </div>
+        <button onclick="closeModal('modal-settings')" class="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-surface-elevated)]">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Appearance: Dark / Light / System -->
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-[var(--text-primary)] block">Appearance Theme</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="setTheme('dark')" id="theme-btn-dark" class="p-3 rounded-xl border border-[var(--border-subtle)] flex flex-col items-center gap-1.5 btn-press transition">
+            <i data-lucide="moon" class="w-4 h-4 text-sky-400"></i>
+            <span class="text-xs font-semibold">Dark</span>
+          </button>
+          <button onclick="setTheme('light')" id="theme-btn-light" class="p-3 rounded-xl border border-[var(--border-subtle)] flex flex-col items-center gap-1.5 btn-press transition">
+            <i data-lucide="sun" class="w-4 h-4 text-amber-500"></i>
+            <span class="text-xs font-semibold">Light</span>
+          </button>
+          <button onclick="setTheme('system')" id="theme-btn-system" class="p-3 rounded-xl border border-[var(--border-subtle)] flex flex-col items-center gap-1.5 btn-press transition">
+            <i data-lucide="laptop" class="w-4 h-4 text-brand"></i>
+            <span class="text-xs font-semibold">System</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Motion & Animation Preferences -->
+      <div class="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
+        <label class="text-xs font-semibold text-[var(--text-primary)] block">Motion & Performance</label>
+        <div class="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)]">
+          <div>
+            <span class="text-xs font-medium text-[var(--text-primary)] block">Smooth Microinteractions</span>
+            <span class="text-[10px] text-[var(--text-secondary)]">Card entry transitions and tactile feedback</span>
+          </div>
+          <input type="checkbox" id="toggle-animations" checked onchange="toggleMotion(this.checked)" class="w-4 h-4 accent-brand cursor-pointer">
+        </div>
+      </div>
+
+      <!-- Backend Connection -->
+      <div class="space-y-2.5 pt-2 border-t border-[var(--border-subtle)]">
+        <label class="text-xs font-semibold text-[var(--text-primary)] block">Backend API Connection</label>
+        <div class="space-y-2">
+          <input id="input-api-url" type="text" value="http://localhost:8000" placeholder="http://localhost:8000" class="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-2.5 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-brand">
+          <div class="flex items-center justify-between">
+            <button onclick="testConnection()" class="text-[11px] text-brand hover:underline flex items-center gap-1">
+              <i data-lucide="activity" class="w-3 h-3"></i> Test Latency
+            </button>
+            <span id="test-latency-result" class="text-[11px] text-[var(--text-muted)] font-mono"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Razorpay Payment Integration -->
+      <div class="space-y-2.5 pt-2 border-t border-[var(--border-subtle)]">
+        <label class="text-xs font-semibold text-[var(--text-primary)] block">Payment Gateway (Razorpay)</label>
+        <div class="p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)] space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[var(--text-secondary)]">Gateway:</span>
+            <span class="font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Razorpay Official SDK
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[var(--text-secondary)]">Regional Currencies:</span>
+            <span id="settings-rate-badge" class="font-mono text-[var(--text-primary)] font-medium">INR (₹) · USD ($) · EUR (€)</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[var(--text-secondary)]">Key ID:</span>
+            <span id="settings-key-id" class="font-mono text-[10px] text-[var(--text-muted)] truncate max-w-[150px]">rzp_test_...</span>
+          </div>
+          <button onclick="closeModal('modal-settings'); openPricingModal();" class="w-full mt-1 py-1.5 text-xs text-brand bg-brand/10 hover:bg-brand/20 font-medium rounded-lg text-center transition">
+            View Subscription Plans & Pricing →
+          </button>
+        </div>
+      </div>
+
+      <!-- Connected X Account -->
+      <div class="space-y-2.5 pt-2 border-t border-[var(--border-subtle)]">
+        <label class="text-xs font-semibold text-[var(--text-primary)] block">Connected Account</label>
+        <div class="p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)] space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[var(--text-secondary)]">Provider:</span>
+            <span class="font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              <span>X (Twitter) OAuth 2.0</span>
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[var(--text-secondary)]">Handle:</span>
+            <span id="settings-user-handle" class="font-mono font-bold text-brand">@ezeslucky</span>
+          </div>
+          <button onclick="closeModal('modal-settings'); handleSignOutClick();" class="w-full mt-1 py-2 text-xs text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 font-semibold rounded-lg text-center transition flex items-center justify-center gap-1.5 btn-press">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <span>Sign Out of X</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Desktop Shortcuts Cheat Sheet -->
+      <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-1.5">
+        <span class="font-bold text-[var(--text-primary)] block text-[11px] uppercase tracking-wider">Keyboard Shortcuts</span>
+        <div class="grid grid-cols-2 gap-1 text-[11px]">
+          <div><kbd class="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono">1-4</kbd> Switch Tabs</div>
+          <div><kbd class="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono">/</kbd> Focus Search</div>
+          <div><kbd class="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono">R</kbd> Refresh Data</div>
+          <div><kbd class="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono">Esc</kbd> Close Dialogs</div>
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <button onclick="saveSettings()" class="w-full py-2.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded-xl btn-press shadow-md">
+        Save & Apply Settings
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 4. RAZORPAY SUBSCRIPTION PRICING MODAL ==================== -->
+  <div id="modal-pricing" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full sm:max-w-4xl rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 space-y-4 max-h-[92vh] flex flex-col shadow-2xl modal-animate overflow-y-auto custom-scrollbar">
+      
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between border-b border-[var(--border-subtle)] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+            <i data-lucide="crown" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-base text-[var(--text-primary)]">Subscription Plans & Access</h3>
+              <span id="pricing-current-pill" class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-brand/10 text-brand border border-brand/20">Loading</span>
+            </div>
+            <p class="text-xs text-[var(--text-secondary)]">Unlock autonomous X posting, real-time research, and browser CDP verification</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-pricing')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-surface-elevated)]" aria-label="Close Pricing Modal">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Regional Country & Currency Selector Bar -->
+      <div class="bg-[var(--bg-input)]/60 border border-[var(--border-subtle)] rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center shrink-0">
+            <i data-lucide="globe" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-[var(--text-primary)]">Billing Region:</span>
+              <span id="pricing-region-badge" class="font-semibold text-brand text-xs">IN · India (INR ₹)</span>
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)]">Native regional pricing · Direct Razorpay settlement in advertised currency</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <label for="pricing-country-select" class="text-[11px] font-medium text-[var(--text-secondary)] hidden sm:inline">Country:</label>
+          <select id="pricing-country-select" onchange="onCountryChanged(this.value)" class="bg-[var(--bg-surface)] border border-[var(--border-card)] hover:border-brand/50 text-[var(--text-primary)] text-xs rounded-xl px-3 py-2 font-semibold focus:outline-none focus:border-brand cursor-pointer shadow-sm">
+            <option value="IN">IN · India (INR ₹)</option>
+            <option value="US">US · United States (USD $)</option>
+            <option value="DE">DE · Germany (EUR €)</option>
+            <option value="FR">FR · France (EUR €)</option>
+            <option value="IT">IT · Italy (EUR €)</option>
+            <option value="ES">ES · Spain (EUR €)</option>
+            <option value="NL">NL · Netherlands (EUR €)</option>
+            <option value="IE">IE · Ireland (EUR €)</option>
+            <option value="EU">EU · European Union (EUR €)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Plans Grid (5 Plans: Trial, Monthly, 6-Month, Annual, Lifetime) -->
+      <div id="pricing-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[var(--border-subtle)] text-xs">
+        <div class="flex items-center gap-2 text-[var(--text-muted)]">
+          <i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-500"></i>
+          <span>Official Razorpay SDK · 256-bit SSL encrypted · No hidden fees</span>
+        </div>
+        <button onclick="openHistoryModal()" class="text-xs text-brand hover:underline font-medium flex items-center gap-1 self-start sm:self-auto">
+          <i data-lucide="receipt" class="w-3.5 h-3.5"></i> View Invoices & Receipts
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 5. PAYMENT HISTORY & INVOICES MODAL ==================== -->
+  <div id="modal-history" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full sm:max-w-xl rounded-t-3xl sm:rounded-2xl p-5 space-y-4 max-h-[85vh] flex flex-col shadow-2xl modal-animate overflow-hidden">
+      <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="receipt" class="w-5 h-5 text-brand"></i>
+          <div>
+            <h3 class="font-bold text-sm text-[var(--text-primary)]">Payment Receipts & Invoices</h3>
+            <p class="text-[11px] text-[var(--text-secondary)]">Verified Razorpay ledger transactions</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-history')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-surface-elevated)]">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="history-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 pr-1">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 6. CUSTOMIZE RESEARCH SOURCES MODAL (131+ Sources) ==================== -->
+  <div id="modal-sources" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full max-w-2xl rounded-2xl shadow-2xl max-h-[92vh] flex flex-col custom-scrollbar modal-animate overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="p-4 sm:p-5 border-b border-[var(--border-subtle)] flex items-center justify-between">
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-brand/10 text-brand flex items-center justify-center">
+              <i data-lucide="layers" class="w-4 h-4"></i>
+            </div>
+            <h3 class="font-bold text-sm sm:text-base text-[var(--text-primary)]">Customize Research Sources</h3>
+          </div>
+          <p class="text-xs text-[var(--text-secondary)]">Select from 131+ curated sources across 14 specialized categories</p>
+        </div>
+        <button onclick="closeModal('modal-sources')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-surface-elevated)] transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Search & Category Filters -->
+      <div class="p-4 border-b border-[var(--border-subtle)] space-y-3 bg-[var(--bg-input)]/40">
+        <!-- Search Input -->
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="sources-modal-search" placeholder="Search 131 sources by name, category, or topic (e.g. AI, Python, Security, Cloud)..." oninput="filterModalSources()" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl py-2 pl-9 pr-3 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-brand transition shadow-sm">
+        </div>
+
+        <!-- Category Chips -->
+        <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 text-[11px]" id="modal-category-chips">
+          <!-- Filled dynamically via JS -->
+        </div>
+
+        <!-- Action / Counter bar -->
+        <div class="flex items-center justify-between text-xs pt-1">
+          <span id="modal-sources-counter" class="font-semibold text-brand font-mono">0 / 131 Selected</span>
+          <div class="flex items-center gap-2">
+            <button onclick="selectAllSources()" class="text-xs text-[var(--text-secondary)] hover:text-brand font-medium btn-press">Select All</button>
+            <span class="text-[var(--border-subtle)]">|</span>
+            <button onclick="deselectAllSources()" class="text-xs text-[var(--text-secondary)] hover:text-rose-500 font-medium btn-press">Clear All</button>
+            <span class="text-[var(--border-subtle)]">|</span>
+            <button onclick="restoreDefaultSources()" class="text-xs text-[var(--text-secondary)] hover:text-brand font-medium btn-press">Reset Defaults</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable Sources List -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar max-h-[46vh]" id="modal-sources-list">
+        <!-- Populated via JS -->
+      </div>
+
+      <!-- Custom RSS Feed Section -->
+      <div class="border-t border-[var(--border-subtle)] p-4 bg-[var(--bg-input)]/20 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+            <i data-lucide="rss" class="w-3.5 h-3.5 text-orange-500"></i> Custom RSS / Atom Feeds
+          </span>
+          <span id="custom-feeds-count" class="text-[11px] text-[var(--text-muted)]">0 custom feeds</span>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center gap-2">
+          <input type="text" id="input-custom-feed-name" placeholder="Feed Name (e.g. My Substack)" class="w-full sm:w-1/3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl px-3 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-brand">
+          <input type="url" id="input-custom-feed-url" placeholder="https://example.com/feed.xml" class="w-full sm:flex-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl px-3 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-brand">
+          <button onclick="addCustomFeedFromModal()" class="w-full sm:w-auto text-xs bg-brand/10 hover:bg-brand/20 text-brand px-3.5 py-1.5 rounded-xl font-semibold btn-press flex items-center justify-center gap-1 shrink-0">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Feed
+          </button>
+        </div>
+        <div id="modal-custom-feeds-chips" class="flex flex-wrap gap-1.5 pt-1">
+          <!-- Custom feeds list -->
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 border-t border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-surface)]">
+        <button onclick="closeModal('modal-sources')" class="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press">
+          Cancel
+        </button>
+        <button onclick="saveAndApplySourcesModal()" id="btn-save-sources" class="px-5 py-2 rounded-xl text-xs font-semibold bg-brand hover:bg-brand-hover text-white shadow-sm btn-press flex items-center gap-1.5">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i> Save & Apply (<span id="modal-footer-save-count">39</span>)
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== TOAST NOTIFICATION CONTAINER ==================== -->
+  <div id="toast" class="fixed bottom-20 md:bottom-6 left-1/2 md:left-auto md:right-6 -translate-x-1/2 md:translate-x-0 bg-[var(--bg-surface)] border border-[var(--border-card)] text-[var(--text-primary)] text-xs py-2.5 px-4 rounded-2xl shadow-2xl flex items-center gap-2.5 transition-all duration-300 opacity-0 pointer-events-none translate-y-4 z-50 max-w-sm w-11/12 sm:w-auto">
+    <div id="toast-icon-wrap" class="w-6 h-6 rounded-full flex items-center justify-center shrink-0">
+      <i id="toast-icon" data-lucide="info" class="w-3.5 h-3.5"></i>
+    </div>
+    <span id="toast-msg" class="flex-1 font-medium leading-snug">Notification</span>
+  </div>
+
+  <!-- ==================== CORE JAVASCRIPT APPLICATION ==================== -->
+  <script>
+    // -------------------------------------------------- Application State
+    let API_BASE = localStorage.getItem('tweety_api_base') || (location.origin.includes('http') && !location.origin.includes(':8000') ? 'http://localhost:8000' : location.origin);
+    let currentPlan = null;
+    let editingSlot = null;
+    let pendingResearchHook = null;
+    let rawResearchItems = [];
+    let currentSourceFilter = 'all';
+
+    let currentSubscription = null;
+    let availablePlans = [];
+    let currentExchangeRate = 85.0;
+    let razorpayKeyId = 'rzp_test_placeholder_key_id';
+    let isPro = false;
+    let currentThemeMode = localStorage.getItem('tweety_theme') || 'system';
+
+    // -------------------------------------------------- Theme Engine
+    function initTheme() {
+      applyTheme(currentThemeMode, false);
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        if (currentThemeMode === 'system') {
+          applyTheme('system', true);
+        }
+      });
+    }
+
+    function setTheme(mode, notify = false) {
+      currentThemeMode = mode;
+      localStorage.setItem('tweety_theme', mode);
+      applyTheme(mode, true);
+      if (notify) {
+        showToast(`Theme changed to ${mode.charAt(0).toUpperCase() + mode.slice(1)} Mode`);
+      }
+    }
+
+    function cycleTheme() {
+      const modes = ['dark', 'light', 'system'];
+      const next = modes[(modes.indexOf(currentThemeMode) + 1) % modes.length];
+      setTheme(next, true);
+    }
+
+    function applyTheme(mode, animate = true) {
+      if (animate) {
+        document.documentElement.classList.add('theme-transition');
+        setTimeout(() => document.documentElement.classList.remove('theme-transition'), 250);
+      }
+
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = mode === 'dark' || (mode === 'system' && prefersDark);
+
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#090d16');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f8fafc');
+      }
+
+      const icon = document.getElementById('theme-icon-indicator');
+      if (icon) {
+        if (mode === 'system') icon.setAttribute('data-lucide', 'laptop');
+        else if (mode === 'light') icon.setAttribute('data-lucide', 'sun');
+        else icon.setAttribute('data-lucide', 'moon');
+      }
+
+      ['dark', 'light', 'system'].forEach(m => {
+        const btn = document.getElementById(`theme-btn-${m}`);
+        if (!btn) return;
+        if (m === mode) {
+          btn.className = "p-3 rounded-xl border-2 border-brand bg-brand/10 text-brand flex flex-col items-center gap-1.5 btn-press transition shadow-sm";
+        } else {
+          btn.className = "p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex flex-col items-center gap-1.5 btn-press transition";
+        }
+      });
+
+      lucide.createIcons();
+    }
+
+    function toggleMotion(enabled) {
+      localStorage.setItem('tweety_motion', enabled ? 'true' : 'false');
+      if (enabled) {
+        document.documentElement.classList.remove('reduced-motion');
+      } else {
+        document.documentElement.classList.add('reduced-motion');
+      }
+    }
+
+    // -------------------------------------------------- Toast Notifications
+    let toastTimeout = null;
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-msg');
+      const icon = document.getElementById('toast-icon');
+      const iconWrap = document.getElementById('toast-icon-wrap');
+      
+      text.innerText = msg;
+
+      if (type === 'success' || type === true) {
+        icon.setAttribute('data-lucide', 'check-circle-2');
+        iconWrap.className = 'w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0';
+      } else if (type === 'error' || type === false) {
+        icon.setAttribute('data-lucide', 'alert-circle');
+        iconWrap.className = 'w-6 h-6 rounded-full bg-rose-500/20 text-rose-500 flex items-center justify-center shrink-0';
+      } else {
+        icon.setAttribute('data-lucide', 'info');
+        iconWrap.className = 'w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center shrink-0';
+      }
+
+      lucide.createIcons();
+
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 3400);
+    }
+
+    // -------------------------------------------------- API Layer & Auth Helpers
+    function getAuthToken() {
+      return localStorage.getItem('t_session_token') || '';
+    }
+
+    function setAuthToken(token) {
+      if (token) {
+        localStorage.setItem('t_session_token', token);
+      } else {
+        localStorage.removeItem('t_session_token');
+      }
+    }
+
+    async function apiFetch(endpoint, options = {}) {
+      const url = `${API_BASE}${endpoint}`;
+      const tok = getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      };
+      if (tok) {
+        headers['Authorization'] = `Bearer ${tok}`;
+      }
+      try {
+        const res = await fetch(url, {
+          ...options,
+          credentials: 'include',
+          headers: headers
+        });
+        if (res.status === 401 && !endpoint.startsWith('/api/auth/')) {
+          showAuthPanel('login');
+          throw new Error('Please sign in with your X account to continue.');
+        }
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: res.statusText }));
+          throw new Error(err.detail || 'API request failed');
+        }
+        setConnStatus(true);
+        return await res.json();
+      } catch (e) {
+        setConnStatus(false);
+        throw e;
+      }
+    }
+
+    function setConnStatus(online) {
+      const pill = document.getElementById('conn-pill');
+      if (online) {
+        pill.className = 'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
+        pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span><span id="conn-text" class="hidden sm:inline">Online</span>`;
+      } else {
+        pill.className = 'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20';
+        pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span><span id="conn-text" class="hidden sm:inline">Offline</span>`;
+      }
+    }
+
+    async function testConnection() {
+      const resEl = document.getElementById('test-latency-result');
+      resEl.innerText = 'Testing latency...';
+      const start = performance.now();
+      try {
+        await apiFetch('/api/status');
+        const elapsed = Math.round(performance.now() - start);
+        resEl.innerText = `${elapsed}ms (Active)`;
+        resEl.className = 'text-[11px] text-emerald-500 font-mono';
+        showToast(`Connected to backend in ${elapsed}ms!`, 'success');
+      } catch (e) {
+        resEl.innerText = 'Unreachable';
+        resEl.className = 'text-[11px] text-rose-500 font-mono';
+        showToast('Connection failed: ' + e.message, 'error');
+      }
+    }
+
+    // -------------------------------------------------- Status & Schedule Queue
+    async function loadStatus() {
+      try {
+        const st = await apiFetch('/api/status');
+        const h = st.handle || 'ezeslucky';
+        document.getElementById('handle-badge').innerText = `@${h}`;
+        document.getElementById('stat-handle').innerText = `@${h}`;
+        document.getElementById('stat-chars').innerText = `${st.max_chars || 280} chars`;
+        document.getElementById('stat-day').innerText = `Day ${st.next_day || 1}`;
+        document.getElementById('stat-posts').innerText = `${st.total_posts || 0}`;
+
+        const pLink = document.getElementById('btn-view-profile-x');
+        if (pLink) pLink.href = `https://x.com/${h}`;
+      } catch (e) {
+        console.warn('Failed to load status:', e);
+      }
+    }
+
+    async function loadPlan() {
+      const container = document.getElementById('slots-list');
+      try {
+        const plan = await apiFetch('/api/plan');
+        currentPlan = plan;
+        
+        const d = plan.date ? new Date(plan.date + 'T00:00:00') : new Date();
+        const dateStr = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        document.getElementById('plan-date').innerText = `Schedule for ${dateStr} · Autonomous posting pipeline`;
+        renderSlots(plan.slots || []);
+      } catch (e) {
+        container.innerHTML = `
+          <div class="col-span-full bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-6 text-center text-xs space-y-2 shadow-sm">
+            <i data-lucide="alert-triangle" class="w-8 h-8 text-amber-500 mx-auto"></i>
+            <p class="font-bold text-[var(--text-primary)]">Cannot connect to server</p>
+            <p class="text-[var(--text-secondary)]">Start the server with <code class="text-brand font-mono">python scripts/server.py</code></p>
+            <button onclick="refreshAll(true)" class="mt-2 px-3.5 py-1.5 bg-brand text-white rounded-xl text-xs font-semibold btn-press">
+              Retry Connection
+            </button>
+          </div>`;
+        lucide.createIcons();
+      }
+    }
+
+    function renderSlots(slots) {
+      const container = document.getElementById('slots-list');
+      container.innerHTML = '';
+
+      if (!slots || slots.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center py-12 text-xs text-[var(--text-muted)]">No queue slots planned for today. Click "Re-plan Slots" to generate today's schedule.</div>`;
+        return;
+      }
+
+      let postedCount = 0;
+      slots.forEach(s => { if (s.posted) postedCount++; });
+      document.getElementById('queue-progress-text').innerText = `${postedCount}/${slots.length} posted`;
+      document.getElementById('queue-progress-bar').style.width = `${(postedCount / slots.length) * 100}%`;
+
+      slots.forEach((s, idx) => {
+        const isPosted = s.posted;
+        const hasText = !!(s.text && s.text.trim());
+        const isAiUpdate = s.kind === 'ai_update';
+        
+        let badgeHtml = '';
+        if (isPosted) {
+          badgeHtml = `
+            <span class="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
+              <i data-lucide="check-circle" class="w-3 h-3"></i> POSTED
+            </span>`;
+        } else if (hasText) {
+          badgeHtml = `
+            <span class="inline-flex items-center gap-1 text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 px-2 py-0.5 rounded-full font-bold">
+              <i data-lucide="sparkles" class="w-3 h-3"></i> READY
+            </span>`;
+        } else {
+          badgeHtml = `
+            <span class="inline-flex items-center gap-1 text-[10px] bg-[var(--bg-input)] text-[var(--text-muted)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-full font-medium">
+              EMPTY
+            </span>`;
+        }
+
+        const dueFormatted = s.due_at ? s.due_at.substring(11, 16) : s.slot;
+
+        const card = document.createElement('div');
+        card.className = "bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-sm card-lift flex flex-col justify-between";
+        card.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-[var(--bg-input)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-primary)] font-mono font-bold text-xs">
+                  ${idx + 1}
+                </div>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-mono text-sm font-bold text-[var(--text-primary)]">${s.slot}</span>
+                    ${isAiUpdate ? `<span class="text-[9px] bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20 px-1.5 py-0.2 rounded font-semibold">AI UPDATE</span>` : `<span class="text-[9px] bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20 px-1.5 py-0.2 rounded font-medium">VALUE POST</span>`}
+                  </div>
+                  <span class="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
+                    <i data-lucide="clock" class="w-3 h-3"></i> due ~${dueFormatted}
+                  </span>
+                </div>
+              </div>
+              ${badgeHtml}
+            </div>
+
+            <div class="text-xs text-[var(--text-primary)] bg-[var(--bg-surface-subtle)] rounded-xl p-3 font-sans leading-relaxed border border-[var(--border-subtle)] whitespace-pre-wrap min-h-[72px]">
+              ${hasText ? escapeHtml(s.text) : '<span class="italic text-[var(--text-muted)] flex items-center gap-1"><i data-lucide="pencil-line" class="w-3.5 h-3.5"></i> Slot empty. Click Edit to write or pick from Research.</span>'}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)]">
+            <span class="text-[10px] text-[var(--text-muted)] font-mono font-medium">
+              ${hasText ? `${s.text.length}/280 chars` : '0 chars'}
+            </span>
+            <div class="flex items-center gap-2">
+              ${!isPosted ? `
+                <button onclick="openEditModal('${s.slot}')" class="text-xs bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] font-medium btn-press flex items-center gap-1 shadow-sm">
+                  <i data-lucide="edit-2" class="w-3 h-3 text-brand"></i> Edit
+                </button>
+                ${hasText ? `
+                  <button onclick="triggerSlotPost('${s.slot}')" class="text-xs bg-brand hover:bg-brand-hover text-white font-semibold px-3.5 py-1.5 rounded-xl btn-press flex items-center gap-1 shadow-sm">
+                    <i data-lucide="send" class="w-3 h-3"></i> Publish
+                  </button>
+                ` : ''}
+              ` : `
+                ${s.tweet_url ? `
+                  <a href="${s.tweet_url}" target="_blank" class="text-xs font-semibold text-brand hover:underline flex items-center gap-1 btn-press">
+                    Live on X <i data-lucide="external-link" class="w-3 h-3"></i>
+                  </a>
+                ` : `
+                  <span class="text-xs text-emerald-500 flex items-center gap-1">
+                    <i data-lucide="check" class="w-3 h-3"></i> Verified Live
+                  </span>
+                `}
+              `}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    // =========================================================================
+    // RESEARCH ENGINE: 131+ Sources, LinkedIn Integration & 1s Live Refresh
+    // =========================================================================
+
+    let isLinkedInConfigured = false;
+    let isLiveUpdatesEnabled = false;
+    let liveUpdateTimer = null;
+    let lastKnownRevision = '';
+    let isJobCollecting = false;
+
+    // Sources Catalog State
+    let catalogSources = [];
+    let catalogCategories = [];
+    let userSelectedSources = new Set();
+    let userCustomFeeds = [];
+    let activeModalCategory = 'all';
+
+    async function loadResearch(silent = false) {
+      const container = document.getElementById('research-items');
+      if (!silent) {
+        container.innerHTML = `
+          <div class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div class="h-28 bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl animate-pulse"></div>
+            <div class="h-28 bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl animate-pulse"></div>
+          </div>`;
+      }
+      try {
+        const data = await apiFetch('/api/research/latest');
+        rawResearchItems = data.items || [];
+        isLinkedInConfigured = !!data.is_linkedin_configured;
+
+        const summaryEl = document.getElementById('research-summary');
+        if (summaryEl) {
+          summaryEl.innerText = `${rawResearchItems.length} stories collected (${data.date || 'Today'}) from 131+ curated sources`;
+        }
+
+        filterResearch(silent);
+      } catch (e) {
+        if (!silent) {
+          container.innerHTML = `
+            <div class="col-span-full bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-8 text-center text-xs text-[var(--text-secondary)] space-y-2">
+              <i data-lucide="newspaper" class="w-8 h-8 text-[var(--text-muted)] mx-auto"></i>
+              <p class="font-bold">No research collected yet</p>
+              <p>Click "Scrape Fresh Stories" to collect the latest tech stories.</p>
+            </div>`;
+          lucide.createIcons();
+        }
+      }
+    }
+
+    function setResearchFilter(source) {
+      currentSourceFilter = source;
+      document.querySelectorAll('#source-filters button').forEach(b => {
+        if (b.getAttribute('data-source') === source) {
+          b.className = "filter-pill px-3 py-1 text-xs font-semibold rounded-full bg-brand text-white btn-press shadow-sm flex items-center gap-1";
+        } else {
+          b.className = "filter-pill px-3 py-1 text-xs font-medium rounded-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] btn-press flex items-center gap-1";
+        }
+      });
+      filterResearch();
+    }
+
+    function clearResearchSearch() {
+      const input = document.getElementById('research-search');
+      input.value = '';
+      document.getElementById('research-search-clear').classList.add('hidden');
+      filterResearch();
+    }
+
+    function filterResearch(silent = false) {
+      const query = (document.getElementById('research-search')?.value || '').toLowerCase().trim();
+      const sort = document.getElementById('research-sort')?.value || 'score';
+      const clearBtn = document.getElementById('research-search-clear');
+      if (clearBtn) clearBtn.classList.toggle('hidden', query.length === 0);
+
+      let filtered = rawResearchItems.filter(item => {
+        const s = (item.source || '').toLowerCase();
+        const sid = (item.source_id || '').toLowerCase();
+
+        if (currentSourceFilter === 'Hacker News') {
+          if (!s.includes('hacker news') && !s.includes('hn') && sid !== 'hn') return false;
+        } else if (currentSourceFilter === 'Reddit') {
+          if (!s.includes('reddit') && !s.includes('r/') && !sid.includes('reddit')) return false;
+        } else if (currentSourceFilter === 'RSS') {
+          if (s.includes('reddit') || s.includes('hacker news') || s === 'hn' || s === 'linkedin' || sid === 'linkedin') return false;
+        } else if (currentSourceFilter === 'LinkedIn') {
+          if (s !== 'linkedin' && !s.includes('linkedin') && sid !== 'linkedin') return false;
+        }
+
+        if (query) {
+          const matchTitle = (item.title || '').toLowerCase().includes(query);
+          const matchSource = (item.source || '').toLowerCase().includes(query);
+          const matchCategory = (item.category || '').toLowerCase().includes(query);
+          return matchTitle || matchSource || matchCategory;
+        }
+        return true;
+      });
+
+      if (sort === 'score') {
+        filtered.sort((a, b) => (b.score || 0) - (a.score || 0));
+      } else if (sort === 'comments') {
+        filtered.sort((a, b) => (b.comments || 0) - (a.comments || 0));
+      }
+
+      renderResearch(filtered, silent);
+    }
+
+    function renderResearch(items, preserveScroll = false) {
+      const container = document.getElementById('research-items');
+      if (!container) return;
+
+      const prevScrollY = preserveScroll ? window.scrollY : 0;
+
+      // Special case: LinkedIn tab when unconfigured or empty
+      if (currentSourceFilter === 'LinkedIn' && (!items || items.length === 0)) {
+        container.innerHTML = `
+          <div class="col-span-full bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
+            <div class="w-12 h-12 rounded-2xl bg-[#0a66c2]/10 border border-[#0a66c2]/20 flex items-center justify-center mx-auto text-[#0a66c2]">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+              </svg>
+            </div>
+            <div class="max-w-md mx-auto space-y-1.5">
+              <h3 class="text-sm sm:text-base font-bold text-[var(--text-primary)]">Official LinkedIn Integration</h3>
+              <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
+                In strict compliance with professional terms of service, TweetyTweets connects directly via authorized OAuth2 access tokens. We never bypass auth or run illegal scrapers.
+              </p>
+            </div>
+            <div class="bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-3.5 max-w-md mx-auto text-left space-y-2 text-xs">
+              <div class="flex items-center gap-2 text-amber-500 font-semibold text-[11px]">
+                <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                <span>Setup Required: LINKEDIN_ACCESS_TOKEN</span>
+              </div>
+              <p class="text-[11px] text-[var(--text-muted)] leading-normal">
+                To research your posts or organization updates, set <code class="font-mono text-brand bg-brand/10 px-1 py-0.5 rounded">LINKEDIN_ACCESS_TOKEN</code> in your environment or <code class="font-mono text-[var(--text-primary)]">.env</code> file.
+              </p>
+              <div class="pt-1 flex items-center justify-between text-[11px]">
+                <span class="text-[var(--text-muted)]">OAuth 2.0 / REST v2</span>
+                <button onclick="openCustomizeSourcesModal()" class="text-brand font-semibold hover:underline flex items-center gap-1">
+                  Configure Sources <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                </button>
+              </div>
+            </div>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      if (!items || items.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-8 text-center text-xs text-[var(--text-muted)] space-y-1">
+            <i data-lucide="search-x" class="w-6 h-6 mx-auto text-[var(--text-muted)]"></i>
+            <p>No research stories match your filters or query.</p>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = '';
+      items.forEach(item => {
+        const s = (item.source || '').toLowerCase();
+        let badgeColor = 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+        let sourceIconHtml = '';
+
+        if (s.includes('hacker news') || s === 'hn') {
+          badgeColor = 'bg-[#ff6600]/10 text-[#ff6600] border-[#ff6600]/30';
+          sourceIconHtml = '<span class="font-bold text-[9px] mr-1 bg-[#ff6600] text-white px-1 rounded-sm">Y</span>';
+        } else if (s.includes('reddit') || s.startsWith('r/')) {
+          badgeColor = 'bg-[#ff4500]/10 text-[#ff4500] border-[#ff4500]/30';
+        } else if (s === 'linkedin' || s.includes('linkedin')) {
+          badgeColor = 'bg-[#0a66c2]/10 text-[#0a66c2] border-[#0a66c2]/30';
+          sourceIconHtml = `<svg class="w-2.5 h-2.5 inline mr-1 text-[#0a66c2]" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>`;
+        }
+
+        const timeAgo = item.created ? formatTimeAgo(item.created) : '';
+
+        const card = document.createElement('div');
+        card.className = "bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 space-y-2.5 shadow-sm card-lift flex flex-col justify-between";
+        card.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-semibold px-2 py-0.5 rounded-full border text-[10px] ${badgeColor} flex items-center">
+                ${sourceIconHtml}
+                ${escapeHtml(item.source)}
+              </span>
+              <span class="text-[var(--text-muted)] font-mono flex items-center gap-1.5">
+                ${item.score ? `<span>🔥 ${item.score} pts</span>` : ''}
+                ${item.comments ? `<span>💬 ${item.comments}</span>` : ''}
+                ${timeAgo ? `<span class="text-[10px] text-[var(--text-muted)]">⏱ ${timeAgo}</span>` : ''}
+              </span>
+            </div>
+
+            <a href="${item.url}" target="_blank" class="text-xs sm:text-sm font-semibold text-[var(--text-primary)] hover:text-brand transition block leading-snug">
+              ${escapeHtml(item.title)}
+            </a>
+
+            ${item.extra?.summary ? `<p class="text-[11px] text-[var(--text-secondary)] line-clamp-2 leading-relaxed">${escapeHtml(item.extra.summary)}</p>` : ''}
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)] text-xs">
+            <a href="${item.url}" target="_blank" class="text-[11px] text-[var(--text-muted)] hover:text-brand flex items-center gap-1 font-medium">
+              Read source <i data-lucide="external-link" class="w-3 h-3"></i>
+            </a>
+            <button onclick="promptUseInDraft(${JSON.stringify(escapeHtml(item.title)).replace(/"/g, '&quot;')})" class="text-xs bg-brand/10 hover:bg-brand/20 text-brand px-3 py-1.5 rounded-xl font-semibold btn-press flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3 h-3"></i> Use in Draft
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+      if (preserveScroll && prevScrollY) {
+        window.scrollTo({ top: prevScrollY, behavior: 'instant' });
+      }
+    }
+
+    function formatTimeAgo(isoString) {
+      try {
+        const dt = new Date(isoString);
+        const diffMs = Date.now() - dt.getTime();
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        if (diffHours < 1) return '<1h';
+        if (diffHours < 24) return `${diffHours}h`;
+        const diffDays = Math.floor(diffHours / 24);
+        return `${diffDays}d`;
+      } catch (e) {
+        return '';
+      }
+    }
+
+    // -------------------------------------------------- Background Scraping & Job Progress
+    async function collectResearch() {
+      const btn = document.getElementById('btn-collect-research');
+      const progressBanner = document.getElementById('research-job-progress');
+      const progressMsg = document.getElementById('job-progress-msg');
+      const progressSub = document.getElementById('job-progress-sub');
+      const progressStatus = document.getElementById('job-progress-status');
+
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Scraping...`;
+      btn.disabled = true;
+
+      if (progressBanner) {
+        progressBanner.classList.remove('hidden');
+        progressMsg.innerText = "Triggering research collection pipeline...";
+        progressSub.innerText = "Querying selected sources (Hacker News, Reddit, RSS, LinkedIn)";
+        progressStatus.innerText = "Running";
+        progressStatus.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brand/20 text-brand shrink-0";
+      }
+
+      try {
+        const startRes = await apiFetch('/api/research/collect', { method: 'POST', body: JSON.stringify({}) });
+        if (startRes.busy) {
+          showToast('A research collection job is already running.', 'info');
+        } else {
+          showToast(`Started scraping ${startRes.sources_count || 'selected'} sources...`, 'info');
+        }
+
+        const jobId = startRes.job_id;
+        // Poll job status until completed
+        let completed = false;
+        let pollCount = 0;
+        while (!completed && pollCount < 45) {
+          pollCount++;
+          await new Promise(r => setTimeout(r, 1200));
+
+          const jobData = await apiFetch(`/api/research/jobs/${jobId}`);
+          const job = jobData.job || {};
+          if (job.status === 'completed') {
+            completed = true;
+            if (progressMsg) progressMsg.innerText = `Collection complete! Found ${job.stories_found || 0} stories (${job.new_stories || 0} new).`;
+            if (progressSub) progressSub.innerText = `Sources completed: ${(job.sources_completed || []).join(', ') || 'All'}`;
+            if (progressStatus) {
+              progressStatus.innerText = "Completed";
+              progressStatus.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-500 shrink-0";
+            }
+            showToast(`Scrape completed! ${job.new_stories || 0} new stories added.`, 'success');
+            await loadResearch(true);
+            setTimeout(() => {
+              if (progressBanner) progressBanner.classList.add('hidden');
+            }, 4000);
+            break;
+          } else if (job.status === 'failed') {
+            completed = true;
+            if (progressMsg) progressMsg.innerText = `Scrape encountered error: ${job.error_message || 'Job failed'}`;
+            if (progressStatus) {
+              progressStatus.innerText = "Failed";
+              progressStatus.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-500 shrink-0";
+            }
+            showToast('Research job failed: ' + (job.error_message || 'Unknown error'), 'error');
+            break;
+          } else {
+            if (progressMsg) progressMsg.innerText = `Collecting stories across sources... (elapsed ${pollCount * 1.2 | 0}s)`;
+          }
+        }
+      } catch (e) {
+        showToast('Research scrape failed: ' + e.message, 'error');
+        if (progressBanner) progressBanner.classList.add('hidden');
+      } finally {
+        btn.innerHTML = `<i data-lucide="compass" class="w-3.5 h-3.5"></i> Scrape Fresh Stories`;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    // -------------------------------------------------- Live Auto-Refresh Engine (1-Second Polling)
+    function toggleLiveUpdates() {
+      isLiveUpdatesEnabled = !isLiveUpdatesEnabled;
+      localStorage.setItem('tweety_live_updates', isLiveUpdatesEnabled ? 'true' : 'false');
+      updateLiveToggleUI();
+
+      if (isLiveUpdatesEnabled) {
+        startLiveRefreshTimer();
+        showToast('Live Updates ON: Checking for fresh stories every second.', 'success');
+      } else {
+        stopLiveRefreshTimer();
+        showToast('Live Updates OFF.', 'info');
+      }
+    }
+
+    function updateLiveToggleUI() {
+      const dot = document.getElementById('live-indicator-dot');
+      const text = document.getElementById('live-indicator-text');
+      const btn = document.getElementById('btn-live-toggle');
+
+      if (!btn) return;
+
+      if (isLiveUpdatesEnabled) {
+        btn.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 transition btn-press";
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+        if (text) text.innerText = "Live: ON (1s)";
+      } else {
+        btn.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border border-[var(--border-subtle)] bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition btn-press";
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-neutral-400";
+        if (text) text.innerText = "Live: OFF";
+      }
+    }
+
+    function startLiveRefreshTimer() {
+      stopLiveRefreshTimer();
+      liveUpdateTimer = setInterval(checkLiveResearchStatus, 1000);
+    }
+
+    function stopLiveRefreshTimer() {
+      if (liveUpdateTimer) {
+        clearInterval(liveUpdateTimer);
+        liveUpdateTimer = null;
+      }
+    }
+
+    async function checkLiveResearchStatus() {
+      // Pause if tab is hidden or user navigated to Queue/Verify/Status
+      if (document.hidden || currentTab !== 'research') return;
+
+      try {
+        const statusData = await apiFetch('/api/research/status');
+        if (!statusData) return;
+
+        // Check if revision changed
+        if (statusData.revision && statusData.revision !== lastKnownRevision) {
+          lastKnownRevision = statusData.revision;
+          // Refresh silently preserving user scroll & query
+          await loadResearch(true);
+        }
+
+        // Keep job indicator updated if background job is running
+        const progressBanner = document.getElementById('research-job-progress');
+        if (statusData.is_collecting) {
+          if (progressBanner && progressBanner.classList.contains('hidden')) {
+            progressBanner.classList.remove('hidden');
+          }
+        }
+      } catch (e) {
+        // Silent failure for high-frequency poll
+      }
+    }
+
+    // -------------------------------------------------- 131+ Sources Customization Modal
+    async function openCustomizeSourcesModal() {
+      const modal = document.getElementById('modal-sources');
+      modal.classList.remove('hidden');
+
+      try {
+        const [sourcesData, prefsData] = await Promise.all([
+          apiFetch('/api/research/sources'),
+          apiFetch('/api/research/preferences')
+        ]);
+
+        catalogSources = sourcesData.sources || [];
+        catalogCategories = sourcesData.categories || [];
+        const prefs = prefsData.preferences || {};
+        userSelectedSources = new Set(prefs.selected_sources || []);
+        userCustomFeeds = prefs.custom_feeds || [];
+
+        renderModalCategories();
+        renderModalSourcesList();
+        renderModalCustomFeeds();
+        updateModalCounter();
+      } catch (e) {
+        showToast('Failed to load sources catalog: ' + e.message, 'error');
+      }
+      lucide.createIcons();
+    }
+
+    function renderModalCategories() {
+      const container = document.getElementById('modal-category-chips');
+      if (!container) return;
+
+      let html = `<button onclick="setModalCategory('all')" class="px-2.5 py-1 rounded-full text-xs font-semibold btn-press transition shrink-0 ${activeModalCategory === 'all' ? 'bg-brand text-white' : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'}">All (${catalogSources.length})</button>`;
+
+      catalogCategories.forEach(cat => {
+        const count = catalogSources.filter(s => s.category === cat).length;
+        const isActive = activeModalCategory === cat;
+        html += `<button onclick="setModalCategory(${JSON.stringify(cat).replace(/"/g, '&quot;')})" class="px-2.5 py-1 rounded-full text-xs font-medium btn-press transition shrink-0 ${isActive ? 'bg-brand text-white font-semibold' : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'}">${escapeHtml(cat)} (${count})</button>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function setModalCategory(cat) {
+      activeModalCategory = cat;
+      renderModalCategories();
+      filterModalSources();
+    }
+
+    function filterModalSources() {
+      const q = (document.getElementById('sources-modal-search')?.value || '').toLowerCase().trim();
+      const filtered = catalogSources.filter(s => {
+        if (activeModalCategory !== 'all' && s.category !== activeModalCategory) return false;
+        if (q) {
+          const matchName = (s.name || '').toLowerCase().includes(q);
+          const matchDesc = (s.description || '').toLowerCase().includes(q);
+          const matchCat = (s.category || '').toLowerCase().includes(q);
+          return matchName || matchDesc || matchCat;
+        }
+        return true;
+      });
+      renderModalSourcesList(filtered);
+    }
+
+    function renderModalSourcesList(items = null) {
+      const list = document.getElementById('modal-sources-list');
+      if (!list) return;
+
+      const sourcesToRender = items || (activeModalCategory === 'all' ? catalogSources : catalogSources.filter(s => s.category === activeModalCategory));
+
+      if (sourcesToRender.length === 0) {
+        list.innerHTML = `<div class="p-6 text-center text-xs text-[var(--text-muted)]">No sources match your search.</div>`;
+        return;
+      }
+
+      list.innerHTML = sourcesToRender.map(s => {
+        const isChecked = userSelectedSources.has(s.id);
+        const isAuthReq = s.requires_auth && !s.is_configured;
+        const statusBadge = isAuthReq 
+          ? `<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Requires Token</span>`
+          : (isChecked 
+              ? `<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Active</span>`
+              : `<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--bg-input)] text-[var(--text-muted)] border border-[var(--border-subtle)]">Available</span>`);
+
+        return `
+          <div class="flex items-center justify-between p-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-brand/40 transition">
+            <label class="flex items-center gap-2.5 flex-1 cursor-pointer min-w-0 pr-2">
+              <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSourceSelection('${s.id}', this.checked)" class="w-4 h-4 accent-brand rounded cursor-pointer shrink-0">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-semibold text-[var(--text-primary)] truncate">${escapeHtml(s.name)}</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-[var(--bg-input)] text-[var(--text-secondary)] font-mono shrink-0">${escapeHtml(s.category)}</span>
+                </div>
+                <p class="text-[11px] text-[var(--text-muted)] truncate mt-0.5">${escapeHtml(s.description || s.url || '')}</p>
+              </div>
+            </label>
+            <div class="shrink-0 flex items-center gap-1.5">
+              ${statusBadge}
+              ${s.url ? `<a href="${s.url}" target="_blank" class="p-1 text-[var(--text-muted)] hover:text-brand" title="Visit website"><i data-lucide="external-link" class="w-3.5 h-3.5"></i></a>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function toggleSourceSelection(id, checked) {
+      if (checked) {
+        userSelectedSources.add(id);
+      } else {
+        userSelectedSources.delete(id);
+      }
+      updateModalCounter();
+    }
+
+    function selectAllSources() {
+      catalogSources.forEach(s => userSelectedSources.add(s.id));
+      renderModalSourcesList();
+      updateModalCounter();
+    }
+
+    function deselectAllSources() {
+      userSelectedSources.clear();
+      renderModalSourcesList();
+      updateModalCounter();
+    }
+
+    function restoreDefaultSources() {
+      userSelectedSources.clear();
+      catalogSources.filter(s => s.default_enabled).forEach(s => userSelectedSources.add(s.id));
+      renderModalSourcesList();
+      updateModalCounter();
+      showToast('Restored 39 factory curated default sources.', 'info');
+    }
+
+    function updateModalCounter() {
+      const count = userSelectedSources.size;
+      const counterEl = document.getElementById('modal-sources-counter');
+      const footerCount = document.getElementById('modal-footer-save-count');
+      const headerBtnText = document.getElementById('btn-sources-count-text');
+
+      if (counterEl) counterEl.innerText = `${count} / ${catalogSources.length} Selected`;
+      if (footerCount) footerCount.innerText = count;
+      if (headerBtnText) headerBtnText.innerText = `Customize Sources (${count})`;
+    }
+
+    function renderModalCustomFeeds() {
+      const chips = document.getElementById('modal-custom-feeds-chips');
+      const counter = document.getElementById('custom-feeds-count');
+      if (!chips) return;
+
+      if (counter) counter.innerText = `${userCustomFeeds.length} custom feeds`;
+
+      if (userCustomFeeds.length === 0) {
+        chips.innerHTML = `<span class="text-[11px] text-[var(--text-muted)] italic">No custom feeds added yet.</span>`;
+        return;
+      }
+
+      chips.innerHTML = userCustomFeeds.map((feed, idx) => `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-[11px] font-medium">
+          <i data-lucide="rss" class="w-3 h-3"></i>
+          <span>${escapeHtml(feed.name)}</span>
+          <button onclick="removeCustomFeed(${idx})" class="p-0.5 hover:text-rose-500 transition"><i data-lucide="x" class="w-3 h-3"></i></button>
+        </span>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function addCustomFeedFromModal() {
+      const nameInput = document.getElementById('input-custom-feed-name');
+      const urlInput = document.getElementById('input-custom-feed-url');
+      const name = nameInput.value.trim();
+      const url = urlInput.value.trim();
+
+      if (!name || !url) {
+        showToast('Please enter both feed name and valid RSS/Atom URL.', 'error');
+        return;
+      }
+
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        showToast('Feed URL must start with http:// or https://', 'error');
+        return;
+      }
+
+      userCustomFeeds.push({ name, url });
+      nameInput.value = '';
+      urlInput.value = '';
+      renderModalCustomFeeds();
+      showToast(`Added custom feed "${name}".`, 'success');
+    }
+
+    function removeCustomFeed(idx) {
+      userCustomFeeds.splice(idx, 1);
+      renderModalCustomFeeds();
+    }
+
+    async function saveAndApplySourcesModal() {
+      const btn = document.getElementById('btn-save-sources');
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Saving...`;
+      btn.disabled = true;
+
+      try {
+        const payload = {
+          selected_sources: Array.from(userSelectedSources),
+          custom_feeds: userCustomFeeds
+        };
+
+        await apiFetch('/api/research/preferences', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+
+        showToast(`Saved ${userSelectedSources.size} sources & ${userCustomFeeds.length} custom feeds.`, 'success');
+        updateModalCounter();
+        closeModal('modal-sources');
+
+        // Automatically trigger collection for new preferences
+        collectResearch();
+      } catch (e) {
+        showToast('Failed to save preferences: ' + e.message, 'error');
+      } finally {
+        btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> Save & Apply (<span id="modal-footer-save-count">${userSelectedSources.size}</span>)`;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    // -------------------------------------------------- Research Hook Insertion
+    function promptUseInDraft(title) {
+      pendingResearchHook = title;
+      const list = document.getElementById('slot-picker-list');
+      list.innerHTML = '';
+
+      if (!currentPlan?.slots || currentPlan.slots.length === 0) {
+        showToast('No slots planned. Creating plan...', 'info');
+        makeNewPlan();
+        return;
+      }
+
+      currentPlan.slots.forEach(s => {
+        const item = document.createElement('button');
+        item.className = "w-full p-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-input)] hover:border-brand flex items-center justify-between text-xs btn-press";
+        item.onclick = () => fillSlotWithHook(s.slot);
+        item.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="font-mono font-bold text-[var(--text-primary)]">${s.slot}</span>
+            <span class="text-[10px] text-[var(--text-secondary)]">${s.kind === 'ai_update' ? 'AI Update' : 'Value'}</span>
+          </div>
+          <span class="text-[10px] ${s.posted ? 'text-emerald-500' : (s.text ? 'text-sky-500' : 'text-[var(--text-muted)]')}">
+            ${s.posted ? 'Posted' : (s.text ? 'Has Draft' : 'Empty')}
+          </span>
+        `;
+        list.appendChild(item);
+      });
+
+      document.getElementById('modal-slot-picker').classList.remove('hidden');
+    }
+
+    function fillSlotWithHook(slot) {
+      closeModal('modal-slot-picker');
+      switchTab('queue');
+      openEditModal(slot);
+      const editor = document.getElementById('modal-text');
+      editor.value = `${pendingResearchHook}\n\n`;
+      updateCharCount();
+      showToast(`Inserted story hook into Slot ${slot}`);
+    }
+
+    // -------------------------------------------------- Draft Editor Modal Logic
+    function openEditModal(slot) {
+      editingSlot = slot;
+      const s = currentPlan?.slots?.find(x => x.slot === slot);
+      document.getElementById('modal-slot-title').innerText = `Edit Draft — Slot ${slot}`;
+      document.getElementById('modal-slot-sub').innerText = s?.kind === 'ai_update' ? 'Daily AI Update Slot' : 'Standard Value Post Slot';
+      document.getElementById('modal-text').value = s?.text || '';
+      setEditorView('edit');
+      updateCharCount();
+      document.getElementById('modal-edit').classList.remove('hidden');
+    }
+
+    function openComposeStandalone() {
+      switchTab('queue');
+      const emptySlot = currentPlan?.slots?.find(s => !s.posted && !s.text) || currentPlan?.slots?.[0];
+      if (emptySlot) {
+        openEditModal(emptySlot.slot);
+      }
+    }
+
+    function setEditorView(view) {
+      const editView = document.getElementById('editor-view-input');
+      const previewView = document.getElementById('editor-view-preview');
+      const btnEdit = document.getElementById('btn-view-edit');
+      const btnPreview = document.getElementById('btn-view-preview');
+      const simText = document.getElementById('live-simulated-tweet');
+
+      if (view === 'edit') {
+        editView.classList.remove('hidden');
+        previewView.classList.add('hidden');
+        btnEdit.className = "px-2.5 py-1 rounded-md font-semibold bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm";
+        btnPreview.className = "px-2.5 py-1 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)]";
+      } else {
+        const val = document.getElementById('modal-text').value;
+        simText.innerText = val || '(Post draft is currently empty)';
+        editView.classList.add('hidden');
+        previewView.classList.remove('hidden');
+        btnPreview.className = "px-2.5 py-1 rounded-md font-semibold bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm";
+        btnEdit.className = "px-2.5 py-1 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)]";
+      }
+    }
+
+    function updateCharCount() {
+      const len = document.getElementById('modal-text').value.length;
+      document.getElementById('modal-char-count').innerText = `${len} / 280`;
+      const rem = 280 - len;
+      const remEl = document.getElementById('modal-char-remaining');
+      const ring = document.getElementById('char-ring');
+
+      remEl.innerText = `${rem} left`;
+      
+      const pct = Math.min(100, Math.max(0, (len / 280) * 100));
+      ring.style.strokeDasharray = `${pct}, 100`;
+
+      if (rem < 0) {
+        remEl.className = 'text-rose-500 font-mono font-bold text-xs';
+        ring.className = 'text-rose-500 transition-all duration-200';
+      } else if (rem < 25) {
+        remEl.className = 'text-amber-500 font-mono font-bold text-xs';
+        ring.className = 'text-amber-500 transition-all duration-200';
+      } else {
+        remEl.className = 'text-emerald-500 font-mono font-bold text-xs';
+        ring.className = 'text-brand transition-all duration-200';
+      }
+    }
+
+    function insertTemplate(type) {
+      const ed = document.getElementById('modal-text');
+      if (type === 'hook') {
+        ed.value = "The best way to build AI agents is grounding them on real DOM verification.\n\n";
+      } else if (type === 'bullets') {
+        ed.value = "• DeepSeek v4.1 released\n• Anthropic solves 26-year-old math challenge\n• Local LLMs hitting 120 tokens/sec on consumer hardware";
+      } else if (type === 'break') {
+        ed.value += "\n\n";
+      }
+      updateCharCount();
+    }
+
+    async function saveDraft() {
+      const text = document.getElementById('modal-text').value.trim();
+      if (!editingSlot) return;
+      try {
+        await apiFetch('/api/draft/fill', {
+          method: 'POST',
+          body: JSON.stringify({ slot: editingSlot, text })
+        });
+        showToast(`Slot ${editingSlot} draft saved!`, 'success');
+        closeModal('modal-edit');
+        loadPlan();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function postDraftNow(dryRun = false) {
+      if (!editingSlot) return;
+      const text = document.getElementById('modal-text').value.trim();
+      if (!text) {
+        showToast('Draft is empty. Write your post first!', 'error');
+        return;
+      }
+
+      if (!confirm(`Publish live to X via real browser session for slot ${editingSlot}?`)) return;
+
+      const btn = document.getElementById('btn-modal-publish');
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Publishing...`;
+      btn.disabled = true;
+
+      showToast('Opening browser CDP & composing post...', 'info');
+      try {
+        const res = await apiFetch('/api/post/trigger', {
+          method: 'POST',
+          body: JSON.stringify({ slot: editingSlot, text, dry_run: dryRun })
+        });
+
+        if (res.ok && res.result?.posted) {
+          showToast('🎉 Published and verified live on profile!', 'success');
+          closeModal('modal-edit');
+        } else {
+          showToast(res.error || 'Published with note. Check Verify tab!', 'error');
+        }
+        await loadPlan();
+        reloadShots();
+      } catch (e) {
+        showToast('Publish failed: ' + e.message, 'error');
+      } finally {
+        btn.innerHTML = `<i data-lucide="send" class="w-3.5 h-3.5"></i> Publish Live Now`;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    async function triggerSlotPost(slot) {
+      editingSlot = slot;
+      const s = currentPlan?.slots?.find(x => x.slot === slot);
+      if (s && s.text) {
+        document.getElementById('modal-text').value = s.text;
+        postDraftNow(false);
+      }
+    }
+
+    async function makeNewPlan() {
+      if (!confirm("Re-plan today's slots with fresh jitter times?")) return;
+      const btn = document.getElementById('btn-replan');
+      btn.disabled = true;
+      try {
+        await apiFetch('/api/plan/make', { method: 'POST' });
+        showToast('Generated fresh slot schedule!', 'success');
+        await loadPlan();
+      } catch (e) {
+        showToast(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function triggerQuickCheck() {
+      showToast('Checking schedule gate...', 'info');
+      try {
+        const d = await apiFetch('/api/due');
+        if (d.idle) {
+          showToast('Schedule Gate: IDLE (No posts due right now)', 'info');
+        } else {
+          showToast(`Schedule Gate: Slot ${d.draft.slot} is DUE!`, 'success');
+        }
+      } catch (e) {
+        showToast('Due check failed: ' + e.message, 'error');
+      }
+    }
+
+    function reloadShots() {
+      const p = document.getElementById('img-profile');
+      const c = document.getElementById('img-compose');
+      const timestamp = new Date().getTime();
+      document.getElementById('img-profile-loading').classList.remove('hidden');
+      document.getElementById('img-compose-loading').classList.remove('hidden');
+      p.src = `${API_BASE}/api/shots/profile?t=${timestamp}`;
+      c.src = `${API_BASE}/api/shots/compose?t=${timestamp}`;
+    }
+
+    // -------------------------------------------------- Responsive Tab Switching
+    function switchTab(tab) {
+      ['queue', 'research', 'verify', 'status'].forEach(t => {
+        const sec = document.getElementById(`tab-${t}`);
+        sec.classList.toggle('hidden', t !== tab);
+
+        // Mobile Nav
+        const mNavBtn = document.getElementById(`nav-${t}`);
+        if (mNavBtn) {
+          const dot = mNavBtn.querySelector('.nav-dot');
+          if (t === tab) {
+            mNavBtn.className = "nav-tab flex flex-col items-center py-1 px-3 text-brand font-semibold rounded-xl transition btn-press";
+            if (dot) dot.classList.remove('hidden');
+          } else {
+            mNavBtn.className = "nav-tab flex flex-col items-center py-1 px-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press";
+            if (dot) dot.classList.add('hidden');
+          }
+        }
+
+        // Desktop Nav
+        const dNavBtn = document.getElementById(`dnav-${t}`);
+        if (dNavBtn) {
+          if (t === tab) {
+            dNavBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-brand text-white shadow-sm flex items-center gap-1.5 btn-press transition";
+          } else {
+            dNavBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition";
+          }
+        }
+      });
+
+      if (tab === 'verify') reloadShots();
+      if (tab === 'research') {
+        loadResearch();
+        if (isLiveUpdatesEnabled) startLiveRefreshTimer();
+      } else {
+        stopLiveRefreshTimer();
+      }
+      lucide.createIcons();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function openSettingsModal() {
+      document.getElementById('input-api-url').value = API_BASE;
+      const rBadge = document.getElementById('settings-rate-badge');
+      if (rBadge) rBadge.innerText = `1 USD = ₹${currentExchangeRate.toFixed(2)} INR`;
+      const kBadge = document.getElementById('settings-key-id');
+      if (kBadge) kBadge.innerText = razorpayKeyId;
+      applyTheme(currentThemeMode, false);
+      document.getElementById('modal-settings').classList.remove('hidden');
+    }
+
+    function saveSettings() {
+      API_BASE = document.getElementById('input-api-url').value.trim().replace(/\/$/, '');
+      localStorage.setItem('tweety_api_base', API_BASE);
+      closeModal('modal-settings');
+      showToast('Settings saved. Refreshing dashboard...', 'success');
+      refreshAll(true);
+    }
+
+    // -------------------------------------------------- Razorpay Multi-Currency Subscription Engine
+    let selectedCountry = 'IN';
+    let availableCountries = [];
+
+    function openPricingModal() {
+      document.getElementById('modal-pricing').classList.remove('hidden');
+      loadPlans(selectedCountry);
+      loadSubscriptionStatus();
+    }
+
+    function onCountryChanged(code) {
+      selectedCountry = code;
+      loadPlans(code);
+    }
+
+    function openHistoryModal() {
+      document.getElementById('modal-history').classList.remove('hidden');
+      loadPaymentHistory();
+    }
+
+    async function loadSubscriptionStatus() {
+      try {
+        const sub = await apiFetch('/api/subscription/status');
+        if (sub) {
+          currentSubscription = sub;
+          if (sub.key_id) razorpayKeyId = sub.key_id;
+          isPro = sub.is_active || false;
+          if (sub.billing_country) selectedCountry = sub.billing_country;
+          updateSubscriptionUI();
+        }
+      } catch (e) {
+        console.warn('Subscription status load error:', e);
+      }
+    }
+
+    async function loadPlans(country = null) {
+      const code = (country || selectedCountry || 'IN').toUpperCase();
+      selectedCountry = code;
+      try {
+        const res = await apiFetch(`/api/subscription/plans?country=${encodeURIComponent(code)}`);
+        if (res && res.plans) {
+          availablePlans = res.plans;
+          if (res.key_id) razorpayKeyId = res.key_id;
+          if (res.countries) availableCountries = res.countries;
+
+          renderCountrySelector(res.countries, res.country);
+          renderPricingCards();
+        }
+      } catch (e) {
+        console.warn('Plans load error:', e);
+      }
+    }
+
+    function renderCountrySelector(countries, activeCode) {
+      if (!countries || !countries.length) return;
+      const select = document.getElementById('pricing-country-select');
+      if (select) {
+        select.innerHTML = countries.map(c => `
+          <option value="${c.code}" ${c.code === activeCode ? 'selected' : ''}>
+            ${c.code} · ${c.name} (${c.currency} ${c.symbol})
+          </option>
+        `).join('');
+      }
+      const badge = document.getElementById('pricing-region-badge');
+      const cur = countries.find(c => c.code === activeCode);
+      if (badge && cur) {
+        badge.innerText = `${cur.code} · ${cur.name} (${cur.currency} ${cur.symbol})`;
+      }
+    }
+
+    function updateSubscriptionUI() {
+      if (!currentSubscription) return;
+      const s = currentSubscription;
+      const subBadgeHeader = document.getElementById('badge-pro-header');
+      const iconHeader = document.getElementById('icon-sub-header');
+      const subPlanName = document.getElementById('sub-plan-name');
+      const badgeStatus = document.getElementById('badge-sub-status');
+      const periodText = document.getElementById('sub-period-text');
+      const pricingPill = document.getElementById('pricing-current-pill');
+      const bannerAlert = document.getElementById('banner-sub-alert');
+
+      // 1. Header Button & Badges
+      if (s.status === 'trialing') {
+        if (subBadgeHeader) subBadgeHeader.innerText = `Trial: ${s.remaining_trial_days}d left`;
+        if (iconHeader) iconHeader.setAttribute('data-lucide', 'sparkles');
+      } else if (s.status === 'active') {
+        if (s.is_lifetime) {
+          if (subBadgeHeader) subBadgeHeader.innerText = 'VIP Lifetime';
+          if (iconHeader) iconHeader.setAttribute('data-lucide', 'crown');
+        } else {
+          if (subBadgeHeader) subBadgeHeader.innerText = `Pro (${s.plan_name || 'Active'})`;
+          if (iconHeader) iconHeader.setAttribute('data-lucide', 'check-circle-2');
+        }
+      } else {
+        if (subBadgeHeader) subBadgeHeader.innerText = s.trial_eligible ? '7-Day Trial' : 'Upgrade';
+        if (iconHeader) iconHeader.setAttribute('data-lucide', 'zap');
+      }
+
+      // 2. Status Tab Subscription Card
+      if (subPlanName) subPlanName.innerText = s.plan_name || (s.trial_eligible ? 'Eligible for 7-Day Free Trial' : 'No Active Plan');
+      
+      if (badgeStatus) {
+        if (s.status === 'active') {
+          badgeStatus.className = 'text-xs bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-bold uppercase tracking-wider';
+          badgeStatus.innerText = s.is_lifetime ? 'VIP LIFETIME' : 'ACTIVE PRO';
+        } else if (s.status === 'trialing') {
+          badgeStatus.className = 'text-xs bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full font-bold uppercase tracking-wider';
+          badgeStatus.innerText = 'FREE TRIAL';
+        } else {
+          badgeStatus.className = 'text-xs bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 px-3 py-1 rounded-full font-bold uppercase tracking-wider';
+          badgeStatus.innerText = 'EXPIRED';
+        }
+      }
+
+      if (periodText) {
+        if (s.is_lifetime) {
+          periodText.innerText = 'Permanent Lifetime (Never Expires)';
+        } else if (s.status === 'active' && s.current_period_end) {
+          const dt = new Date(s.current_period_end).toLocaleDateString();
+          periodText.innerText = `${s.remaining_days} days left (Expires ${dt})`;
+        } else if (s.status === 'trialing' && s.trial_end) {
+          const dt = new Date(s.trial_end).toLocaleDateString();
+          periodText.innerText = `${s.remaining_trial_days} days left (Trial ends ${dt})`;
+        } else {
+          periodText.innerText = 'Access Inactive / Expired';
+        }
+      }
+
+      // 3. Pricing Modal Active Pill
+      if (pricingPill) {
+        pricingPill.innerText = s.is_active ? `Active: ${s.plan_name}` : (s.trial_eligible ? 'Free Trial Available' : 'No Active Subscription');
+      }
+
+      // 4. Queue Screen Alert Banner
+      if (bannerAlert) {
+        if (s.status === 'trialing') {
+          bannerAlert.classList.remove('hidden');
+          bannerAlert.className = 'rounded-2xl p-4 bg-amber-500/10 border border-amber-500/30 text-xs shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900 dark:text-amber-200';
+          bannerAlert.innerHTML = `
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+              <div>
+                <p class="font-bold text-xs">⏳ 7-Day Free Trial Active (${s.remaining_trial_days} days remaining)</p>
+                <p class="text-[11px] opacity-80 mt-0.5">Your autonomous agent is scheduling and publishing live posts. Lock in Annual access before trial expires.</p>
+              </div>
+            </div>
+            <button onclick="openPricingModal()" class="py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl btn-press text-xs shrink-0 shadow-sm">
+              Upgrade to Annual →
+            </button>
+          `;
+        } else if (!s.is_active) {
+          bannerAlert.classList.remove('hidden');
+          bannerAlert.className = 'rounded-2xl p-4 bg-rose-500/10 border border-rose-500/30 text-xs shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-rose-900 dark:text-rose-200';
+          bannerAlert.innerHTML = `
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500 shrink-0"></i>
+              <div>
+                <p class="font-bold text-xs">⚠️ Access Inactive or Expired</p>
+                <p class="text-[11px] opacity-80 mt-0.5">${s.trial_eligible ? 'Start your 7-day free trial or select a subscription plan to enable autonomous posting.' : 'Please renew your subscription to resume automated posting and research.'}</p>
+              </div>
+            </div>
+            <button onclick="openPricingModal()" class="py-1.5 px-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl btn-press text-xs shrink-0 shadow-sm">
+              ${s.trial_eligible ? 'Start Free Trial →' : 'Select Plan →'}
+            </button>
+          `;
+        } else {
+          bannerAlert.classList.add('hidden');
+        }
+      }
+
+      lucide.createIcons();
+      renderPricingCards();
+    }
+
+    function renderPricingCards() {
+      const container = document.getElementById('pricing-cards-container');
+      if (!container || !availablePlans.length) return;
+
+      const sub = currentSubscription || {};
+      const currentPlanId = sub.plan_id;
+      const isTrialing = (sub.status === 'trialing');
+      const isActivePaid = (sub.status === 'active');
+
+      container.innerHTML = availablePlans.map(plan => {
+        const isCurrent = (currentPlanId === plan.id && (isTrialing || isActivePaid));
+        const isTrial = (plan.id === 'trial');
+        const isLifetime = !!plan.is_lifetime;
+        const isRec = !!plan.recommended;
+        const checkoutEnabled = (plan.checkout_enabled !== false);
+
+        let cardClass = "bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4 transition card-lift relative";
+        let badgeHtml = '';
+        let buttonHtml = '';
+
+        if (isCurrent) {
+          cardClass = "bg-[var(--bg-surface)] border-2 border-emerald-500 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4 transition relative shadow-lg";
+          badgeHtml = `<span class="absolute -top-2.5 right-4 bg-emerald-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow">Active Plan</span>`;
+        } else if (isRec) {
+          cardClass = "bg-[var(--bg-surface)] border-2 border-brand rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4 transition relative shadow-xl";
+          badgeHtml = `<span class="absolute -top-2.5 right-4 bg-brand text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow">Recommended</span>`;
+        } else if (isLifetime) {
+          cardClass = "bg-gradient-to-br from-amber-500/10 via-[var(--bg-surface)] to-amber-500/5 border-2 border-amber-500/60 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4 transition relative shadow-lg";
+          badgeHtml = `<span class="absolute -top-2.5 right-4 bg-amber-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow">VIP Access</span>`;
+        }
+
+        // CTA Button
+        if (isCurrent) {
+          buttonHtml = `<button disabled class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 cursor-default">Current Active Plan</button>`;
+        } else if (isTrial) {
+          if (sub.trial_eligible) {
+            buttonHtml = `<button onclick="startFreeTrial()" id="btn-plan-trial" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-brand hover:bg-brand-hover text-white btn-press shadow-md flex items-center justify-center gap-1.5">
+              <span>Start 7-Day Free Trial</span>
+            </button>`;
+          } else {
+            buttonHtml = `<button disabled class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-[var(--bg-input)] text-[var(--text-muted)] cursor-not-allowed border border-[var(--border-subtle)]">Trial Already Claimed</button>`;
+          }
+        } else if (!checkoutEnabled) {
+          buttonHtml = `
+            <div class="space-y-1.5">
+              <button disabled class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-[var(--bg-input)] text-[var(--text-muted)] cursor-not-allowed border border-[var(--border-subtle)] flex items-center justify-center gap-1.5 opacity-60" title="${escapeHtml(plan.unconfigured_reason || 'Checkout disabled for this plan')}">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                <span>Not Configured</span>
+              </button>
+              <p class="text-[10px] text-amber-500/90 text-center leading-tight">${escapeHtml(plan.unconfigured_reason || 'Price not configured')}</p>
+            </div>
+          `;
+        } else if (isLifetime) {
+          buttonHtml = `<button onclick="checkoutSubscription('lifetime')" id="btn-plan-lifetime" class="w-full py-2.5 px-4 rounded-xl text-xs font-black bg-amber-500 hover:bg-amber-400 text-black btn-press shadow-md flex items-center justify-center gap-1.5">
+            <i data-lucide="crown" class="w-4 h-4"></i>
+            <span>Get Lifetime VIP (${escapeHtml(plan.formatted_price)})</span>
+          </button>`;
+        } else if (isRec) {
+          buttonHtml = `<button onclick="checkoutSubscription('${plan.id}')" id="btn-plan-${plan.id}" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-brand hover:bg-brand-hover text-white btn-press shadow-md flex items-center justify-center gap-1.5">
+            <span>Get Annual Access (${escapeHtml(plan.formatted_price)})</span>
+          </button>`;
+        } else {
+          buttonHtml = `<button onclick="checkoutSubscription('${plan.id}')" id="btn-plan-${plan.id}" class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] hover:border-brand/40 text-[var(--text-primary)] btn-press flex items-center justify-center gap-1.5">
+            <span>Select ${plan.name} (${escapeHtml(plan.formatted_price)})</span>
+          </button>`;
+        }
+
+        // Price display
+        let priceSubtext = '';
+        if (plan.price > 0) {
+          priceSubtext = `<div class="text-[11px] text-[var(--text-secondary)] font-medium mt-0.5">${escapeHtml(plan.billing_period)} access</div>`;
+        } else if (plan.price === 0) {
+          priceSubtext = `<div class="text-[11px] text-emerald-500 font-medium mt-0.5">100% Free · No Card Required</div>`;
+        } else {
+          priceSubtext = `<div class="text-[11px] text-amber-500 font-medium mt-0.5">Configure Separately</div>`;
+        }
+
+        return `
+          <div class="${cardClass}">
+            ${badgeHtml}
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="font-bold text-sm text-[var(--text-primary)]">${escapeHtml(plan.name)}</h4>
+                  <span class="text-[10px] text-[var(--text-muted)]">${escapeHtml(plan.billing_period)}</span>
+                </div>
+                ${isLifetime ? '<div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center"><i data-lucide="crown" class="w-4 h-4"></i></div>' : ''}
+              </div>
+
+              <div class="pt-1">
+                <div class="flex items-baseline gap-1.5">
+                  <span class="text-2xl font-black text-[var(--text-primary)]">${escapeHtml(plan.formatted_price)}</span>
+                  ${plan.price > 0 ? `<span class="text-xs text-[var(--text-muted)] font-bold">${escapeHtml(plan.currency)}</span>` : ''}
+                </div>
+                ${priceSubtext}
+              </div>
+
+              <p class="text-[11px] text-[var(--text-secondary)] leading-relaxed">${escapeHtml(plan.description)}</p>
+
+              <div class="pt-2 border-t border-[var(--border-subtle)] space-y-1.5">
+                ${plan.features.map(f => `
+                  <div class="flex items-start gap-1.5 text-[11px] text-[var(--text-secondary)]">
+                    <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5"></i>
+                    <span>${escapeHtml(f)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="pt-3">
+              ${buttonHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    async function startFreeTrial() {
+      const btn = document.getElementById('btn-plan-trial');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Activating...`;
+        lucide.createIcons();
+      }
+
+      try {
+        const res = await apiFetch('/api/subscription/start-trial', { method: 'POST', body: JSON.stringify({}) });
+        if (res && res.ok) {
+          currentSubscription = res.subscription;
+          isPro = true;
+          showToast('🎉 7-Day Free Trial activated! Full autonomous posting unlocked.', 'success');
+          updateSubscriptionUI();
+          closeModal('modal-pricing');
+          refreshAll();
+      const savedLive = localStorage.getItem('tweety_live_updates');
+      if (savedLive === 'true') {
+        isLiveUpdatesEnabled = true;
+        updateLiveToggleUI();
+        startLiveRefreshTimer();
+      }
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to start free trial', 'error');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `Start 7-Day Free Trial`;
+        }
+      }
+    }
+
+    async function checkoutSubscription(planId) {
+      const btn = document.getElementById(`btn-plan-${planId}`);
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Creating Order...`;
+        lucide.createIcons();
+      }
+
+      try {
+        const res = await apiFetch('/api/subscription/create-order', {
+          method: 'POST',
+          body: JSON.stringify({ plan_id: planId, country: selectedCountry })
+        });
+
+        if (!res || !res.order) throw new Error('Could not create payment order');
+        const order = res.order;
+
+        if (!window.Razorpay) {
+          throw new Error('Razorpay Checkout SDK not loaded. Please verify internet connection.');
+        }
+
+        const options = {
+          key: order.key_id,
+          amount: order.amount,
+          currency: order.currency,
+          name: "Tweets Autonomous Agent",
+          description: `${order.plan_name} (${order.formatted_price})`,
+          order_id: order.order_id,
+          notes: {
+            plan_id: planId,
+            country: selectedCountry
+          },
+          handler: async function(response) {
+            await verifyRazorpayPayment(response, planId);
+          },
+          modal: {
+            ondismiss: function() {
+              showToast("Payment checkout cancelled. You were not charged.", "info");
+              if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+              }
+            }
+          },
+          theme: {
+            color: "#1d9bf0"
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function(resp) {
+          const errDetail = resp.error?.description || 'Payment failed';
+          showToast(`Payment declined: ${errDetail}`, 'error');
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+          }
+        });
+        rzp.open();
+      } catch (err) {
+        showToast(err.message || 'Checkout error', 'error');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+
+    async function verifyRazorpayPayment(rzpResponse, planId) {
+      showToast('Verifying payment signature with Razorpay...', 'info');
+      try {
+        const verifyRes = await apiFetch('/api/subscription/verify-payment', {
+          method: 'POST',
+          body: JSON.stringify({
+            razorpay_order_id: rzpResponse.razorpay_order_id,
+            razorpay_payment_id: rzpResponse.razorpay_payment_id,
+            razorpay_signature: rzpResponse.razorpay_signature
+          })
+        });
+
+        if (verifyRes && verifyRes.ok) {
+          currentSubscription = verifyRes.subscription;
+          isPro = true;
+          closeModal('modal-pricing');
+          showToast(`🎉 Payment verified! Welcome to ${verifyRes.subscription.plan_id.toUpperCase()} Access!`, 'success');
+          updateSubscriptionUI();
+          refreshAll();
+      const savedLive = localStorage.getItem('tweety_live_updates');
+      if (savedLive === 'true') {
+        isLiveUpdatesEnabled = true;
+        updateLiveToggleUI();
+        startLiveRefreshTimer();
+      }
+        }
+      } catch (err) {
+        showToast(`Verification error: ${err.message}`, 'error');
+      }
+    }
+
+    async function loadPaymentHistory() {
+      const container = document.getElementById('history-list');
+      if (!container) return;
+      container.innerHTML = `<div class="p-4 text-center text-xs text-[var(--text-muted)]"><i data-lucide="loader-2" class="w-4 h-4 animate-spin inline-block mr-1"></i> Loading receipts...</div>`;
+      lucide.createIcons();
+
+      try {
+        const res = await apiFetch('/api/subscription/history');
+        if (!res || !res.history || !res.history.length) {
+          container.innerHTML = `
+            <div class="p-8 text-center text-xs text-[var(--text-muted)] space-y-2">
+              <i data-lucide="receipt" class="w-8 h-8 mx-auto opacity-40"></i>
+              <p>No payment transactions recorded yet.</p>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        container.innerHTML = res.history.map(item => {
+          const dateStr = new Date(item.created_at).toLocaleString();
+          const isVerified = (item.verification_status === 'verified');
+          const curr = item.currency || 'INR';
+          const sym = (curr === 'INR' ? '₹' : (curr === 'USD' ? '$' : (curr === 'EUR' ? '€' : '')));
+          const amt = item.amount || item.amount_usd || item.amount_inr || 0;
+          const countryCode = item.billing_country || 'IN';
+
+          return `
+            <div class="p-3.5 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)] space-y-2 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-[var(--text-primary)] uppercase">${escapeHtml(item.plan_id)} PLAN</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isVerified ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'} uppercase">
+                  ${escapeHtml(item.verification_status)}
+                </span>
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
+                <span class="font-semibold text-[var(--text-primary)]">${sym}${amt.toLocaleString()} ${curr} (${countryCode})</span>
+                <span class="text-[var(--text-muted)] font-mono text-[10px]">${dateStr}</span>
+              </div>
+              <div class="text-[10px] font-mono text-[var(--text-muted)] pt-1 border-t border-[var(--border-subtle)] truncate">
+                Order: ${escapeHtml(item.razorpay_order_id)} | Pay: ${escapeHtml(item.razorpay_payment_id || 'N/A')}
+              </div>
+            </div>
+          `;
+        }).join('');
+        lucide.createIcons();
+      } catch (err) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-rose-500">Failed to load payment history: ${err.message}</div>`;
+      }
+    }
+
+    function escapeHtml(text) {
+      const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'};
+      return (text || '').replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function refreshAll(showFeedback = false) {
+      const rIcon = document.getElementById('icon-refresh');
+      if (rIcon) rIcon.classList.add('animate-spin');
+      
+      Promise.all([loadStatus(), loadPlan(), loadSubscriptionStatus(), loadPlans()]).finally(() => {
+        if (rIcon) rIcon.classList.remove('animate-spin');
+        if (showFeedback) showToast('Dashboard refreshed!', 'success');
+      });
+      reloadShots();
+    }
+
+    // -------------------------------------------------- Keyboard Shortcuts
+    window.addEventListener('keydown', e => {
+      // Ignore if typing inside input or textarea
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+        if (e.key === 'Escape') {
+          closeModal('modal-edit');
+          closeModal('modal-slot-picker');
+          closeModal('modal-settings');
+          closeModal('modal-pricing');
+          closeModal('modal-history');
+        }
+        return;
+      }
+
+      if (e.key === '1') switchTab('queue');
+      else if (e.key === '2') switchTab('research');
+      else if (e.key === '3') switchTab('verify');
+      else if (e.key === '4') switchTab('status');
+      else if (e.key === 'r' || e.key === 'R') refreshAll(true);
+      else if (e.key === 's' || e.key === 'S') openSettingsModal();
+      else if (e.key === '/') {
+        e.preventDefault();
+        switchTab('research');
+        document.getElementById('research-search')?.focus();
+      } else if (e.key === 'Escape') {
+        closeModal('modal-edit');
+        closeModal('modal-slot-picker');
+        closeModal('modal-settings');
+        closeModal('modal-pricing');
+        closeModal('modal-history');
+      }
+    });
+
+    // ================================================== T Auth & Onboarding Controller
+    let currentUser = null;
+    let usernameCheckTimeout = null;
+
+    function showAuthPanel(panel) {
+      const authView = document.getElementById('auth-view');
+      const pLogin = document.getElementById('auth-panel-login');
+      const pUsername = document.getElementById('auth-panel-username');
+      const pWelcome = document.getElementById('auth-panel-welcome');
+
+      if (!authView || !pLogin || !pUsername || !pWelcome) return;
+
+      if (panel === 'dashboard') {
+        authView.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => authView.classList.add('hidden'), 220);
+        return;
+      }
+
+      authView.classList.remove('hidden', 'pointer-events-none');
+      setTimeout(() => authView.classList.remove('opacity-0'), 10);
+
+      pLogin.classList.toggle('hidden', panel !== 'login');
+      pUsername.classList.toggle('hidden', panel !== 'username');
+      pWelcome.classList.toggle('hidden', panel !== 'welcome');
+
+      if (panel === 'username') {
+        const uInput = document.getElementById('input-onboarding-username');
+        if (uInput) {
+          setTimeout(() => {
+            uInput.focus();
+            handleUsernameInput(uInput.value);
+          }, 150);
+        }
+      }
+      lucide.createIcons();
+    }
+
+    function showAuthError(msg) {
+      const banner = document.getElementById('auth-error-banner');
+      const text = document.getElementById('auth-error-text');
+      if (banner && text) {
+        text.innerText = msg || 'Authorization error occurred.';
+        banner.classList.remove('hidden');
+      }
+    }
+
+    function clearAuthError() {
+      const banner = document.getElementById('auth-error-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    async function loginWithX() {
+      clearAuthError();
+      const btn = document.getElementById('btn-login-x');
+      const text = document.getElementById('btn-login-x-text');
+      const spinner = document.getElementById('btn-login-x-spinner');
+
+      btn.disabled = true;
+      text.innerText = 'Connecting to X...';
+      spinner?.classList.remove('hidden');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/x/login`);
+        const data = await res.json();
+        if (data && data.auth_url) {
+          window.location.href = data.auth_url;
+        } else {
+          throw new Error('Could not initiate X OAuth flow.');
+        }
+      } catch (err) {
+        showAuthError(err.message || 'Failed to connect to X.');
+        btn.disabled = false;
+        text.innerText = 'Continue with X';
+        spinner?.classList.add('hidden');
+      }
+    }
+
+    function handleUsernameInput(val) {
+      const clean = (val || '').replace(/^@/, '').trim();
+      const countEl = document.getElementById('username-char-count');
+      const feedback = document.getElementById('username-feedback');
+      const btn = document.getElementById('btn-submit-username');
+
+      if (countEl) countEl.innerText = `${clean.length}/15`;
+
+      if (!clean) {
+        if (feedback) feedback.innerHTML = '<span class="text-[var(--text-muted)]">3-15 characters, letters, numbers, underscores</span>';
+        if (btn) btn.disabled = true;
+        return;
+      }
+
+      if (clean.length < 3) {
+        if (feedback) feedback.innerHTML = '<span class="text-rose-500 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Too short (minimum 3 characters)</span>';
+        if (btn) btn.disabled = true;
+        lucide.createIcons();
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_]+$/.test(clean)) {
+        if (feedback) feedback.innerHTML = '<span class="text-rose-500 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Only letters, numbers, and underscores allowed</span>';
+        if (btn) btn.disabled = true;
+        lucide.createIcons();
+        return;
+      }
+
+      if (feedback) feedback.innerHTML = '<span class="text-[var(--text-muted)]">Checking availability...</span>';
+
+      if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
+      usernameCheckTimeout = setTimeout(async () => {
+        try {
+          const res = await apiFetch('/api/auth/check-username', {
+            method: 'POST',
+            body: JSON.stringify({ username: clean })
+          });
+          if (res.available) {
+            feedback.innerHTML = `<span class="text-emerald-500 flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> @${clean} is available!</span>`;
+            if (btn) btn.disabled = false;
+          } else {
+            feedback.innerHTML = `<span class="text-rose-500 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> ${res.error || 'Username is taken'}</span>`;
+            if (btn) btn.disabled = true;
+          }
+          lucide.createIcons();
+        } catch (e) {
+          feedback.innerHTML = `<span class="text-amber-500">${e.message}</span>`;
+        }
+      }, 250);
+    }
+
+    async function submitUsernameOnboarding() {
+      const input = document.getElementById('input-onboarding-username');
+      const clean = (input ? input.value : '').replace(/^@/, '').trim();
+      const btn = document.getElementById('btn-submit-username');
+      const text = document.getElementById('btn-submit-username-text');
+      const icon = document.getElementById('btn-submit-username-icon');
+      const spinner = document.getElementById('btn-submit-username-spinner');
+
+      if (!clean) return;
+
+      btn.disabled = true;
+      text.innerText = 'Saving...';
+      icon?.classList.add('hidden');
+      spinner?.classList.remove('hidden');
+
+      try {
+        const res = await apiFetch('/api/auth/username', {
+          method: 'POST',
+          body: JSON.stringify({ username: clean })
+        });
+        currentUser = res.user;
+
+        // Update welcome badge
+        const badge = document.getElementById('welcome-username-badge');
+        if (badge) badge.innerText = `@${res.user.username}`;
+
+        showAuthPanel('welcome');
+      } catch (err) {
+        showToast(err.message, 'error');
+        const feedback = document.getElementById('username-feedback');
+        if (feedback) feedback.innerHTML = `<span class="text-rose-500">${err.message}</span>`;
+      } finally {
+        btn.disabled = false;
+        text.innerText = 'Continue';
+        icon?.classList.remove('hidden');
+        spinner?.classList.add('hidden');
+      }
+    }
+
+    async function startAppDashboard() {
+      const btn = document.getElementById('btn-start-app');
+      const text = document.getElementById('btn-start-app-text');
+      const icon = document.getElementById('btn-start-app-icon');
+      const spinner = document.getElementById('btn-start-app-spinner');
+
+      btn.disabled = true;
+      text.innerText = 'Launching...';
+      icon?.classList.add('hidden');
+      spinner?.classList.remove('hidden');
+
+      try {
+        const res = await apiFetch('/api/auth/complete-onboarding', {
+          method: 'POST',
+          body: JSON.stringify({})
+        });
+        if (res.user) currentUser = res.user;
+
+        // Update header & settings
+        const h = currentUser ? currentUser.username : 'ezeslucky';
+        document.getElementById('handle-badge').innerText = `@${h}`;
+        const setHandle = document.getElementById('settings-user-handle');
+        if (setHandle) setHandle.innerText = `@${h}`;
+
+        showToast("Welcome to T! You're ready to create & post.", 'success');
+        showAuthPanel('dashboard');
+        refreshAll(true);
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        text.innerText = 'Start App';
+        icon?.classList.remove('hidden');
+        spinner?.classList.add('hidden');
+      }
+    }
+
+    async function handleSignOutClick() {
+      try {
+        await apiFetch('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+      } catch (e) {
+        console.warn('Logout notification error:', e);
+      }
+      setAuthToken('');
+      currentUser = null;
+      showToast('Signed out of X', 'info');
+      showAuthPanel('login');
+    }
+
+    async function initAuth() {
+      // 1. Check URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const authError = urlParams.get('auth_error');
+      const authToken = urlParams.get('auth_token');
+      const step = urlParams.get('step');
+      const prefillUsername = urlParams.get('username');
+
+      if (authError || authToken || step) {
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      if (authError) {
+        showAuthError(authError);
+        showAuthPanel('login');
+        return;
+      }
+
+      if (authToken) {
+        setAuthToken(authToken);
+      }
+
+      // 2. Fetch authenticated profile
+      try {
+        const res = await apiFetch('/api/auth/me');
+        if (res.authenticated && res.user) {
+          currentUser = res.user;
+          const h = currentUser.username;
+          document.getElementById('handle-badge').innerText = `@${h}`;
+          const setHandle = document.getElementById('settings-user-handle');
+          if (setHandle) setHandle.innerText = `@${h}`;
+
+          if (!currentUser.onboarding_completed || step === 'username') {
+            const uInput = document.getElementById('input-onboarding-username');
+            if (uInput) uInput.value = prefillUsername || currentUser.username || '';
+            showAuthPanel('username');
+          } else {
+            showAuthPanel('dashboard');
+            refreshAll();
+      const savedLive = localStorage.getItem('tweety_live_updates');
+      if (savedLive === 'true') {
+        isLiveUpdatesEnabled = true;
+        updateLiveToggleUI();
+        startLiveRefreshTimer();
+      }
+          }
+        } else {
+          showAuthPanel('login');
+        }
+      } catch (e) {
+        console.warn('Auth check failed:', e);
+        showAuthPanel('login');
+      }
+    }
+
+    // -------------------------------------------------- Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      const motionPref = localStorage.getItem('tweety_motion');
+      if (motionPref === 'false') {
+        document.documentElement.classList.add('reduced-motion');
+        const t = document.getElementById('toggle-animations');
+        if (t) t.checked = false;
+      }
+      lucide.createIcons();
+      initAuth();
+    });
+  </script>
+</body>
+</html>

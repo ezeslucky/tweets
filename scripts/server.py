@@ -34,6 +34,7 @@ import due
 import post
 import razorpay_gateway
 import research
+import research_catalog
 import settings
 import subscription
 import x_auth
@@ -88,6 +89,17 @@ class CheckUsernameRequest(BaseModel):
 
 class UpdateUsernameRequest(BaseModel):
     username: str
+
+class ResearchCollectRequest(BaseModel):
+    enabled_sources: Optional[List[str]] = None
+    custom_feeds: Optional[List[Dict[str, str]]] = None
+    hours: Optional[int] = 36
+
+class ResearchPreferencesRequest(BaseModel):
+    selected_sources: List[str]
+    custom_feeds: Optional[List[Dict[str, str]]] = None
+    topics: Optional[List[str]] = None
+
 
 def extract_session_token(request: Request) -> Optional[str]:
     """Extract session token from Bearer header, cookie, or query parameters."""
@@ -509,23 +521,241 @@ async def check_due():
     d = due.due()
     return {"idle": d is None, "draft": d}
 
+# ==================== RESEARCH & DISCOVERY APIS ====================
+
+@app.get("/api/research/sources")
+async def get_research_sources():
+    """Return complete catalog of 131+ customizable research sources across 14 categories."""
+    sources = research_catalog.get_all_sources()
+    is_li_configured = bool(os.getenv("LINKEDIN_ACCESS_TOKEN"))
+    for s in sources:
+        if s["id"] == "linkedin":
+            s["is_configured"] = is_li_configured
+            s["status_note"] = "Active" if is_li_configured else "Requires LINKEDIN_ACCESS_TOKEN"
+        else:
+            s["is_configured"] = True
+            s["status_note"] = "Ready"
+
+    return {
+        "ok": True,
+        "total_sources": len(sources),
+        "categories": research_catalog.get_categories(),
+        "sources": sources,
+        "is_linkedin_configured": is_li_configured
+    }
+
+@app.get("/api/research/preferences")
+async def get_research_preferences(request: Request):
+    """Retrieve customized research sources and custom RSS feeds for current user."""
+    user = get_current_user_optional(request)
+    cfg = settings.load()
+    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    prefs = database.get_user_research_preferences(handle)
+    return {"ok": True, "preferences": prefs}
+
+@app.post("/api/research/preferences")
+async def save_research_preferences(request: Request, req: ResearchPreferencesRequest):
+    """Persist user custom source selections and custom feeds."""
+    user = get_current_user_optional(request)
+    cfg = settings.load()
+    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    saved = database.save_user_research_preferences(
+        user_id=handle,
+        selected_sources=req.selected_sources,
+        custom_feeds=req.custom_feeds,
+        topics=req.topics
+    )
+    return {"ok": True, "preferences": saved}
+
+@app.post("/api/research/preferences/reset")
+async def reset_research_preferences(request: Request):
+    """Reset source preferences to factory defaults."""
+    user = get_current_user_optional(request)
+    cfg = settings.load()
+    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    res = database.reset_user_research_preferences(handle)
+    return {"ok": True, "preferences": res}
+
+@app.post("/api/research/collect")
+async def collect_fresh_stories(request: Request, background_tasks: BackgroundTasks, req: Optional[ResearchCollectRequest] = None):
+    """Start background research collection across all selected sources, including LinkedIn."""
+    user = get_current_user_optional(request)
+    cfg = settings.load()
+    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+
+    if research.is_collecting():
+        return {
+            "ok": False,
+            "busy": True,
+            "job_id": research.get_active_job_id(),
+            "message": "A research collection job is currently in progress."
+        }
+
+    job_id = f"job_{int(datetime.now().timestamp() * 1000)}"
+    prefs = database.get_user_research_preferences(handle)
+    enabled_sources = (req.enabled_sources if req and req.enabled_sources else None) or prefs.get("selected_sources") or research_catalog.get_default_source_ids()
+    custom_feeds = (req.custom_feeds if req and req.custom_feeds else None) or prefs.get("custom_feeds") or []
+    hours = (req.hours if req and req.hours else None) or 36
+
+    database.create_research_job(job_id, handle, enabled_sources)
+
+    # Launch background collector
+    background_tasks.add_task(
+        research.collect_customized,
+        user_id=handle,
+        enabled_sources=enabled_sources,
+        custom_feeds=custom_feeds,
+        hours=hours,
+        job_id=job_id,
+    )
+
+    return {
+        "ok": True,
+        "job_id": job_id,
+        "status": "running",
+        "sources_count": len(enabled_sources) + len(custom_feeds),
+        "message": f"Collection started for {len(enabled_sources)} sources"
+    }
+
+@app.get("/api/research/jobs/status")
+async def get_research_job_status(request: Request):
+    """Poll status of latest or active background collection run."""
+    user = get_current_user_optional(request)
+    cfg = settings.load()
+    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    is_busy = research.is_collecting()
+    active = research.get_active_job_info()
+    latest = database.get_latest_research_job(handle)
+    return {
+        "ok": True,
+        "is_collecting": is_busy,
+        "active_job": active,
+        "latest_job": latest
+    }
+
+@app.get("/api/research/jobs/{job_id}")
+async def get_research_job_detail(job_id: str):
+    """Retrieve detailed progress and story yields for a specific collection job."""
+    job = database.get_research_job(job_id)
+    if not job:
+        if research.is_collecting() and research.get_active_job_id() == job_id:
+            return {"ok": True, "job": {"job_id": job_id, "status": "running"}}
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+    return {"ok": True, "job": job}
+
+@app.get("/api/research/status")
+async def get_research_live_status(request: Request):
+    """Microsecond-fast status probe for 1-second client-side auto-refresh polling."""
+    user = get_current_user_optional(request)
+    cfg = settings.load()
+    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+
+    counts = database.get_research_stories_count(user_id=handle)
+    latest_job = database.get_latest_research_job(handle)
+    is_busy = research.is_collecting()
+    active_id = research.get_active_job_id()
+
+    # Determine revision string
+    latest_ts = ""
+    if latest_job and latest_job.get("completed_at"):
+        latest_ts = str(latest_job["completed_at"])
+    elif latest_job and latest_job.get("created_at"):
+        latest_ts = str(latest_job["created_at"])
+    else:
+        # Fallback to swipe file mtime
+        SWIPE_DIR.mkdir(parents=True, exist_ok=True)
+        files = sorted(SWIPE_DIR.glob("*.json"))
+        if files:
+            latest_ts = str(files[-1].stat().st_mtime)
+
+    return {
+        "revision": f"{latest_ts}:{counts.get('total', 0)}:{is_busy}",
+        "total_stories": counts.get("total", 0),
+        "is_collecting": is_busy,
+        "active_job_id": active_id,
+        "is_linkedin_configured": bool(os.getenv("LINKEDIN_ACCESS_TOKEN")),
+        "counts": counts,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 @app.get("/api/research/latest")
-async def get_latest_research():
+async def get_latest_research(
+    source: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    search: Optional[str] = None,
+    request: Request = None
+):
+    """Retrieve research stories from SQLite database with fallback to swipe JSON file."""
+    user = get_current_user_optional(request) if request else None
+    cfg = settings.load()
+    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    is_li_configured = bool(os.getenv("LINKEDIN_ACCESS_TOKEN"))
+
+    db_items = database.get_research_stories(
+        user_id=handle,
+        source=source,
+        limit=limit,
+        offset=offset,
+        search=search
+    )
+    counts = database.get_research_stories_count(user_id=handle)
+
+    if db_items or counts.get("total", 0) > 0:
+        return {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "counts": counts,
+            "status": {"db": "ok"},
+            "items": db_items,
+            "total": counts.get("total", 0),
+            "is_linkedin_configured": is_li_configured,
+        }
+
+    # Fallback to swipe/YYYY-MM-DD.json
     SWIPE_DIR.mkdir(parents=True, exist_ok=True)
     files = sorted(SWIPE_DIR.glob("*.json"))
     if not files:
-        return {"items": [], "total": 0}
+        return {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "counts": {"total": 0, "hn": 0, "linkedin": 0, "reddit": 0, "rss": 0},
+            "status": {},
+            "items": [],
+            "total": 0,
+            "is_linkedin_configured": is_li_configured,
+        }
+
     latest = files[-1]
     try:
         data = json.loads(latest.read_text(encoding="utf-8"))
+        raw_items = data.get("items", [])
+
+        # Filter if requested
+        if source and source.lower() != "all":
+            s_low = source.lower()
+            if s_low in ("linkedin", "li"):
+                raw_items = [i for i in raw_items if (i.get("source") or "").lower() == "linkedin"]
+            elif s_low in ("hn", "hackernews", "hacker news"):
+                raw_items = [i for i in raw_items if (i.get("source") or "").lower() == "hn" or "hacker" in (i.get("source") or "").lower()]
+            elif s_low == "reddit":
+                raw_items = [i for i in raw_items if (i.get("source") or "").lower().startswith("reddit")]
+            elif s_low == "rss":
+                raw_items = [i for i in raw_items if (i.get("source") or "").lower().startswith("rss:")]
+
+        if search:
+            q = search.lower().strip()
+            raw_items = [i for i in raw_items if q in (i.get("title") or "").lower() or q in (i.get("source") or "").lower()]
+
         return {
             "date": latest.stem,
             "counts": data.get("counts", {}),
             "status": data.get("status", {}),
-            "items": data.get("items", [])[:30]
+            "items": raw_items[offset:offset + limit],
+            "total": len(raw_items),
+            "is_linkedin_configured": is_li_configured,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/shots/{name}")
 async def get_shot(name: str):
