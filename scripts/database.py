@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 import sqlite3
 import threading
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -93,9 +95,43 @@ def init_db() -> None:
                 );
                 """)
 
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id TEXT PRIMARY KEY,
+                    x_user_id TEXT UNIQUE NOT NULL,
+                    username TEXT UNIQUE NOT NULL,
+                    display_name TEXT,
+                    onboarding_completed INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS oauth_states (
+                    state TEXT PRIMARY KEY,
+                    code_verifier TEXT NOT NULL,
+                    redirect_uri TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS sessions (
+                    session_token TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+                """)
+
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(razorpay_order_id);")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);")
+                conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_x_user_id ON users(x_user_id);")
+                conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users(LOWER(username));")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);")
         finally:
             conn.close()
 
@@ -430,5 +466,271 @@ def get_payment_history(user_id: str) -> List[Dict[str, Any]]:
                 ORDER BY id DESC
             """, (user_id,))
             return [dict(r) for r in cursor.fetchall()]
+        finally:
+            conn.close()
+
+# =========================================================================
+# User Management & X OAuth PKCE Sessions
+# =========================================================================
+
+def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieve user record by internal user ID."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, x_user_id, username, display_name, onboarding_completed, created_at, updated_at
+                FROM users WHERE id = ?
+            """, (user_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+def get_user_by_x_id(x_user_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieve user record by X provider user ID."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, x_user_id, username, display_name, onboarding_completed, created_at, updated_at
+                FROM users WHERE x_user_id = ?
+            """, (str(x_user_id),))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
+    """Retrieve user record by username (case-insensitive)."""
+    init_db()
+    clean_name = username.strip().lstrip('@')
+    with _lock:
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, x_user_id, username, display_name, onboarding_completed, created_at, updated_at
+                FROM users WHERE LOWER(username) = LOWER(?)
+            """, (clean_name,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+def check_username_available(username: str, exclude_user_id: Optional[str] = None) -> bool:
+    """Check if a username is available (case-insensitive)."""
+    init_db()
+    clean_name = username.strip().lstrip('@')
+    if not clean_name:
+        return False
+    with _lock:
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            if exclude_user_id:
+                cursor.execute("""
+                    SELECT 1 FROM users WHERE LOWER(username) = LOWER(?) AND id != ?
+                """, (clean_name, exclude_user_id))
+            else:
+                cursor.execute("""
+                    SELECT 1 FROM users WHERE LOWER(username) = LOWER(?)
+                """, (clean_name,))
+            return cursor.fetchone() is None
+        finally:
+            conn.close()
+
+def create_or_update_x_user(
+    x_user_id: str,
+    x_username: str,
+    display_name: Optional[str] = None,
+) -> Tuple[Dict[str, Any], bool]:
+    """Create or update user from verified X OAuth credentials.
+    Returns (user_dict, is_new_user).
+    """
+    init_db()
+    str_x_id = str(x_user_id).strip()
+    clean_username = x_username.strip().lstrip('@')
+    display_name = display_name.strip() if display_name else clean_username
+    now_str = _now_iso()
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM users WHERE x_user_id = ?", (str_x_id,))
+                existing = cursor.fetchone()
+                if existing:
+                    # Existing user: update display name and timestamp
+                    conn.execute("""
+                        UPDATE users SET
+                            display_name = COALESCE(?, display_name),
+                            updated_at = ?
+                        WHERE x_user_id = ?
+                    """, (display_name, now_str, str_x_id))
+                    cursor.execute("SELECT * FROM users WHERE x_user_id = ?", (str_x_id,))
+                    return dict(cursor.fetchone()), False
+
+                # New user: ensure initial username is unique
+                candidate_username = clean_username
+                cursor.execute("SELECT 1 FROM users WHERE LOWER(username) = LOWER(?)", (candidate_username,))
+                if cursor.fetchone():
+                    # Collision with another user's chosen username -> append unique suffix
+                    candidate_username = f"{clean_username[:10]}_{secrets.randbelow(1000):03d}"
+
+                user_id = f"usr_{uuid.uuid4().hex[:12]}"
+                conn.execute("""
+                    INSERT INTO users (
+                        id, x_user_id, username, display_name,
+                        onboarding_completed, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, 0, ?, ?)
+                """, (user_id, str_x_id, candidate_username, display_name, now_str, now_str))
+
+                cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+                return dict(cursor.fetchone()), True
+        finally:
+            conn.close()
+
+def update_username(user_id: str, new_username: str) -> Dict[str, Any]:
+    """Update username for authenticated user after uniqueness validation."""
+    init_db()
+    clean_name = new_username.strip().lstrip('@')
+    if not clean_name:
+        raise ValueError("Username cannot be empty.")
+    
+    if not check_username_available(clean_name, exclude_user_id=user_id):
+        raise ValueError(f"Username '@{clean_name}' is already taken. Please choose another.")
+
+    with _lock:
+        conn = get_connection()
+        try:
+            now_str = _now_iso()
+            with conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE users SET
+                        username = ?,
+                        updated_at = ?
+                    WHERE id = ?
+                """, (clean_name, now_str, user_id))
+                if cursor.rowcount == 0:
+                    raise ValueError(f"User '{user_id}' not found.")
+                
+                cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+                return dict(cursor.fetchone())
+        finally:
+            conn.close()
+
+def complete_onboarding(user_id: str) -> Dict[str, Any]:
+    """Mark onboarding completed for authenticated user."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            now_str = _now_iso()
+            with conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE users SET
+                        onboarding_completed = 1,
+                        updated_at = ?
+                    WHERE id = ?
+                """, (now_str, user_id))
+                cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+                row = cursor.fetchone()
+                if not row:
+                    raise ValueError(f"User '{user_id}' not found.")
+                return dict(row)
+        finally:
+            conn.close()
+
+def save_oauth_state(state: str, code_verifier: str, redirect_uri: str) -> None:
+    """Store PKCE code_verifier and state with single-use lifecycle."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    INSERT OR REPLACE INTO oauth_states (state, code_verifier, redirect_uri, created_at)
+                    VALUES (?, ?, ?, ?)
+                """, (state, code_verifier, redirect_uri, _now_iso()))
+        finally:
+            conn.close()
+
+def get_and_delete_oauth_state(state: str) -> Optional[Dict[str, str]]:
+    """Atomically retrieve and consume OAuth state to prevent replay attacks."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT state, code_verifier, redirect_uri FROM oauth_states WHERE state = ?", (state,))
+                row = cursor.fetchone()
+                if row:
+                    conn.execute("DELETE FROM oauth_states WHERE state = ?", (state,))
+                    return dict(row)
+                return None
+        finally:
+            conn.close()
+
+def create_session(user_id: str, duration_days: int = 30) -> str:
+    """Create and persist a secure session token."""
+    init_db()
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    expires_at = (now + timedelta(days=duration_days)).isoformat()
+    now_str = now.isoformat()
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    INSERT INTO sessions (session_token, user_id, expires_at, created_at)
+                    VALUES (?, ?, ?, ?)
+                """, (token, user_id, expires_at, now_str))
+            return token
+        finally:
+            conn.close()
+
+def get_session_user(session_token: str) -> Optional[Dict[str, Any]]:
+    """Retrieve user record if session token is valid and unexpired."""
+    if not session_token:
+        return None
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            now_str = _now_iso()
+            cursor.execute("""
+                SELECT u.id, u.x_user_id, u.username, u.display_name,
+                       u.onboarding_completed, u.created_at, u.updated_at
+                FROM sessions s
+                JOIN users u ON s.user_id = u.id
+                WHERE s.session_token = ? AND s.expires_at > ?
+            """, (session_token, now_str))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+def delete_session(session_token: str) -> None:
+    """Invalidate session on logout."""
+    if not session_token:
+        return
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("DELETE FROM sessions WHERE session_token = ?", (session_token,))
         finally:
             conn.close()

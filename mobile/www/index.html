@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#090d16">
-  <title>Tweets — Autonomous X Agent Companion</title>
+  <title>T — Autonomous Agent Companion</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -194,6 +194,131 @@
 </head>
 <body class="flex flex-col h-screen overflow-hidden text-slate-900 dark:text-slate-100 font-sans">
 
+  <!-- ==================== AUTHENTICATION & ONBOARDING OVERLAY ==================== -->
+  <div id="auth-view" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-app)] overflow-y-auto transition-opacity duration-300">
+    <div class="max-w-md w-full mx-auto my-auto relative">
+      
+      <!-- Top Brand Ambient Accent Glow -->
+      <div class="absolute -top-16 left-1/2 -translate-x-1/2 w-64 h-64 bg-brand/15 rounded-full blur-3xl pointer-events-none -z-10"></div>
+
+      <!-- Theme Switcher for Login Screens -->
+      <div class="flex justify-end mb-3">
+        <button onclick="cycleTheme()" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Toggle Theme" aria-label="Toggle Theme">
+          <i data-lucide="moon" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- ================= PANEL 1: LOGIN (X ONLY) ================= -->
+      <div id="auth-panel-login" class="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-7 sm:p-9 shadow-2xl transition-all duration-300">
+        <!-- Reusable Geometric T Logo Component -->
+        <div class="w-16 h-16 rounded-2xl bg-brand/10 border border-brand/25 flex items-center justify-center text-brand shadow-lg mx-auto mb-6">
+          <svg class="w-9 h-9 text-brand" viewBox="0 0 32 32" fill="none" aria-label="T Logo">
+            <path d="M4 6.5C4 5.67 4.67 5 5.5 5H26.5C27.33 5 28 5.67 28 6.5V11C28 11.83 27.33 12.5 26.5 12.5H19.5V26.5C19.5 27.33 18.83 28 18 28H14C13.17 28 12.5 27.33 12.5 26.5V12.5H5.5C4.67 12.5 4 11.83 4 11V6.5Z" fill="currentColor"/>
+            <path d="M5.5 5H26.5C27.33 5 28 5.67 28 6.5V8.5L25 10H7L4 8.5V6.5C4 5.67 4.67 5 5.5 5Z" fill="white" fill-opacity="0.3"/>
+            <path d="M16 12.5V28" stroke="white" stroke-opacity="0.25" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)] text-center mb-2">Welcome to T</h1>
+        <p class="text-sm text-[var(--text-secondary)] text-center mb-7 leading-relaxed">Sign in with your X account to get started.</p>
+
+        <!-- Inline Error Banner -->
+        <div id="auth-error-banner" class="hidden mb-6 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 text-xs font-medium flex items-center gap-2.5">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-500"></i>
+          <span id="auth-error-text" class="flex-1">Authorization failed. Please try again.</span>
+        </div>
+
+        <!-- Primary Button: Continue with X -->
+        <button onclick="loginWithX()" id="btn-login-x" class="w-full py-4 px-6 rounded-2xl bg-[var(--text-primary)] text-[var(--bg-app)] font-bold text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl hover:opacity-90 active:scale-[0.98] transition-all">
+          <!-- Official X Icon -->
+          <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          <span id="btn-login-x-text">Continue with X</span>
+          <i id="btn-login-x-spinner" data-lucide="loader-2" class="w-4 h-4 animate-spin hidden"></i>
+        </button>
+
+        <!-- Security / Protocol Note -->
+        <div class="mt-8 pt-5 border-t border-[var(--border-subtle)] text-center">
+          <p class="text-[11px] text-[var(--text-muted)] flex items-center justify-center gap-1.5">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-brand"></i>
+            <span>Secure X OAuth 2.0 PKCE • No passwords or secrets required</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- ================= PANEL 2: USERNAME ONBOARDING ================= -->
+      <div id="auth-panel-username" class="hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-7 sm:p-9 shadow-2xl transition-all duration-300">
+        <!-- Reusable Geometric T Logo -->
+        <div class="w-14 h-14 rounded-2xl bg-brand/10 border border-brand/25 flex items-center justify-center text-brand shadow-md mx-auto mb-5">
+          <svg class="w-8 h-8 text-brand" viewBox="0 0 32 32" fill="none" aria-label="T Logo">
+            <path d="M4 6.5C4 5.67 4.67 5 5.5 5H26.5C27.33 5 28 5.67 28 6.5V11C28 11.83 27.33 12.5 26.5 12.5H19.5V26.5C19.5 27.33 18.83 28 18 28H14C13.17 28 12.5 27.33 12.5 26.5V12.5H5.5C4.67 12.5 4 11.83 4 11V6.5Z" fill="currentColor"/>
+            <path d="M5.5 5H26.5C27.33 5 28 5.67 28 6.5V8.5L25 10H7L4 8.5V6.5C4 5.67 4.67 5 5.5 5Z" fill="white" fill-opacity="0.3"/>
+            <path d="M16 12.5V28" stroke="white" stroke-opacity="0.25" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <h2 class="text-2xl font-extrabold tracking-tight text-[var(--text-primary)] text-center mb-2">Choose your username</h2>
+        <p class="text-xs sm:text-sm text-[var(--text-secondary)] text-center mb-6 leading-relaxed">
+          Set up your handle for your autonomous persona.
+        </p>
+
+        <!-- Username Form -->
+        <form onsubmit="event.preventDefault(); submitUsernameOnboarding();" class="space-y-4">
+          <div>
+            <label for="input-onboarding-username" class="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Username</label>
+            <div class="relative flex items-center">
+              <span class="absolute left-4 text-brand font-bold text-base select-none pointer-events-none">@</span>
+              <input type="text" id="input-onboarding-username" placeholder="Enter your username" maxlength="15" autocomplete="off" spellcheck="false" class="w-full pl-9 pr-14 py-3.5 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] font-semibold text-sm focus:outline-none focus:border-brand transition" oninput="handleUsernameInput(this.value)" />
+              <span id="username-char-count" class="absolute right-4 text-xs text-[var(--text-muted)] font-mono">0/15</span>
+            </div>
+            <!-- Feedback / Validation Message -->
+            <div id="username-feedback" class="mt-2 text-xs text-[var(--text-muted)] min-h-[18px] flex items-center gap-1.5 transition-colors"></div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="btn-submit-username" class="w-full py-3.5 px-6 rounded-2xl bg-brand hover:bg-brand-hover text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg btn-press transition">
+            <span id="btn-submit-username-text">Continue</span>
+            <i id="btn-submit-username-icon" data-lucide="arrow-right" class="w-4 h-4"></i>
+            <i id="btn-submit-username-spinner" data-lucide="loader-2" class="w-4 h-4 animate-spin hidden"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- ================= PANEL 3: ALL SET / WELCOME ================= -->
+      <div id="auth-panel-welcome" class="hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-7 sm:p-9 shadow-2xl transition-all duration-300 text-center">
+        <!-- T Logo with Animated Emerald Badge -->
+        <div class="relative w-16 h-16 rounded-2xl bg-brand/10 border border-brand/25 flex items-center justify-center text-brand shadow-lg mx-auto mb-6">
+          <svg class="w-9 h-9 text-brand" viewBox="0 0 32 32" fill="none" aria-label="T Logo">
+            <path d="M4 6.5C4 5.67 4.67 5 5.5 5H26.5C27.33 5 28 5.67 28 6.5V11C28 11.83 27.33 12.5 26.5 12.5H19.5V26.5C19.5 27.33 18.83 28 18 28H14C13.17 28 12.5 27.33 12.5 26.5V12.5H5.5C4.67 12.5 4 11.83 4 11V6.5Z" fill="currentColor"/>
+            <path d="M5.5 5H26.5C27.33 5 28 5.67 28 6.5V8.5L25 10H7L4 8.5V6.5C4 5.67 4.67 5 5.5 5Z" fill="white" fill-opacity="0.3"/>
+            <path d="M16 12.5V28" stroke="white" stroke-opacity="0.25" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md border-2 border-[var(--bg-card)]">
+            <i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
+          </span>
+        </div>
+
+        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)] mb-2">You're all set!</h2>
+        <p class="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed">Your account is ready. Let's get started.</p>
+
+        <!-- Account Badge Preview -->
+        <div class="my-6 p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-subtle)] flex items-center justify-center gap-2">
+          <span class="text-xs text-[var(--text-secondary)] font-medium">Signed in as</span>
+          <span id="welcome-username-badge" class="text-xs font-mono font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-md">@username</span>
+        </div>
+
+        <!-- Primary Button: Start App -->
+        <button onclick="startAppDashboard()" id="btn-start-app" class="w-full py-4 px-6 rounded-2xl bg-brand hover:bg-brand-hover text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl btn-press transition">
+          <span id="btn-start-app-text">Start App</span>
+          <i id="btn-start-app-icon" data-lucide="sparkles" class="w-4 h-4"></i>
+          <i id="btn-start-app-spinner" data-lucide="loader-2" class="w-4 h-4 animate-spin hidden"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ==================== TOP NAVIGATION HEADER ==================== -->
   <header class="bg-[var(--bg-header)] backdrop-blur-xl border-b border-[var(--border-subtle)] px-4 py-3 z-30 shrink-0 sticky top-0 transition-colors">
     <div class="max-w-5xl mx-auto flex items-center justify-between">
@@ -201,13 +326,15 @@
       <!-- Logo & Connection Status -->
       <div class="flex items-center space-x-3">
         <div class="w-9 h-9 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand shadow-sm shrink-0">
-          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          <svg class="w-5 h-5 text-brand" viewBox="0 0 32 32" fill="none" aria-label="T Logo">
+            <path d="M4 6.5C4 5.67 4.67 5 5.5 5H26.5C27.33 5 28 5.67 28 6.5V11C28 11.83 27.33 12.5 26.5 12.5H19.5V26.5C19.5 27.33 18.83 28 18 28H14C13.17 28 12.5 27.33 12.5 26.5V12.5H5.5C4.67 12.5 4 11.83 4 11V6.5Z" fill="currentColor"/>
+            <path d="M5.5 5H26.5C27.33 5 28 5.67 28 6.5V8.5L25 10H7L4 8.5V6.5C4 5.67 4.67 5 5.5 5Z" fill="white" fill-opacity="0.3"/>
+            <path d="M16 12.5V28" stroke="white" stroke-opacity="0.25" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="font-bold text-sm tracking-tight text-[var(--text-primary)]">Tweets</h1>
+            <h1 class="font-bold text-sm tracking-tight text-[var(--text-primary)]">T</h1>
             <span id="conn-pill" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" title="Connected to CDP & Backend">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span id="conn-text" class="hidden sm:inline">Online</span>
@@ -262,6 +389,11 @@
         <!-- Settings Modal Button -->
         <button onclick="openSettingsModal()" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Settings & Shortcuts (S)" aria-label="Open Settings">
           <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Sign Out Button -->
+        <button onclick="handleSignOutClick()" id="btn-signout-header" class="p-2 text-[var(--text-secondary)] hover:text-rose-500 rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Sign Out of X" aria-label="Sign Out">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
         </button>
       </div>
     </div>
@@ -809,6 +941,28 @@
         </div>
       </div>
 
+      <!-- Connected X Account -->
+      <div class="space-y-2.5 pt-2 border-t border-[var(--border-subtle)]">
+        <label class="text-xs font-semibold text-[var(--text-primary)] block">Connected Account</label>
+        <div class="p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)] space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[var(--text-secondary)]">Provider:</span>
+            <span class="font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              <span>X (Twitter) OAuth 2.0</span>
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[var(--text-secondary)]">Handle:</span>
+            <span id="settings-user-handle" class="font-mono font-bold text-brand">@ezeslucky</span>
+          </div>
+          <button onclick="closeModal('modal-settings'); handleSignOutClick();" class="w-full mt-1 py-2 text-xs text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 font-semibold rounded-lg text-center transition flex items-center justify-center gap-1.5 btn-press">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <span>Sign Out of X</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Desktop Shortcuts Cheat Sheet -->
       <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-1.5">
         <span class="font-bold text-[var(--text-primary)] block text-[11px] uppercase tracking-wider">Keyboard Shortcuts</span>
@@ -1030,14 +1184,39 @@
       }, 3400);
     }
 
-    // -------------------------------------------------- API Layer
+    // -------------------------------------------------- API Layer & Auth Helpers
+    function getAuthToken() {
+      return localStorage.getItem('t_session_token') || '';
+    }
+
+    function setAuthToken(token) {
+      if (token) {
+        localStorage.setItem('t_session_token', token);
+      } else {
+        localStorage.removeItem('t_session_token');
+      }
+    }
+
     async function apiFetch(endpoint, options = {}) {
       const url = `${API_BASE}${endpoint}`;
+      const tok = getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      };
+      if (tok) {
+        headers['Authorization'] = `Bearer ${tok}`;
+      }
       try {
         const res = await fetch(url, {
           ...options,
-          headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+          credentials: 'include',
+          headers: headers
         });
+        if (res.status === 401 && !endpoint.startsWith('/api/auth/')) {
+          showAuthPanel('login');
+          throw new Error('Please sign in with your X account to continue.');
+        }
         if (!res.ok) {
           const err = await res.json().catch(() => ({ detail: res.statusText }));
           throw new Error(err.detail || 'API request failed');
@@ -2105,6 +2284,272 @@
       }
     });
 
+    // ================================================== T Auth & Onboarding Controller
+    let currentUser = null;
+    let usernameCheckTimeout = null;
+
+    function showAuthPanel(panel) {
+      const authView = document.getElementById('auth-view');
+      const pLogin = document.getElementById('auth-panel-login');
+      const pUsername = document.getElementById('auth-panel-username');
+      const pWelcome = document.getElementById('auth-panel-welcome');
+
+      if (!authView || !pLogin || !pUsername || !pWelcome) return;
+
+      if (panel === 'dashboard') {
+        authView.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => authView.classList.add('hidden'), 220);
+        return;
+      }
+
+      authView.classList.remove('hidden', 'pointer-events-none');
+      setTimeout(() => authView.classList.remove('opacity-0'), 10);
+
+      pLogin.classList.toggle('hidden', panel !== 'login');
+      pUsername.classList.toggle('hidden', panel !== 'username');
+      pWelcome.classList.toggle('hidden', panel !== 'welcome');
+
+      if (panel === 'username') {
+        const uInput = document.getElementById('input-onboarding-username');
+        if (uInput) {
+          setTimeout(() => {
+            uInput.focus();
+            handleUsernameInput(uInput.value);
+          }, 150);
+        }
+      }
+      lucide.createIcons();
+    }
+
+    function showAuthError(msg) {
+      const banner = document.getElementById('auth-error-banner');
+      const text = document.getElementById('auth-error-text');
+      if (banner && text) {
+        text.innerText = msg || 'Authorization error occurred.';
+        banner.classList.remove('hidden');
+      }
+    }
+
+    function clearAuthError() {
+      const banner = document.getElementById('auth-error-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    async function loginWithX() {
+      clearAuthError();
+      const btn = document.getElementById('btn-login-x');
+      const text = document.getElementById('btn-login-x-text');
+      const spinner = document.getElementById('btn-login-x-spinner');
+
+      btn.disabled = true;
+      text.innerText = 'Connecting to X...';
+      spinner?.classList.remove('hidden');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/x/login`);
+        const data = await res.json();
+        if (data && data.auth_url) {
+          window.location.href = data.auth_url;
+        } else {
+          throw new Error('Could not initiate X OAuth flow.');
+        }
+      } catch (err) {
+        showAuthError(err.message || 'Failed to connect to X.');
+        btn.disabled = false;
+        text.innerText = 'Continue with X';
+        spinner?.classList.add('hidden');
+      }
+    }
+
+    function handleUsernameInput(val) {
+      const clean = (val || '').replace(/^@/, '').trim();
+      const countEl = document.getElementById('username-char-count');
+      const feedback = document.getElementById('username-feedback');
+      const btn = document.getElementById('btn-submit-username');
+
+      if (countEl) countEl.innerText = `${clean.length}/15`;
+
+      if (!clean) {
+        if (feedback) feedback.innerHTML = '<span class="text-[var(--text-muted)]">3-15 characters, letters, numbers, underscores</span>';
+        if (btn) btn.disabled = true;
+        return;
+      }
+
+      if (clean.length < 3) {
+        if (feedback) feedback.innerHTML = '<span class="text-rose-500 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Too short (minimum 3 characters)</span>';
+        if (btn) btn.disabled = true;
+        lucide.createIcons();
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_]+$/.test(clean)) {
+        if (feedback) feedback.innerHTML = '<span class="text-rose-500 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Only letters, numbers, and underscores allowed</span>';
+        if (btn) btn.disabled = true;
+        lucide.createIcons();
+        return;
+      }
+
+      if (feedback) feedback.innerHTML = '<span class="text-[var(--text-muted)]">Checking availability...</span>';
+
+      if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
+      usernameCheckTimeout = setTimeout(async () => {
+        try {
+          const res = await apiFetch('/api/auth/check-username', {
+            method: 'POST',
+            body: JSON.stringify({ username: clean })
+          });
+          if (res.available) {
+            feedback.innerHTML = `<span class="text-emerald-500 flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> @${clean} is available!</span>`;
+            if (btn) btn.disabled = false;
+          } else {
+            feedback.innerHTML = `<span class="text-rose-500 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> ${res.error || 'Username is taken'}</span>`;
+            if (btn) btn.disabled = true;
+          }
+          lucide.createIcons();
+        } catch (e) {
+          feedback.innerHTML = `<span class="text-amber-500">${e.message}</span>`;
+        }
+      }, 250);
+    }
+
+    async function submitUsernameOnboarding() {
+      const input = document.getElementById('input-onboarding-username');
+      const clean = (input ? input.value : '').replace(/^@/, '').trim();
+      const btn = document.getElementById('btn-submit-username');
+      const text = document.getElementById('btn-submit-username-text');
+      const icon = document.getElementById('btn-submit-username-icon');
+      const spinner = document.getElementById('btn-submit-username-spinner');
+
+      if (!clean) return;
+
+      btn.disabled = true;
+      text.innerText = 'Saving...';
+      icon?.classList.add('hidden');
+      spinner?.classList.remove('hidden');
+
+      try {
+        const res = await apiFetch('/api/auth/username', {
+          method: 'POST',
+          body: JSON.stringify({ username: clean })
+        });
+        currentUser = res.user;
+
+        // Update welcome badge
+        const badge = document.getElementById('welcome-username-badge');
+        if (badge) badge.innerText = `@${res.user.username}`;
+
+        showAuthPanel('welcome');
+      } catch (err) {
+        showToast(err.message, 'error');
+        const feedback = document.getElementById('username-feedback');
+        if (feedback) feedback.innerHTML = `<span class="text-rose-500">${err.message}</span>`;
+      } finally {
+        btn.disabled = false;
+        text.innerText = 'Continue';
+        icon?.classList.remove('hidden');
+        spinner?.classList.add('hidden');
+      }
+    }
+
+    async function startAppDashboard() {
+      const btn = document.getElementById('btn-start-app');
+      const text = document.getElementById('btn-start-app-text');
+      const icon = document.getElementById('btn-start-app-icon');
+      const spinner = document.getElementById('btn-start-app-spinner');
+
+      btn.disabled = true;
+      text.innerText = 'Launching...';
+      icon?.classList.add('hidden');
+      spinner?.classList.remove('hidden');
+
+      try {
+        const res = await apiFetch('/api/auth/complete-onboarding', {
+          method: 'POST',
+          body: JSON.stringify({})
+        });
+        if (res.user) currentUser = res.user;
+
+        // Update header & settings
+        const h = currentUser ? currentUser.username : 'ezeslucky';
+        document.getElementById('handle-badge').innerText = `@${h}`;
+        const setHandle = document.getElementById('settings-user-handle');
+        if (setHandle) setHandle.innerText = `@${h}`;
+
+        showToast("Welcome to T! You're ready to create & post.", 'success');
+        showAuthPanel('dashboard');
+        refreshAll(true);
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        text.innerText = 'Start App';
+        icon?.classList.remove('hidden');
+        spinner?.classList.add('hidden');
+      }
+    }
+
+    async function handleSignOutClick() {
+      try {
+        await apiFetch('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+      } catch (e) {
+        console.warn('Logout notification error:', e);
+      }
+      setAuthToken('');
+      currentUser = null;
+      showToast('Signed out of X', 'info');
+      showAuthPanel('login');
+    }
+
+    async function initAuth() {
+      // 1. Check URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const authError = urlParams.get('auth_error');
+      const authToken = urlParams.get('auth_token');
+      const step = urlParams.get('step');
+      const prefillUsername = urlParams.get('username');
+
+      if (authError || authToken || step) {
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      if (authError) {
+        showAuthError(authError);
+        showAuthPanel('login');
+        return;
+      }
+
+      if (authToken) {
+        setAuthToken(authToken);
+      }
+
+      // 2. Fetch authenticated profile
+      try {
+        const res = await apiFetch('/api/auth/me');
+        if (res.authenticated && res.user) {
+          currentUser = res.user;
+          const h = currentUser.username;
+          document.getElementById('handle-badge').innerText = `@${h}`;
+          const setHandle = document.getElementById('settings-user-handle');
+          if (setHandle) setHandle.innerText = `@${h}`;
+
+          if (!currentUser.onboarding_completed || step === 'username') {
+            const uInput = document.getElementById('input-onboarding-username');
+            if (uInput) uInput.value = prefillUsername || currentUser.username || '';
+            showAuthPanel('username');
+          } else {
+            showAuthPanel('dashboard');
+            refreshAll();
+          }
+        } else {
+          showAuthPanel('login');
+        }
+      } catch (e) {
+        console.warn('Auth check failed:', e);
+        showAuthPanel('login');
+      }
+    }
+
     // -------------------------------------------------- Initialize
     window.addEventListener('DOMContentLoaded', () => {
       initTheme();
@@ -2115,7 +2560,7 @@
         if (t) t.checked = false;
       }
       lucide.createIcons();
-      refreshAll();
+      initAuth();
     });
   </script>
 </body>
