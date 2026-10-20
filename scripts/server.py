@@ -76,6 +76,7 @@ class TrialStartRequest(BaseModel):
 
 class OrderCreateRequest(BaseModel):
     plan_id: str
+    country: Optional[str] = "IN"
 
 class PaymentVerifyRequest(BaseModel):
     razorpay_order_id: str
@@ -376,7 +377,7 @@ async def get_status(request: Request):
     cfg = settings.load()
     handle = current_user["username"] if current_user else (cfg.get("handle") or "ezeslucky")
     sub = database.get_subscription(handle)
-    plan_meta = subscription.get_plan(sub.get("plan_id") or "")
+    plan_meta = subscription.get_plan(sub.get("plan_id") or "", country_code=sub.get("billing_country", "IN"))
     
     return {
         "handle": handle,
@@ -538,10 +539,11 @@ async def get_shot(name: str):
 # ==================== RAZORPAY SUBSCRIPTION & PRICING APIS ====================
 
 @app.get("/api/subscription/plans")
-async def get_subscription_plans():
-    """Retrieve trusted public plan catalog with current exchange rate and INR conversions."""
-    catalog = subscription.get_public_plans()
+async def get_subscription_plans(country: Optional[str] = "IN"):
+    """Retrieve trusted regional public plan catalog in the native currency."""
+    catalog = subscription.get_catalog_for_country(country)
     catalog["key_id"] = razorpay_gateway.get_key_id()
+    catalog["supported_currencies"] = razorpay_gateway.get_supported_currencies()
     return catalog
 
 @app.get("/api/subscription/status")
@@ -551,9 +553,11 @@ async def get_subscription_status(request: Request):
     cfg = settings.load()
     handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
     sub = database.get_subscription(handle)
-    plan_meta = subscription.get_plan(sub.get("plan_id") or "")
+    country = sub.get("billing_country", "IN")
+    plan_meta = subscription.get_plan(sub.get("plan_id") or "", country_code=country)
     sub["plan_name"] = plan_meta["name"] if plan_meta else "None"
     sub["key_id"] = razorpay_gateway.get_key_id()
+    sub["supported_currencies"] = razorpay_gateway.get_supported_currencies()
     return sub
 
 @app.post("/api/subscription/start-trial")
@@ -575,21 +579,21 @@ async def start_free_trial(request: Request, req: Optional[TrialStartRequest] = 
 
 @app.post("/api/subscription/create-order")
 async def create_subscription_order(request: Request, req: OrderCreateRequest):
-    """Create Razorpay order on server with validated plan pricing and INR conversion."""
+    """Create Razorpay order on server with validated regional pricing."""
     user = get_current_user_optional(request)
     cfg = settings.load()
     handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    country = (req.country or "IN").strip().upper()
     try:
-        order = razorpay_gateway.create_order(handle, req.plan_id)
+        order = razorpay_gateway.create_order(handle, req.plan_id, country_code=country)
         database.record_order_created(
             user_id=handle,
             plan_id=req.plan_id,
             order_id=order["order_id"],
-            amount_usd=order["amount_usd"],
-            amount_inr=order["amount_inr"],
-            amount_paise=order["amount"],
-            exchange_rate=order["exchange_rate"],
+            amount=order["price"],
+            amount_subunits=order["amount_subunits"],
             currency=order["currency"],
+            billing_country=country,
         )
         return {"ok": True, "order": order}
     except ValueError as e:
@@ -638,12 +642,11 @@ async def verify_subscription_payment(request: Request, req: PaymentVerifyReques
         plan_id=p_info["plan_id"],
         order_id=req.razorpay_order_id,
         payment_id=req.razorpay_payment_id,
-        amount_usd=p_info["amount_usd"],
-        amount_inr=p_info["amount_inr"],
-        amount_paise=p_info["amount_paise"],
-        exchange_rate=p_info["exchange_rate"],
-        raw_details=rz_payment,
+        amount=p_info.get("amount") or p_info.get("amount_usd") or p_info.get("amount_inr") or 0.0,
+        amount_subunits=p_info.get("amount_subunits") or p_info.get("amount_paise") or 0,
         currency=p_info.get("currency", "INR"),
+        billing_country=p_info.get("billing_country", "IN"),
+        raw_details=rz_payment,
     )
 
     # 5. Sync to post state
@@ -685,20 +688,21 @@ async def handle_razorpay_webhook(request: Request):
         notes = entity.get("notes", {})
         user_id = notes.get("user_id")
         plan_id = notes.get("plan_id")
+        country_code = notes.get("country_code", "IN")
         if user_id and plan_id and order_id and payment_id:
-            plan = subscription.get_plan(plan_id)
-            if plan:
-                rate = float(notes.get("exchange_rate", subscription.get_exchange_rate()))
-                amt_inr, paise = subscription.calculate_inr_amount(plan["price_usd"], rate)
+            plan = subscription.get_plan(plan_id, country_code=country_code)
+            if plan and plan.get("price"):
+                currency = plan["currency"]
+                subunits = int(round(plan["price"] * 100))
                 database.activate_subscription(
                     user_id=user_id,
                     plan_id=plan_id,
                     order_id=order_id,
                     payment_id=payment_id,
-                    amount_usd=plan["price_usd"],
-                    amount_inr=amt_inr,
-                    amount_paise=paise,
-                    exchange_rate=rate,
+                    amount=plan["price"],
+                    amount_subunits=subunits,
+                    currency=currency,
+                    billing_country=country_code,
                     raw_details=entity,
                 )
 

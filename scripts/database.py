@@ -55,6 +55,8 @@ def init_db() -> None:
                     current_period_end TEXT,
                     razorpay_order_id TEXT,
                     razorpay_payment_id TEXT,
+                    billing_country TEXT DEFAULT 'IN',
+                    currency TEXT DEFAULT 'INR',
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
@@ -67,11 +69,14 @@ def init_db() -> None:
                     plan_id TEXT NOT NULL,
                     razorpay_order_id TEXT NOT NULL,
                     razorpay_payment_id TEXT,
-                    amount_usd REAL NOT NULL,
-                    amount_inr REAL NOT NULL,
-                    amount_paise INTEGER NOT NULL,
+                    billing_country TEXT DEFAULT 'IN',
                     currency TEXT NOT NULL DEFAULT 'INR',
-                    exchange_rate REAL NOT NULL,
+                    amount REAL DEFAULT 0,
+                    amount_subunits INTEGER DEFAULT 0,
+                    amount_usd REAL DEFAULT 0,
+                    amount_inr REAL DEFAULT 0,
+                    amount_paise INTEGER DEFAULT 0,
+                    exchange_rate REAL DEFAULT 1.0,
                     verification_status TEXT NOT NULL,
                     raw_details TEXT,
                     created_at TEXT NOT NULL
@@ -132,6 +137,24 @@ def init_db() -> None:
                 conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_x_user_id ON users(x_user_id);")
                 conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users(LOWER(username));")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);")
+
+                # Automatic schema migrations for multi-currency support
+                cur = conn.cursor()
+                cur.execute("PRAGMA table_info(payments);")
+                payment_cols = {col["name"] for col in cur.fetchall()}
+                if "billing_country" not in payment_cols:
+                    conn.execute("ALTER TABLE payments ADD COLUMN billing_country TEXT DEFAULT 'IN';")
+                if "amount" not in payment_cols:
+                    conn.execute("ALTER TABLE payments ADD COLUMN amount REAL DEFAULT 0;")
+                if "amount_subunits" not in payment_cols:
+                    conn.execute("ALTER TABLE payments ADD COLUMN amount_subunits INTEGER DEFAULT 0;")
+
+                cur.execute("PRAGMA table_info(subscriptions);")
+                sub_cols = {col["name"] for col in cur.fetchall()}
+                if "billing_country" not in sub_cols:
+                    conn.execute("ALTER TABLE subscriptions ADD COLUMN billing_country TEXT DEFAULT 'IN';")
+                if "currency" not in sub_cols:
+                    conn.execute("ALTER TABLE subscriptions ADD COLUMN currency TEXT DEFAULT 'INR';")
         finally:
             conn.close()
 
@@ -180,6 +203,8 @@ def get_subscription(user_id: str) -> Dict[str, Any]:
                     "is_lifetime": False,
                     "trial_eligible": not trial_claimed,
                     "has_claimed_trial": trial_claimed,
+                    "billing_country": "IN",
+                    "currency": "INR",
                 }
 
             sub = dict(row)
@@ -240,6 +265,8 @@ def get_subscription(user_id: str) -> Dict[str, Any]:
                 "is_lifetime": is_lifetime,
                 "trial_eligible": not trial_claimed,
                 "has_claimed_trial": trial_claimed,
+                "billing_country": sub.get("billing_country", "IN"),
+                "currency": sub.get("currency", "INR"),
                 "razorpay_order_id": sub.get("razorpay_order_id"),
                 "razorpay_payment_id": sub.get("razorpay_payment_id"),
                 "updated_at": sub.get("updated_at"),
@@ -296,14 +323,32 @@ def record_order_created(
     user_id: str,
     plan_id: str,
     order_id: str,
-    amount_usd: float,
-    amount_inr: float,
-    amount_paise: int,
-    exchange_rate: float,
+    amount: float = 0.0,
+    amount_subunits: int = 0,
     currency: str = "INR",
+    billing_country: str = "IN",
+    amount_usd: Optional[float] = None,
+    amount_inr: Optional[float] = None,
+    amount_paise: Optional[int] = None,
+    exchange_rate: Optional[float] = None,
 ) -> None:
-    """Record pending order initiation in payments table."""
+    """Record pending order initiation in payments table with multi-currency tracking."""
     init_db()
+    effective_amount = amount
+    effective_subunits = amount_subunits
+
+    if amount_usd is not None and not effective_amount:
+        effective_amount = amount_usd
+    if amount_inr is not None and not effective_amount:
+        effective_amount = amount_inr
+    if amount_paise is not None and not effective_subunits:
+        effective_subunits = amount_paise
+
+    eff_usd = amount_usd if amount_usd is not None else (effective_amount if currency == "USD" else 0.0)
+    eff_inr = amount_inr if amount_inr is not None else (effective_amount if currency == "INR" else 0.0)
+    eff_paise = amount_paise if amount_paise is not None else effective_subunits
+    eff_rate = exchange_rate if exchange_rate is not None else 1.0
+
     with _lock:
         conn = get_connection()
         try:
@@ -312,10 +357,16 @@ def record_order_created(
                 conn.execute("""
                     INSERT INTO payments (
                         user_id, plan_id, razorpay_order_id, razorpay_payment_id,
-                        amount_usd, amount_inr, amount_paise, currency,
+                        billing_country, currency, amount, amount_subunits,
+                        amount_usd, amount_inr, amount_paise,
                         exchange_rate, verification_status, raw_details, created_at
-                    ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, 'pending', NULL, ?)
-                """, (user_id, plan_id, order_id, amount_usd, amount_inr, amount_paise, currency, exchange_rate, now_str))
+                    ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?)
+                """, (
+                    user_id, plan_id, order_id,
+                    billing_country, currency, effective_amount, effective_subunits,
+                    eff_usd, eff_inr, eff_paise,
+                    eff_rate, now_str
+                ))
 
                 # Note: We do NOT downgrade an active/trialing user to payment_pending
                 cursor = conn.cursor()
@@ -326,14 +377,16 @@ def record_order_created(
                         INSERT INTO subscriptions (
                             user_id, plan_id, status, trial_start, trial_end,
                             current_period_start, current_period_end, razorpay_order_id,
-                            razorpay_payment_id, created_at, updated_at
-                        ) VALUES (?, ?, 'payment_pending', NULL, NULL, NULL, NULL, ?, NULL, ?, ?)
+                            razorpay_payment_id, billing_country, currency, created_at, updated_at
+                        ) VALUES (?, ?, 'payment_pending', NULL, NULL, NULL, NULL, ?, NULL, ?, ?, ?, ?)
                         ON CONFLICT(user_id) DO UPDATE SET
                             plan_id = excluded.plan_id,
                             status = 'payment_pending',
                             razorpay_order_id = excluded.razorpay_order_id,
+                            billing_country = excluded.billing_country,
+                            currency = excluded.currency,
                             updated_at = excluded.updated_at;
-                    """, (user_id, plan_id, order_id, now_str, now_str))
+                    """, (user_id, plan_id, order_id, billing_country, currency, now_str, now_str))
         finally:
             conn.close()
 
@@ -342,15 +395,33 @@ def activate_subscription(
     plan_id: str,
     order_id: str,
     payment_id: str,
-    amount_usd: float,
-    amount_inr: float,
-    amount_paise: int,
-    exchange_rate: float,
-    raw_details: Optional[Dict[str, Any]] = None,
+    amount: float = 0.0,
+    amount_subunits: int = 0,
     currency: str = "INR",
+    billing_country: str = "IN",
+    raw_details: Optional[Dict[str, Any]] = None,
+    amount_usd: Optional[float] = None,
+    amount_inr: Optional[float] = None,
+    amount_paise: Optional[int] = None,
+    exchange_rate: Optional[float] = None,
 ) -> Dict[str, Any]:
-    """Atomically activate subscription after verified payment."""
+    """Atomically activate subscription after verified payment in native currency."""
     init_db()
+    effective_amount = amount
+    effective_subunits = amount_subunits
+
+    if amount_usd is not None and not effective_amount:
+        effective_amount = amount_usd
+    if amount_inr is not None and not effective_amount:
+        effective_amount = amount_inr
+    if amount_paise is not None and not effective_subunits:
+        effective_subunits = amount_paise
+
+    eff_usd = amount_usd if amount_usd is not None else (effective_amount if currency == "USD" else 0.0)
+    eff_inr = amount_inr if amount_inr is not None else (effective_amount if currency == "INR" else 0.0)
+    eff_paise = amount_paise if amount_paise is not None else effective_subunits
+    eff_rate = exchange_rate if exchange_rate is not None else 1.0
+
     with _lock:
         conn = get_connection()
         try:
@@ -381,25 +452,35 @@ def activate_subscription(
                         UPDATE payments SET
                             razorpay_payment_id = ?,
                             verification_status = 'verified',
-                            raw_details = ?
+                            raw_details = ?,
+                            billing_country = COALESCE(billing_country, ?),
+                            currency = COALESCE(currency, ?),
+                            amount = CASE WHEN amount > 0 THEN amount ELSE ? END,
+                            amount_subunits = CASE WHEN amount_subunits > 0 THEN amount_subunits ELSE ? END
                         WHERE razorpay_order_id = ?
-                    """, (payment_id, raw_json, order_id))
+                    """, (payment_id, raw_json, billing_country, currency, effective_amount, effective_subunits, order_id))
                 else:
                     conn.execute("""
                         INSERT INTO payments (
                             user_id, plan_id, razorpay_order_id, razorpay_payment_id,
-                            amount_usd, amount_inr, amount_paise, currency,
+                            billing_country, currency, amount, amount_subunits,
+                            amount_usd, amount_inr, amount_paise,
                             exchange_rate, verification_status, raw_details, created_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified', ?, ?)
-                    """, (user_id, plan_id, order_id, payment_id, amount_usd, amount_inr, amount_paise, currency, exchange_rate, raw_json, now_str))
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified', ?, ?)
+                    """, (
+                        user_id, plan_id, order_id, payment_id,
+                        billing_country, currency, effective_amount, effective_subunits,
+                        eff_usd, eff_inr, eff_paise,
+                        eff_rate, raw_json, now_str
+                    ))
 
                 # Upsert subscriptions table
                 conn.execute("""
                     INSERT INTO subscriptions (
                         user_id, plan_id, status, trial_start, trial_end,
                         current_period_start, current_period_end, razorpay_order_id,
-                        razorpay_payment_id, created_at, updated_at
-                    ) VALUES (?, ?, 'active', NULL, NULL, ?, ?, ?, ?, ?, ?)
+                        razorpay_payment_id, billing_country, currency, created_at, updated_at
+                    ) VALUES (?, ?, 'active', NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(user_id) DO UPDATE SET
                         plan_id = excluded.plan_id,
                         status = 'active',
@@ -407,8 +488,10 @@ def activate_subscription(
                         current_period_end = excluded.current_period_end,
                         razorpay_order_id = excluded.razorpay_order_id,
                         razorpay_payment_id = excluded.razorpay_payment_id,
+                        billing_country = excluded.billing_country,
+                        currency = excluded.currency,
                         updated_at = excluded.updated_at;
-                """, (user_id, plan_id, now_str, period_end, order_id, payment_id, now_str, now_str))
+                """, (user_id, plan_id, now_str, period_end, order_id, payment_id, billing_country, currency, now_str, now_str))
 
             return get_subscription(user_id)
         finally:
@@ -459,7 +542,8 @@ def get_payment_history(user_id: str) -> List[Dict[str, Any]]:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT id, user_id, plan_id, razorpay_order_id, razorpay_payment_id,
-                       amount_usd, amount_inr, amount_paise, currency, exchange_rate,
+                       amount, amount_subunits, currency, billing_country,
+                       amount_usd, amount_inr, amount_paise, exchange_rate,
                        verification_status, created_at
                 FROM payments
                 WHERE user_id = ?

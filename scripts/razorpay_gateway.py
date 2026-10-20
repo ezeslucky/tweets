@@ -1,6 +1,6 @@
 """Razorpay payment gateway integration for Tweets Autonomous Agent.
 
-Handles order creation, cryptographic checkout signature verification,
+Handles multi-currency regional order creation, cryptographic checkout signature verification,
 webhook signature validation, and payment fetching via Razorpay SDK and HMAC-SHA256.
 """
 from __future__ import annotations
@@ -9,12 +9,17 @@ import hashlib
 import hmac
 import os
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import razorpay
 from razorpay.errors import SignatureVerificationError
 
-from subscription import calculate_inr_amount, get_exchange_rate, get_plan
+from subscription import (
+    get_catalog_for_country,
+    get_plan,
+    get_region_config,
+    resolve_region,
+)
 
 def get_key_id() -> str:
     return os.getenv("RAZORPAY_KEY_ID", "rzp_test_placeholder").strip()
@@ -25,34 +30,59 @@ def get_key_secret() -> str:
 def get_webhook_secret() -> str:
     return os.getenv("RAZORPAY_WEBHOOK_SECRET", "placeholder_webhook_secret").strip()
 
+def get_supported_currencies() -> List[str]:
+    """Return list of supported checkout currencies in Razorpay."""
+    raw = os.getenv("RAZORPAY_SUPPORTED_CURRENCIES", "INR,USD,EUR").strip()
+    return [c.strip().upper() for c in raw.split(",") if c.strip()]
+
+def is_currency_supported(currency: str) -> bool:
+    """Check if the currency is supported for Razorpay charges."""
+    return currency.strip().upper() in get_supported_currencies()
+
 def get_razorpay_client() -> razorpay.Client:
     return razorpay.Client(auth=(get_key_id(), get_key_secret()))
 
-def create_order(user_id: str, plan_id: str) -> Dict[str, Any]:
-    """Create a verified Razorpay order in INR for a subscription plan."""
-    plan = get_plan(plan_id)
+def create_order(user_id: str, plan_id: str, country_code: str = "IN") -> Dict[str, Any]:
+    """Create a verified Razorpay order in the region's authoritative currency."""
+    effective_country = (country_code or "IN").strip().upper()
+    plan = get_plan(plan_id, country_code=effective_country)
     if not plan:
         raise ValueError(f"Invalid plan ID: {plan_id}")
-    if plan["price_usd"] <= 0:
+
+    if not plan.get("checkout_enabled") or plan.get("price") is None:
+        reason = plan.get("unconfigured_reason") or f"Checkout is disabled for plan '{plan['name']}' in country '{effective_country}'."
+        raise ValueError(reason)
+
+    if plan["price"] <= 0:
         raise ValueError("Cannot create payment order for free trial. Use /api/subscription/start-trial instead.")
 
-    rate = get_exchange_rate()
-    amount_inr, amount_paise = calculate_inr_amount(plan["price_usd"], rate)
+    currency = plan["currency"]
+    if not is_currency_supported(currency):
+        raise ValueError(
+            f"Currency '{currency}' is currently not enabled for Razorpay charges. "
+            f"Enabled currencies: {', '.join(get_supported_currencies())}. "
+            "We never silently charge international customers in a different currency."
+        )
+
+    region_id = resolve_region(effective_country)
+    region = get_region_config(region_id)
+    multiplier = region.get("subunit_multiplier", 100)
+    amount_subunits = int(round(plan["price"] * multiplier))
 
     client = get_razorpay_client()
     key_id = get_key_id()
-    key_secret = get_key_secret()
 
     order_payload = {
-        "amount": amount_paise,
-        "currency": "INR",
+        "amount": amount_subunits,
+        "currency": currency,
         "receipt": f"rcpt_{user_id[:8]}_{plan_id}_{int(time.time())}",
         "notes": {
             "user_id": user_id,
             "plan_id": plan_id,
             "plan_name": plan["name"],
-            "price_usd": str(plan["price_usd"]),
-            "exchange_rate": str(rate),
+            "country_code": effective_country,
+            "price": str(plan["price"]),
+            "currency": currency,
         },
     }
 
@@ -67,18 +97,19 @@ def create_order(user_id: str, plan_id: str) -> Dict[str, Any]:
 
     # In local development mode without active Razorpay credentials:
     if not order_id:
-        # Generate valid order_id pattern: order_<alphanumeric>
-        seed = f"{user_id}_{plan_id}_{int(time.time()*1000)}"
+        seed = f"{user_id}_{plan_id}_{effective_country}_{int(time.time()*1000)}"
         digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:14]
         order_id = f"order_{digest}"
 
     return {
         "order_id": order_id,
-        "amount": amount_paise,
-        "amount_inr": amount_inr,
-        "amount_usd": plan["price_usd"],
-        "currency": "INR",
-        "exchange_rate": rate,
+        "amount": amount_subunits,
+        "amount_subunits": amount_subunits,
+        "price": plan["price"],
+        "formatted_price": f"{plan['currency_symbol']}{plan['price']:,}",
+        "currency": currency,
+        "currency_symbol": plan["currency_symbol"],
+        "country_code": effective_country,
         "plan_id": plan_id,
         "plan_name": plan["name"],
         "key_id": key_id,
