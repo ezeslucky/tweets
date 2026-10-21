@@ -35,6 +35,10 @@ import post
 import razorpay_gateway
 import research
 import research_catalog
+import daily_intelligence
+import global_trends_catalog
+import trends_engine
+import trends_scheduler
 import settings
 import subscription
 import x_auth
@@ -43,6 +47,9 @@ import x_auth
 database.init_db()
 
 app = FastAPI(title="Tweets Companion API", version="2.0.0")
+@app.on_event("startup")
+async def on_app_startup():
+    trends_scheduler.start_background_scheduler()
 
 # Enable CORS for Capacitor mobile apps and web frontends
 app.add_middleware(
@@ -94,6 +101,28 @@ class ResearchCollectRequest(BaseModel):
     enabled_sources: Optional[List[str]] = None
     custom_feeds: Optional[List[Dict[str, str]]] = None
     hours: Optional[int] = 36
+
+class TrendCollectRequest(BaseModel):
+    source_ids: Optional[List[str]] = None
+    hours: Optional[int] = 48
+
+class WatchlistAddRequest(BaseModel):
+    keyword: str
+    category_filter: Optional[str] = ""
+
+class BookmarkAddRequest(BaseModel):
+    story_id: int
+
+class TrendScheduleUpdateRequest(BaseModel):
+    schedule_time: str = "06:00"
+    timezone: str = "UTC"
+    enabled: bool = True
+
+class TrendPreferencesRequest(BaseModel):
+    preferred_categories: Optional[List[str]] = None
+    preferred_regions: Optional[List[str]] = None
+    preferred_sources: Optional[List[str]] = None
+    preferred_languages: Optional[List[str]] = None
 
 class ResearchPreferencesRequest(BaseModel):
     selected_sources: List[str]
@@ -755,6 +784,218 @@ async def get_latest_research(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== GLOBAL TREND INTELLIGENCE APIS ====================
+
+@app.get("/api/trends/stories")
+async def get_trend_stories(
+    request: Request,
+    time_range: str = "today",
+    category: Optional[str] = None,
+    region: Optional[str] = None,
+    trend_type: Optional[str] = None,
+    source: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: str = "velocity",
+    limit: int = 40,
+    offset: int = 0
+):
+    """Retrieve global trending intelligence stories with multi-dimensional filtering."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else None
+
+    res = database.get_global_trend_stories(
+        time_range=time_range,
+        category=category,
+        region=region,
+        trend_type=trend_type,
+        source=source,
+        search=search,
+        sort_by=sort_by,
+        limit=limit,
+        offset=offset,
+        user_id=handle,
+    )
+    return {"ok": True, **res}
+
+@app.get("/api/trends/overview")
+async def get_trend_overview():
+    """Retrieve intelligence KPI metrics, category breakdowns, regional distributions, and emerging signals."""
+    overview = database.get_global_trend_overview()
+    sched = database.get_trend_schedule()
+    overview["schedule"] = sched
+    return {"ok": True, "overview": overview}
+
+@app.get("/api/trends/sources")
+async def get_trend_sources():
+    """Retrieve all registered trend sources across 12 categories and 6 regions."""
+    sources = global_trends_catalog.get_all_trend_sources()
+    return {
+        "ok": True,
+        "total_sources": len(sources),
+        "categories": global_trends_catalog.get_categories(),
+        "regions": global_trends_catalog.get_regions(),
+        "sources": sources,
+    }
+
+@app.post("/api/trends/collect")
+async def trigger_trend_collection(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    req: Optional[TrendCollectRequest] = None
+):
+    """Manual 'Refresh Now' trigger. Launches background collection and AI report generation."""
+    if trends_engine.is_collecting():
+        return {
+            "ok": False,
+            "busy": True,
+            "job_info": trends_engine.get_active_job_info(),
+            "message": "A global trend collection job is already running."
+        }
+
+    source_ids = req.source_ids if req else None
+    hours = req.hours if req and req.hours else 48
+
+    def _pipeline():
+        trends_engine.collect_global_trends(source_ids=source_ids, hours=hours)
+        daily_intelligence.generate_daily_report()
+
+    background_tasks.add_task(_pipeline)
+    return {
+        "ok": True,
+        "message": "Global trend collection initiated in background.",
+        "status": "running"
+    }
+
+@app.get("/api/trends/status")
+async def get_trends_live_status():
+    """Ultra-fast lightweight status poller for live dashboard updates without hitting external APIs."""
+    sched = database.get_trend_schedule()
+    is_busy = trends_engine.is_collecting()
+    job_info = trends_engine.get_active_job_info()
+
+    last_run = sched.get("last_run_at") or ""
+    total = sched.get("last_stories_count") or 0
+    revision = f"{last_run}:{total}:{is_busy}"
+
+    return {
+        "ok": True,
+        "revision": revision,
+        "is_collecting": is_busy,
+        "active_job": job_info,
+        "last_run_at": last_run,
+        "next_run_at": sched.get("next_run_at"),
+        "last_status": sched.get("last_status"),
+        "total_stories": total,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+@app.get("/api/trends/daily-reports")
+async def list_daily_reports(limit: int = 30):
+    """Retrieve historical index of daily AI intelligence briefs."""
+    reports = database.list_daily_intelligence_reports(limit=limit)
+    return {"ok": True, "reports": reports}
+
+@app.get("/api/trends/daily-reports/{report_date}")
+async def get_daily_report(report_date: str):
+    """Retrieve full executive daily intelligence brief for target date."""
+    rep = database.get_daily_intelligence_report(report_date)
+    if not rep:
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        if report_date == today_str:
+            rep = daily_intelligence.generate_daily_report(today_str)
+        else:
+            raise HTTPException(status_code=404, detail=f"No intelligence brief found for {report_date}")
+    return {"ok": True, "report": rep}
+
+@app.post("/api/trends/daily-reports/generate")
+async def generate_daily_report_endpoint(target_date: Optional[str] = None):
+    """Generate or regenerate daily AI research report on demand."""
+    rep = daily_intelligence.generate_daily_report(target_date)
+    return {"ok": True, "report": rep}
+
+@app.get("/api/trends/watchlist")
+async def get_watchlist(request: Request):
+    """Retrieve followed topics/keywords for the current user."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "guest"
+    items = database.get_user_watchlist(handle)
+    return {"ok": True, "watchlist": items}
+
+@app.post("/api/trends/watchlist")
+async def add_to_watchlist(request: Request, req: WatchlistAddRequest):
+    """Add keyword/topic to user's personal watchlist."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "guest"
+    item = database.add_user_watchlist_item(handle, req.keyword, req.category_filter or "")
+    return {"ok": True, "item": item}
+
+@app.delete("/api/trends/watchlist/{keyword}")
+async def delete_from_watchlist(keyword: str, request: Request):
+    """Remove topic keyword from user's watchlist."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "guest"
+    database.remove_user_watchlist_item(handle, keyword)
+    return {"ok": True, "deleted": keyword}
+
+@app.get("/api/trends/bookmarks")
+async def get_bookmarks(request: Request):
+    """Retrieve bookmarked trend stories for reading list."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "guest"
+    bookmarks = database.get_user_bookmarks(handle)
+    return {"ok": True, "bookmarks": bookmarks}
+
+@app.post("/api/trends/bookmarks")
+async def add_bookmark(request: Request, req: BookmarkAddRequest):
+    """Save story to personal reading list."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "guest"
+    database.add_user_bookmark(handle, req.story_id)
+    return {"ok": True, "bookmarked": req.story_id}
+
+@app.delete("/api/trends/bookmarks/{story_id}")
+async def delete_bookmark(story_id: int, request: Request):
+    """Remove story from bookmarks."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "guest"
+    database.remove_user_bookmark(handle, story_id)
+    return {"ok": True, "removed": story_id}
+
+@app.get("/api/trends/schedule")
+async def get_schedule_settings():
+    """View automated background schedule settings."""
+    sched = database.get_trend_schedule()
+    return {"ok": True, "schedule": sched}
+
+@app.post("/api/trends/schedule")
+async def update_schedule_settings(req: TrendScheduleUpdateRequest):
+    """Configure automated daily update time and timezone."""
+    updated = database.update_trend_schedule(
+        schedule_time=req.schedule_time,
+        timezone_str=req.timezone,
+        enabled=req.enabled,
+    )
+    return {"ok": True, "schedule": updated}
+
+@app.get("/api/trends/export")
+async def export_intelligence_report(report_date: Optional[str] = None, format: str = "markdown"):
+    """Export daily intelligence brief as downloadable Markdown or JSON."""
+    rep = database.get_daily_intelligence_report(report_date)
+    if not rep:
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        rep = daily_intelligence.generate_daily_report(today_str)
+
+    if format.lower() == "json":
+        return rep
+
+    md_content = rep.get("summary_markdown", "# Intelligence Brief")
+    return Response(
+        content=md_content,
+        media_type="text/markdown",
+        headers={"Content-Disposition": f"attachment; filename=intelligence_brief_{rep.get('report_date')}.md"}
+    )
 
 
 @app.get("/api/shots/{name}")

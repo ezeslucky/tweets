@@ -351,20 +351,26 @@
           <span>Queue</span>
           <kbd class="hidden lg:inline text-[9px] opacity-70 bg-white/20 px-1 rounded">1</kbd>
         </button>
+        <button onclick="switchTab('trends')" id="dnav-trends" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition">
+          <i data-lucide="trending-up" class="w-3.5 h-3.5 text-amber-500"></i>
+          <span>Trends</span>
+          <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-400">Live</span>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">2</kbd>
+        </button>
         <button onclick="switchTab('research')" id="dnav-research" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition">
           <i data-lucide="newspaper" class="w-3.5 h-3.5"></i>
           <span>Research</span>
-          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">2</kbd>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">3</kbd>
         </button>
         <button onclick="switchTab('verify')" id="dnav-verify" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition">
           <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
           <span>Verify</span>
-          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">3</kbd>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">4</kbd>
         </button>
         <button onclick="switchTab('status')" id="dnav-status" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 btn-press transition">
           <i data-lucide="activity" class="w-3.5 h-3.5"></i>
           <span>Status</span>
-          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">4</kbd>
+          <kbd class="hidden lg:inline text-[9px] opacity-70 bg-black/10 dark:bg-white/10 px-1 rounded">5</kbd>
         </button>
       </nav>
 
@@ -445,7 +451,310 @@
       </div>
     </section>
 
-    <!-- ==================== TAB 2: RESEARCH SWIPE FILE ==================== -->
+<!-- ==================== TAB 2: GLOBAL TRENDING INTELLIGENCE ==================== -->
+    <section id="tab-trends" class="space-y-4 hidden tab-animate">
+
+      <!-- Header & Main Actions -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 sm:p-5 shadow-sm gap-3">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <i data-lucide="trending-up" class="w-5 h-5 text-amber-500"></i>
+            <h2 class="text-base font-bold tracking-tight text-[var(--text-primary)]">Global Trending Intelligence</h2>
+            <span id="trends-status-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Live Engine Connected
+            </span>
+            <button onclick="openTrendScheduleModal()" id="trends-schedule-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border border-[var(--border-subtle)] bg-[var(--bg-input)] text-[var(--text-secondary)] hover:border-brand hover:text-[var(--text-primary)] transition btn-press" title="Configure automated schedule">
+              <i data-lucide="clock" class="w-3 h-3 text-brand"></i>
+              <span id="trends-next-run-text">Daily Update: 06:00 UTC</span>
+            </button>
+          </div>
+          <p class="text-xs text-[var(--text-secondary)] mt-1">
+            Real-time developments across 12 industries & 6 continents with multi-source velocity scoring.
+          </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <button onclick="openIntelligenceModal()" class="px-3 py-1.5 bg-gradient-to-r from-purple-500/20 to-brand/20 hover:from-purple-500/30 hover:to-brand/30 border border-purple-500/40 text-[var(--text-primary)] rounded-xl text-xs font-semibold flex items-center gap-1.5 btn-press shadow-sm" title="View executive intelligence brief">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-400"></i>
+            <span>Daily AI Brief</span>
+          </button>
+          <button onclick="openWatchlistModal()" class="px-3 py-1.5 bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-xl text-xs font-medium flex items-center gap-1.5 btn-press" title="Manage followed topics & keywords">
+            <i data-lucide="bookmark-plus" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Watchlist</span>
+            <span id="trends-watchlist-badge" class="hidden px-1.5 py-0.2 bg-amber-500/20 text-amber-400 text-[10px] rounded-full font-bold">0</span>
+          </button>
+          <button id="btn-refresh-trends" onclick="triggerTrendsRefresh()" class="px-3 py-1.5 bg-brand hover:bg-brand-hover text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 btn-press shadow-sm">
+            <i id="icon-refresh-trends" data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Refresh Now</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Collection Progress Banner (Shown when scraping/synthesizing) -->
+      <div id="trends-progress-banner" class="hidden bg-brand/10 border border-brand/30 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 text-xs text-[var(--text-primary)] animate-pulse">
+        <i data-lucide="loader" class="w-5 h-5 text-brand animate-spin flex-shrink-0"></i>
+        <div class="flex-1 min-w-0">
+          <span class="font-bold text-brand block" id="trends-progress-title">Collecting Global Intelligence</span>
+          <p class="text-[var(--text-secondary)] text-[11px] truncate" id="trends-progress-desc">
+            Fetching real-time trends from 198 sources across Google Trends, GitHub, Hacker News, Reddit, arXiv, and RSS...
+          </p>
+        </div>
+      </div>
+
+      <!-- Executive KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- KPI 1: Peak Velocity -->
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-3.5 shadow-sm hover:border-[var(--border-subtle)] transition">
+          <div class="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-1">
+            <span class="font-medium">Peak Velocity</span>
+            <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpi-top-velocity" class="text-xl sm:text-2xl font-black text-[var(--text-primary)] font-mono">--</span>
+            <span class="text-[10px] text-amber-400 font-bold uppercase tracking-wider">/ 100</span>
+          </div>
+          <p class="text-[11px] text-[var(--text-muted)] mt-1 truncate">Fastest cross-platform acceleration</p>
+        </div>
+
+        <!-- KPI 2: Breaking Signals -->
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-3.5 shadow-sm hover:border-[var(--border-subtle)] transition">
+          <div class="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-1">
+            <span class="font-medium">Breaking Signals</span>
+            <i data-lucide="flame" class="w-4 h-4 text-rose-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpi-breaking-count" class="text-xl sm:text-2xl font-black text-rose-400 font-mono">--</span>
+            <span class="text-[10px] text-[var(--text-muted)] font-medium">high-impact</span>
+          </div>
+          <p class="text-[11px] text-[var(--text-muted)] mt-1 truncate">Multi-publisher verified spikes</p>
+        </div>
+
+        <!-- KPI 3: Global Coverage -->
+        <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-3.5 shadow-sm hover:border-[var(--border-subtle)] transition">
+          <div class="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-1">
+            <span class="font-medium">Monitored Sources</span>
+            <i data-lucide="globe" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpi-sources-count" class="text-xl sm:text-2xl font-black text-cyan-400 font-mono">198</span>
+            <span class="text-[10px] text-[var(--text-muted)] font-medium">sources</span>
+          </div>
+          <p class="text-[11px] text-[var(--text-muted)] mt-1 truncate">12 industries across 6 continents</p>
+        </div>
+
+        <!-- KPI 4: Active Signals & Report -->
+        <div onclick="openIntelligenceModal()" class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-3.5 shadow-sm hover:border-purple-500/40 transition cursor-pointer group">
+          <div class="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-1">
+            <span class="font-medium group-hover:text-purple-400 transition">Daily AI Brief</span>
+            <i data-lucide="file-text" class="w-4 h-4 text-purple-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpi-stories-count" class="text-xl sm:text-2xl font-black text-purple-400 font-mono">--</span>
+            <span class="text-[10px] text-purple-400/80 font-medium">signals</span>
+          </div>
+          <p class="text-[11px] text-purple-400/70 group-hover:text-purple-300 mt-1 truncate flex items-center gap-1">
+            <span>Read Executive Report</span>
+            <i data-lucide="arrow-right" class="w-3 h-3"></i>
+          </p>
+        </div>
+      </div>
+
+      <!-- Filter & Search Toolbar -->
+      <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-3.5 sm:p-4 space-y-3 shadow-sm">
+        
+        <!-- Search Row & Primary View Tabs -->
+        <div class="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
+          <!-- Fast Search Bar -->
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"></i>
+            <input
+              type="text"
+              id="input-trends-search"
+              oninput="handleTrendsSearch(this.value)"
+              placeholder="Search trending topics, companies, models, keywords..."
+              class="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] focus:border-brand rounded-xl pl-9 pr-8 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition"
+            />
+            <button
+              id="btn-trends-clear-search"
+              onclick="clearTrendsSearch()"
+              class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              title="Clear search"
+            >
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- View Switcher (All Trends / Watchlist / Reading List) -->
+          <div class="flex items-center bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-1 gap-1 flex-shrink-0">
+            <button
+              onclick="setTrendsView('all')"
+              id="tbtn-view-all"
+              class="px-3 py-1 rounded-lg text-xs font-semibold bg-brand text-white shadow-sm flex items-center gap-1 btn-press transition"
+            >
+              <i data-lucide="layers" class="w-3 h-3"></i>
+              <span>All Trends</span>
+            </button>
+            <button
+              onclick="setTrendsView('watchlist')"
+              id="tbtn-view-watchlist"
+              class="px-3 py-1 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1 btn-press transition"
+            >
+              <i data-lucide="star" class="w-3 h-3 text-amber-400"></i>
+              <span>Watchlist</span>
+            </button>
+            <button
+              onclick="setTrendsView('bookmarks')"
+              id="tbtn-view-bookmarks"
+              class="px-3 py-1 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1 btn-press transition"
+            >
+              <i data-lucide="bookmark" class="w-3 h-3 text-brand"></i>
+              <span>Saved (<span id="trends-saved-count">0</span>)</span>
+            </button>
+          </div>
+
+          <!-- Sort Dropdown -->
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <label class="text-[11px] text-[var(--text-muted)] hidden sm:inline">Sort:</label>
+            <select
+              id="select-trends-sort"
+              onchange="handleTrendsSort(this.value)"
+              class="bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-xl px-2.5 py-1.5 text-xs outline-none focus:border-brand cursor-pointer"
+            >
+              <option value="velocity">⚡ Highest Velocity</option>
+              <option value="recent">🕒 Most Recent</option>
+              <option value="cross_sources">🌐 Most Sources</option>
+              <option value="engagement">🔥 Top Engagement</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Category Horizontal Filter Chips (12 Categories + All) -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar" id="trends-category-chips">
+          <button onclick="setTrendsCategory('')" data-cat="" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-semibold bg-brand text-white border border-brand whitespace-nowrap btn-press transition">
+            All Topics
+          </button>
+          <button onclick="setTrendsCategory('ai')" data-cat="ai" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            🤖 Artificial Intelligence
+          </button>
+          <button onclick="setTrendsCategory('tech')" data-cat="tech" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            💻 Technology
+          </button>
+          <button onclick="setTrendsCategory('startups')" data-cat="startups" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            🚀 Startups & Business
+          </button>
+          <button onclick="setTrendsCategory('world')" data-cat="world" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            🌍 World News
+          </button>
+          <button onclick="setTrendsCategory('social')" data-cat="social" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            🔥 Social Media
+          </button>
+          <button onclick="setTrendsCategory('science')" data-cat="science" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            🔬 Science & Research
+          </button>
+          <button onclick="setTrendsCategory('developers')" data-cat="developers" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            🐙 Developer Ecosystem
+          </button>
+          <button onclick="setTrendsCategory('finance')" data-cat="finance" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            📈 Finance & Economics
+          </button>
+          <button onclick="setTrendsCategory('gaming')" data-cat="gaming" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            🎮 Gaming
+          </button>
+          <button onclick="setTrendsCategory('education')" data-cat="education" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            🎓 Education & Careers
+          </button>
+          <button onclick="setTrendsCategory('health')" data-cat="health" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            🌱 Health & Climate
+          </button>
+          <button onclick="setTrendsCategory('regional')" data-cat="regional" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            🗺️ Regional Highlights
+          </button>
+        </div>
+
+        <!-- Secondary Filters Row (Time Window, Signal Type, Region) -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border-subtle)] text-xs">
+          <!-- Time Window -->
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] text-[var(--text-muted)] mr-1">Window:</span>
+            <button onclick="setTrendsTimeRange('today')" data-tw="today" class="trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-brand text-white border border-brand btn-press transition">Today</button>
+            <button onclick="setTrendsTimeRange('24h')" data-tw="24h" class="trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] btn-press transition">24h</button>
+            <button onclick="setTrendsTimeRange('7d')" data-tw="7d" class="trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] btn-press transition">7d</button>
+            <button onclick="setTrendsTimeRange('30d')" data-tw="30d" class="trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] btn-press transition">30d</button>
+          </div>
+
+          <!-- Trend Signal Type -->
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] text-[var(--text-muted)] mr-1">Signal:</span>
+            <button onclick="setTrendsTrendType('')" data-tt="" class="trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-brand text-white border border-brand btn-press transition">All</button>
+            <button onclick="setTrendsTrendType('breaking')" data-tt="breaking" class="trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-rose-400 border border-[var(--border-subtle)] hover:border-rose-500/40 btn-press transition">🔥 Breaking</button>
+            <button onclick="setTrendsTrendType('trending')" data-tt="trending" class="trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-amber-400 border border-[var(--border-subtle)] hover:border-amber-500/40 btn-press transition">⚡ Trending</button>
+            <button onclick="setTrendsTrendType('popular')" data-tt="popular" class="trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-cyan-400 border border-[var(--border-subtle)] hover:border-cyan-500/40 btn-press transition">⭐ Popular</button>
+            <button onclick="setTrendsTrendType('emerging')" data-tt="emerging" class="trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-emerald-400 border border-[var(--border-subtle)] hover:border-emerald-500/40 btn-press transition">🌱 Emerging</button>
+          </div>
+
+          <!-- Region Dropdown -->
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] text-[var(--text-muted)]">Region:</span>
+            <select
+              id="select-trends-region"
+              onchange="setTrendsRegion(this.value)"
+              class="bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-lg px-2 py-0.5 text-xs outline-none focus:border-brand cursor-pointer"
+            >
+              <option value="">🌐 All Regions</option>
+              <option value="global">🌐 Global</option>
+              <option value="north_america">🇺🇸 North America</option>
+              <option value="europe">🇪🇺 Europe</option>
+              <option value="asia_pacific">🇮🇳 Asia-Pacific</option>
+              <option value="latin_america">🌎 Latin America</option>
+              <option value="middle_east_africa">🌍 Middle East & Africa</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Feed Container & Story Cards -->
+      <div id="trends-loading-state" class="hidden py-16 text-center">
+        <i data-lucide="loader" class="w-8 h-8 text-brand animate-spin mx-auto mb-3"></i>
+        <p class="text-xs text-[var(--text-secondary)]">Analyzing global intelligence signals...</p>
+      </div>
+
+      <div id="trends-empty-state" class="hidden py-16 text-center bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-8">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mx-auto mb-3">
+          <i data-lucide="radio" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-sm font-bold text-[var(--text-primary)]">No matching trend signals found</h3>
+        <p class="text-xs text-[var(--text-secondary)] max-w-md mx-auto mt-1 mb-4">
+          Try broadening your filters, searching for a different keyword, or run a fresh collection job across all 198 global sources.
+        </p>
+        <button onclick="triggerTrendsRefresh()" class="px-4 py-2 bg-brand text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 btn-press shadow-sm">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Collect Fresh Stories</span>
+        </button>
+      </div>
+
+      <!-- Story Cards Grid -->
+      <div id="trends-feed-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered dynamically by JavaScript -->
+      </div>
+
+      <!-- Pagination / Load More Footer -->
+      <div id="trends-load-more-container" class="hidden text-center pt-2">
+        <button
+          id="btn-trends-load-more"
+          onclick="loadMoreTrends()"
+          class="px-5 py-2 rounded-xl text-xs font-semibold bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] inline-flex items-center gap-2 btn-press transition shadow-sm"
+        >
+          <span>Load More Signals</span>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ==================== TAB 3: RESEARCH SWIPE FILE ==================== -->
     <section id="tab-research" class="space-y-4 hidden tab-animate">
       
       <!-- Research Header -->
@@ -725,12 +1034,19 @@
 
   <!-- ==================== MOBILE BOTTOM NAVIGATION ==================== -->
   <nav class="md:hidden bg-[var(--bg-nav)] backdrop-blur-xl border-t border-[var(--border-subtle)] fixed bottom-0 left-0 right-0 px-2 py-2 flex justify-around items-center z-30 transition-colors">
-    <button onclick="switchTab('queue')" id="nav-queue" class="nav-tab flex flex-col items-center py-1 px-3 text-brand font-semibold rounded-xl transition btn-press">
+    <button onclick="switchTab('queue')" id="nav-queue" class="nav-tab flex flex-col items-center py-1 px-2.5 text-brand font-semibold rounded-xl transition btn-press">
       <div class="relative">
         <i data-lucide="list-todo" class="w-5 h-5"></i>
         <span class="nav-dot absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand"></span>
       </div>
       <span class="text-[10px] mt-1">Queue</span>
+    </button>
+    <button onclick="switchTab('trends')" id="nav-trends" class="nav-tab flex flex-col items-center py-1 px-2.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press">
+      <div class="relative">
+        <i data-lucide="trending-up" class="w-5 h-5"></i>
+        <span class="nav-dot hidden absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand"></span>
+      </div>
+      <span class="text-[10px] mt-1">Trends</span>
     </button>
     <button onclick="switchTab('research')" id="nav-research" class="nav-tab flex flex-col items-center py-1 px-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl transition btn-press">
       <div class="relative">
@@ -1180,6 +1496,224 @@
         <button onclick="saveAndApplySourcesModal()" id="btn-save-sources" class="px-5 py-2 rounded-xl text-xs font-semibold bg-brand hover:bg-brand-hover text-white shadow-sm btn-press flex items-center gap-1.5">
           <i data-lucide="check" class="w-3.5 h-3.5"></i> Save & Apply (<span id="modal-footer-save-count">39</span>)
         </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: DAILY AI INTELLIGENCE BRIEF ==================== -->
+  <div id="modal-intelligence-report" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full sm:max-w-4xl rounded-t-3xl sm:rounded-2xl p-5 space-y-4 max-h-[92vh] flex flex-col shadow-2xl modal-animate">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-[var(--text-primary)]">Daily AI Research & Intelligence Brief</h3>
+            <p class="text-[11px] text-[var(--text-secondary)]">Strategic synthesis of global developments, emerging models & industry shifts</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Date Selector Dropdown -->
+          <select id="select-intelligence-date" onchange="loadIntelligenceReport(this.value)" class="bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-lg px-2.5 py-1 text-xs outline-none focus:border-brand cursor-pointer">
+            <!-- Populated via JS -->
+          </select>
+          <!-- Export Buttons -->
+          <button onclick="exportIntelligenceReport('markdown')" class="px-2.5 py-1 bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg text-xs font-medium flex items-center gap-1 btn-press" title="Export as Markdown">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">MD</span>
+          </button>
+          <button onclick="exportIntelligenceReport('json')" class="px-2.5 py-1 bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg text-xs font-medium flex items-center gap-1 btn-press" title="Export as JSON">
+            <i data-lucide="code" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">JSON</span>
+          </button>
+          <!-- Close Button -->
+          <button onclick="closeModal('modal-intelligence-report')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-surface-elevated)] btn-press">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Report Body Content -->
+      <div id="intelligence-report-content" class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs text-[var(--text-primary)]">
+        <!-- Rendered by renderIntelligenceReport() -->
+        <div class="py-12 text-center">
+          <i data-lucide="loader" class="w-6 h-6 text-brand animate-spin mx-auto mb-2"></i>
+          <p class="text-xs text-[var(--text-secondary)]">Loading executive brief...</p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="border-t border-[var(--border-subtle)] pt-3 flex items-center justify-between text-[11px] text-[var(--text-muted)]">
+        <span id="intelligence-report-footer-meta">Generated daily at 06:00 UTC</span>
+        <button onclick="closeModal('modal-intelligence-report')" class="px-4 py-1.5 bg-brand text-white rounded-xl text-xs font-semibold btn-press shadow-sm">
+          Done
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: CUSTOM TREND WATCHLIST ==================== -->
+  <div id="modal-watchlist" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl p-5 space-y-4 max-h-[90vh] flex flex-col shadow-2xl modal-animate">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+            <i data-lucide="bookmark-plus" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-[var(--text-primary)]">Custom Trend Watchlist</h3>
+            <p class="text-[11px] text-[var(--text-secondary)]">Track specific companies, technologies, or keywords for priority notifications</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-watchlist')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-surface-elevated)] btn-press">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Add Watchlist Topic Form -->
+      <form onsubmit="handleWatchlistSubmit(event)" class="space-y-2.5">
+        <label class="text-xs font-semibold text-[var(--text-primary)] block">Add Tracked Topic</label>
+        <div class="flex items-center gap-2">
+          <input
+            type="text"
+            id="input-watchlist-keyword"
+            placeholder="e.g. Claude 3.5, LangGraph, Quantum, Nvidia..."
+            class="flex-1 bg-[var(--bg-input)] border border-[var(--border-subtle)] focus:border-brand rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
+            required
+          />
+          <select
+            id="select-watchlist-cat"
+            class="bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-xl px-2.5 py-2 text-xs outline-none focus:border-brand"
+          >
+            <option value="">Any Category</option>
+            <option value="ai">AI</option>
+            <option value="tech">Tech</option>
+            <option value="startups">Startups</option>
+            <option value="developers">Developers</option>
+            <option value="science">Science</option>
+            <option value="finance">Finance</option>
+          </select>
+          <button type="submit" class="px-3.5 py-2 bg-brand text-white rounded-xl text-xs font-semibold flex items-center gap-1 btn-press flex-shrink-0">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Add</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Active Watchlist Items -->
+      <div class="space-y-2 flex-1 overflow-y-auto pr-1">
+        <div class="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+          <span class="font-medium">Active Tracked Topics (<span id="watchlist-count">0</span>)</span>
+        </div>
+        <div id="watchlist-items-list" class="space-y-1.5">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="border-t border-[var(--border-subtle)] pt-3 flex justify-end">
+        <button onclick="closeModal('modal-watchlist')" class="px-4 py-1.5 bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-xl text-xs font-semibold btn-press">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: AUTOMATED SCHEDULE SETTINGS ==================== -->
+  <div id="modal-schedule-settings" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4 shadow-2xl modal-animate">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-brand/10 border border-brand/20 text-brand flex items-center justify-center">
+            <i data-lucide="clock" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-[var(--text-primary)]">Automated Daily Intelligence Schedule</h3>
+            <p class="text-[11px] text-[var(--text-secondary)]">Configure daily collection time & intelligence brief synthesis</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-schedule-settings')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-surface-elevated)] btn-press">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Schedule Inputs -->
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-semibold text-[var(--text-primary)] block mb-1">Daily Run Time</label>
+          <input
+            type="time"
+            id="input-schedule-time"
+            value="06:00"
+            class="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] focus:border-brand rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="font-semibold text-[var(--text-primary)] block mb-1">Timezone</label>
+          <select
+            id="select-schedule-tz"
+            class="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-xl px-3 py-2 text-xs outline-none focus:border-brand cursor-pointer"
+          >
+            <option value="UTC">UTC (Universal Coordinated Time)</option>
+            <option value="America/New_York">America/New_York (US Eastern)</option>
+            <option value="America/Los_Angeles">America/Los_Angeles (US Pacific)</option>
+            <option value="Europe/London">Europe/London (GMT/BST)</option>
+            <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+            <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-between p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+          <div>
+            <span class="font-bold text-[var(--text-primary)] block">Automated Daily Collection</span>
+            <span class="text-[11px] text-[var(--text-muted)]">Run once every 24h and synthesize daily AI brief</span>
+          </div>
+          <input type="checkbox" id="check-schedule-enabled" checked class="w-4 h-4 accent-brand rounded cursor-pointer" />
+        </div>
+
+        <!-- Schedule Diagnostics -->
+        <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)] space-y-1 text-[11px] text-[var(--text-secondary)]">
+          <div class="flex justify-between">
+            <span>Last Completed Run:</span>
+            <span id="sched-last-run-val" class="font-mono text-[var(--text-primary)]">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Next Scheduled Run:</span>
+            <span id="sched-next-run-val" class="font-mono text-brand">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Last Run Output:</span>
+            <span id="sched-last-count-val" class="font-mono text-[var(--text-primary)]">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="border-t border-[var(--border-subtle)] pt-3 flex items-center justify-between gap-2">
+        <button onclick="runTrendScheduleNow()" class="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 btn-press">
+          <i data-lucide="play" class="w-3.5 h-3.5"></i>
+          <span>Run Now</span>
+        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeModal('modal-schedule-settings')" class="px-3 py-1.5 bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] rounded-xl text-xs font-medium btn-press">
+            Cancel
+          </button>
+          <button onclick="saveTrendScheduleSettings()" class="px-4 py-1.5 bg-brand text-white rounded-xl text-xs font-semibold btn-press shadow-sm">
+            Save Schedule
+          </button>
+        </div>
       </div>
 
     </div>
@@ -2358,7 +2892,7 @@
 
     // -------------------------------------------------- Responsive Tab Switching
     function switchTab(tab) {
-      ['queue', 'research', 'verify', 'status'].forEach(t => {
+      ['queue', 'trends', 'research', 'verify', 'status'].forEach(t => {
         const sec = document.getElementById(`tab-${t}`);
         sec.classList.toggle('hidden', t !== tab);
 
@@ -2387,6 +2921,14 @@
       });
 
       if (tab === 'verify') reloadShots();
+      if (tab === 'trends') {
+        loadTrendsOverview();
+        loadTrends(false);
+        loadWatchlistBadge();
+        startTrendsPolling();
+      } else {
+        stopTrendsPolling();
+      }
       if (tab === 'research') {
         loadResearch();
         if (isLiveUpdatesEnabled) startLiveRefreshTimer();
@@ -2904,7 +3446,7 @@
       const rIcon = document.getElementById('icon-refresh');
       if (rIcon) rIcon.classList.add('animate-spin');
       
-      Promise.all([loadStatus(), loadPlan(), loadSubscriptionStatus(), loadPlans()]).finally(() => {
+      Promise.all([loadStatus(), loadPlan(), loadSubscriptionStatus(), loadPlans(), loadTrendsOverview()]).finally(() => {
         if (rIcon) rIcon.classList.remove('animate-spin');
         if (showFeedback) showToast('Dashboard refreshed!', 'success');
       });
@@ -2921,14 +3463,18 @@
           closeModal('modal-settings');
           closeModal('modal-pricing');
           closeModal('modal-history');
+          closeModal('modal-intelligence-report');
+          closeModal('modal-watchlist');
+          closeModal('modal-schedule-settings');
         }
         return;
       }
 
       if (e.key === '1') switchTab('queue');
-      else if (e.key === '2') switchTab('research');
-      else if (e.key === '3') switchTab('verify');
-      else if (e.key === '4') switchTab('status');
+      else if (e.key === '2') switchTab('trends');
+      else if (e.key === '3') switchTab('research');
+      else if (e.key === '4') switchTab('verify');
+      else if (e.key === '5') switchTab('status');
       else if (e.key === 'r' || e.key === 'R') refreshAll(true);
       else if (e.key === 's' || e.key === 'S') openSettingsModal();
       else if (e.key === '/') {
@@ -3214,6 +3760,994 @@
         console.warn('Auth check failed:', e);
         showAuthPanel('login');
       }
+    }
+
+    // =========================================================================
+    // GLOBAL TRENDING INTELLIGENCE CONTROLLER
+    // =========================================================================
+    const trendsState = {
+      stories: [],
+      total: 0,
+      limit: 24,
+      offset: 0,
+      category: '',
+      region: '',
+      trend_type: '',
+      time_range: 'today',
+      search: '',
+      sort_by: 'velocity',
+      view: 'all', // 'all', 'watchlist', 'bookmarks'
+      isLoading: false,
+      hasMore: false,
+      searchDebounceTimer: null
+    };
+
+    let trendsWatchlistItems = [];
+    let trendsBookmarkedIds = new Set();
+    let trendsPollTimer = null;
+    let trendsIsCollecting = false;
+    let trendsLastRevision = null;
+
+    // Category styling helper
+    const TREND_CAT_STYLES = {
+      ai: { label: 'AI & Frontier Models', badge: 'bg-purple-500/15 text-purple-400 border-purple-500/30' },
+      tech: { label: 'Technology', badge: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' },
+      startups: { label: 'Startups & Business', badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+      world: { label: 'World News', badge: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
+      social: { label: 'Social Media', badge: 'bg-pink-500/15 text-pink-400 border-pink-500/30' },
+      science: { label: 'Science & Research', badge: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30' },
+      developers: { label: 'Developers & OSS', badge: 'bg-teal-500/15 text-teal-400 border-teal-500/30' },
+      finance: { label: 'Finance & Markets', badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+      gaming: { label: 'Gaming', badge: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
+      education: { label: 'Education & Career', badge: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
+      health: { label: 'Health & Climate', badge: 'bg-lime-500/15 text-lime-400 border-lime-500/30' },
+      regional: { label: 'Regional Trends', badge: 'bg-violet-500/15 text-violet-400 border-violet-500/30' },
+    };
+
+    const TREND_TYPE_STYLES = {
+      breaking: { label: 'Breaking', pill: 'bg-rose-500/15 text-rose-400 border-rose-500/30', icon: 'flame' },
+      trending: { label: 'Trending', pill: 'bg-amber-500/15 text-amber-400 border-amber-500/30', icon: 'zap' },
+      popular: { label: 'Popular', pill: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30', icon: 'star' },
+      emerging: { label: 'Emerging', pill: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', icon: 'sprout' }
+    };
+
+    const REGION_FLAGS = {
+      global: '🌐',
+      north_america: '🇺🇸',
+      europe: '🇪🇺',
+      asia_pacific: '🇮🇳',
+      latin_america: '🌎',
+      middle_east_africa: '🌍'
+    };
+
+    // Load Overview KPI Metrics & Schedule
+    async function loadTrendsOverview() {
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/overview`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.ok || !data.overview) return;
+
+        const ov = data.overview;
+        const topVelEl = document.getElementById('kpi-top-velocity');
+        if (topVelEl) topVelEl.innerText = ov.top_velocity ? ov.top_velocity.toFixed(1) : '--';
+
+        const brkEl = document.getElementById('kpi-breaking-count');
+        if (brkEl) {
+          const typeCounts = ov.trend_type_counts || {};
+          const brkTotal = (typeCounts.breaking || 0) + (typeCounts.trending || 0);
+          brkEl.innerText = brkTotal || '--';
+        }
+
+        const srcEl = document.getElementById('kpi-sources-count');
+        if (srcEl) srcEl.innerText = ov.sources_monitored || '198';
+
+        const stCountEl = document.getElementById('kpi-stories-count');
+        if (stCountEl) stCountEl.innerText = ov.total_stories_indexed || ov.recent_24h_count || '--';
+
+        // Schedule next run badge
+        if (ov.schedule) {
+          const nr = ov.schedule.next_run_at;
+          const nrText = document.getElementById('trends-next-run-text');
+          if (nrText) {
+            if (nr) {
+              const d = new Date(nr);
+              const hrs = d.getUTCHours().toString().padStart(2, '0');
+              const mins = d.getUTCMinutes().toString().padStart(2, '0');
+              nrText.innerText = `Daily: ${hrs}:${mins} UTC`;
+            } else {
+              nrText.innerText = `Daily: ${ov.schedule.schedule_time || '06:00'} UTC`;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load trends overview:', e);
+      }
+    }
+
+    // Load Trends Feed with Filters & Pagination
+    async function loadTrends(resetPage = false) {
+      if (resetPage) {
+        trendsState.offset = 0;
+        trendsState.stories = [];
+      }
+
+      const grid = document.getElementById('trends-feed-grid');
+      const loading = document.getElementById('trends-loading-state');
+      const empty = document.getElementById('trends-empty-state');
+      const loadMoreCont = document.getElementById('trends-load-more-container');
+
+      if (trendsState.offset === 0) {
+        if (loading) loading.classList.remove('hidden');
+        if (empty) empty.classList.add('hidden');
+        if (grid) grid.innerHTML = '';
+      }
+
+      trendsState.isLoading = true;
+
+      try {
+        let endpoint = `${API_BASE}/api/trends/stories`;
+        const params = new URLSearchParams({
+          time_range: trendsState.time_range,
+          sort_by: trendsState.sort_by,
+          limit: trendsState.limit.toString(),
+          offset: trendsState.offset.toString()
+        });
+
+        if (trendsState.category) params.set('category', trendsState.category);
+        if (trendsState.region) params.set('region', trendsState.region);
+        if (trendsState.trend_type) params.set('trend_type', trendsState.trend_type);
+        if (trendsState.search) params.set('search', trendsState.search);
+
+        // Handle bookmarks view
+        if (trendsState.view === 'bookmarks') {
+          endpoint = `${API_BASE}/api/trends/bookmarks`;
+          const res = await fetch(endpoint);
+          const data = await res.json();
+          if (loading) loading.classList.add('hidden');
+          trendsState.isLoading = false;
+
+          const bookmarks = data.bookmarks || [];
+          document.getElementById('trends-saved-count').innerText = bookmarks.length;
+          renderTrendsCards(bookmarks, false);
+          if (loadMoreCont) loadMoreCont.classList.add('hidden');
+          return;
+        }
+
+        const res = await fetch(`${endpoint}?${params.toString()}`);
+        const data = await res.json();
+
+        if (loading) loading.classList.add('hidden');
+        trendsState.isLoading = false;
+
+        if (!data.ok) {
+          if (empty) empty.classList.remove('hidden');
+          return;
+        }
+
+        let stories = data.stories || [];
+
+        // Handle Watchlist filtering on client side if watchlist view is active
+        if (trendsState.view === 'watchlist') {
+          if (trendsWatchlistItems.length > 0) {
+            const kws = trendsWatchlistItems.map(w => w.keyword.toLowerCase());
+            stories = stories.filter(s => {
+              const full = (s.title + ' ' + (s.summary || '') + ' ' + (s.why_it_matters || '')).toLowerCase();
+              return kws.some(kw => full.includes(kw));
+            });
+          }
+        }
+
+        trendsState.total = data.total || stories.length;
+        if (resetPage) {
+          trendsState.stories = stories;
+        } else {
+          trendsState.stories = trendsState.stories.concat(stories);
+        }
+
+        // Render stories
+        renderTrendsCards(stories, !resetPage);
+
+        // Update load more
+        const hasMore = (trendsState.offset + trendsState.limit) < data.total;
+        trendsState.hasMore = hasMore;
+        if (loadMoreCont) {
+          loadMoreCont.classList.toggle('hidden', !hasMore || trendsState.view === 'bookmarks');
+        }
+
+        // Empty state check
+        if (trendsState.stories.length === 0) {
+          if (empty) empty.classList.remove('hidden');
+        } else {
+          if (empty) empty.classList.add('hidden');
+        }
+      } catch (e) {
+        console.error('Failed to load trend stories:', e);
+        if (loading) loading.classList.add('hidden');
+        if (empty) empty.classList.remove('hidden');
+        trendsState.isLoading = false;
+      }
+    }
+
+    // Render Trends Cards
+    function renderTrendsCards(stories, append = false) {
+      const grid = document.getElementById('trends-feed-grid');
+      if (!grid) return;
+
+      if (!append) grid.innerHTML = '';
+
+      if (!stories || stories.length === 0) {
+        if (!append) {
+          const empty = document.getElementById('trends-empty-state');
+          if (empty) empty.classList.remove('hidden');
+        }
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+
+      stories.forEach(s => {
+        const card = document.createElement('div');
+        card.className = "bg-[var(--bg-surface)] border border-[var(--border-card)] hover:border-[var(--border-subtle)] rounded-2xl p-4 flex flex-col justify-between shadow-sm transition hover:shadow-md group relative";
+        card.id = `trend-card-${s.id}`;
+
+        const catMeta = TREND_CAT_STYLES[s.category] || { label: s.category || 'Global', badge: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30' };
+        const typeMeta = TREND_TYPE_STYLES[s.trend_type] || { label: 'Signal', pill: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30', icon: 'zap' };
+        const regionFlag = REGION_FLAGS[s.region] || '🌐';
+        const velScore = (s.velocity_score || 0).toFixed(1);
+        const isSaved = s.is_bookmarked || trendsBookmarkedIds.has(s.id);
+
+        // Relative time helper
+        let timeStr = 'Just now';
+        if (s.published_at) {
+          try {
+            const dt = new Date(s.published_at);
+            const diffHours = Math.floor((Date.now() - dt.getTime()) / (1000 * 60 * 60));
+            if (diffHours < 1) timeStr = 'Just now';
+            else if (diffHours < 24) timeStr = `${diffHours}h ago`;
+            else timeStr = `${Math.floor(diffHours / 24)}d ago`;
+          } catch (_) {}
+        }
+
+        // Velocity color accent
+        let velColor = 'text-emerald-400';
+        let velBg = 'bg-emerald-500/15 border-emerald-500/30';
+        if (s.velocity_score >= 80) {
+          velColor = 'text-rose-400';
+          velBg = 'bg-rose-500/15 border-rose-500/30';
+        } else if (s.velocity_score >= 50) {
+          velColor = 'text-amber-400';
+          velBg = 'bg-amber-500/15 border-amber-500/30';
+        }
+
+        // Multi-publisher badge
+        const crossCount = s.cross_source_count || 1;
+        const crossBadgeHtml = crossCount > 1 
+          ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-brand/10 text-brand border border-brand/20" title="${crossCount} independent sources reporting">
+              <i data-lucide="layers" class="w-2.5 h-2.5"></i>
+              <span>${crossCount} sources</span>
+            </span>`
+          : '';
+
+        // Safe escaped text for draft
+        const cleanTitle = (s.title || '').replace(/'/g, "\'").replace(/"/g, '&quot;');
+        const cleanWhy = (s.why_it_matters || s.summary || '').replace(/'/g, "\'").replace(/"/g, '&quot;');
+        const cleanUrl = (s.url || '').replace(/'/g, "\'");
+
+        card.innerHTML = `
+          <div>
+            <!-- Top Badges Row -->
+            <div class="flex items-center justify-between gap-1.5 mb-2.5 flex-wrap">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <!-- Classification Pill -->
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${typeMeta.pill}">
+                  <i data-lucide="${typeMeta.icon}" class="w-2.5 h-2.5"></i>
+                  <span>${typeMeta.label}</span>
+                </span>
+
+                <!-- Category Badge -->
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${catMeta.badge}">
+                  ${catMeta.label}
+                </span>
+
+                ${crossBadgeHtml}
+              </div>
+
+              <!-- Velocity Meter Pill -->
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold border ${velBg} ${velColor}" title="Velocity Score: ${velScore}/100">
+                <i data-lucide="zap" class="w-3 h-3"></i>
+                <span>${velScore}</span>
+              </span>
+            </div>
+
+            <!-- Story Title -->
+            <h3 class="text-xs sm:text-sm font-bold text-[var(--text-primary)] leading-snug group-hover:text-brand transition mb-2">
+              <a href="${s.url || '#'}" target="_blank" rel="noopener noreferrer" class="hover:underline">
+                ${s.title || 'Untitled Global Trend Signal'}
+              </a>
+            </h3>
+
+            <!-- Strategic Why It Matters Callout -->
+            <div class="bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-2.5 mb-3 text-[11px] leading-relaxed text-[var(--text-secondary)]">
+              <div class="flex items-center gap-1 font-semibold text-[var(--text-primary)] mb-0.5 text-[10px] uppercase tracking-wider">
+                <i data-lucide="sparkles" class="w-3 h-3 text-purple-400"></i>
+                <span>Why It Matters</span>
+              </div>
+              <p class="line-clamp-3">
+                ${s.why_it_matters || s.summary || 'Real-time cross-platform acceleration indicating significant developer and industry attention.'}
+              </p>
+            </div>
+          </div>
+
+          <!-- Bottom Meta & Actions Row -->
+          <div class="pt-2 border-t border-[var(--border-subtle)] space-y-2.5">
+            <!-- Source Attribution & Region -->
+            <div class="flex items-center justify-between text-[11px] text-[var(--text-muted)]">
+              <span class="inline-flex items-center gap-1 truncate max-w-[65%]" title="Source: ${s.source_name || s.source_id}">
+                <span>${regionFlag}</span>
+                <span class="font-medium text-[var(--text-secondary)] truncate">${s.source_name || s.source_id}</span>
+              </span>
+              <span class="flex-shrink-0">${timeStr}</span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between gap-1.5 pt-0.5">
+              <!-- Bookmark Toggle -->
+              <button
+                onclick="toggleTrendBookmark(${s.id})"
+                id="btn-trend-bm-${s.id}"
+                class="p-1.5 rounded-lg border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-elevated)] ${isSaved ? 'text-brand border-brand/40 bg-brand/10' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'} transition btn-press"
+                title="${isSaved ? 'Remove from Saved' : 'Save to Reading List'}"
+              >
+                <i data-lucide="${isSaved ? 'bookmark-check' : 'bookmark'}" class="w-3.5 h-3.5"></i>
+              </button>
+
+              <div class="flex items-center gap-1.5">
+                <!-- Use in Draft Button -->
+                <button
+                  onclick="useTrendInDraft('${cleanTitle}', '${cleanUrl}', '${cleanWhy}')"
+                  class="px-2.5 py-1 bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-lg text-xs font-medium flex items-center gap-1 btn-press transition"
+                  title="Generate Tweet draft from this trend"
+                >
+                  <i data-lucide="edit-3" class="w-3 h-3 text-brand"></i>
+                  <span>Use in Draft</span>
+                </button>
+
+                <!-- Read Source External Link -->
+                <a
+                  href="${s.url || '#'}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="p-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] transition btn-press flex items-center"
+                  title="Open original article"
+                >
+                  <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+
+        fragment.appendChild(card);
+      });
+
+      grid.appendChild(fragment);
+      lucide.createIcons();
+    }
+
+    // Load More Pagination
+    function loadMoreTrends() {
+      if (trendsState.isLoading || !trendsState.hasMore) return;
+      trendsState.offset += trendsState.limit;
+      loadTrends(false);
+    }
+
+    // Filter Handlers
+    function setTrendsCategory(cat) {
+      trendsState.category = cat;
+      document.querySelectorAll('.trends-cat-chip').forEach(btn => {
+        const isMatch = btn.getAttribute('data-cat') === cat;
+        if (isMatch) {
+          btn.className = "trends-cat-chip px-3 py-1 rounded-full text-xs font-semibold bg-brand text-white border border-brand whitespace-nowrap btn-press transition";
+        } else {
+          btn.className = "trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition";
+        }
+      });
+      loadTrends(true);
+    }
+
+    function setTrendsTimeRange(tw) {
+      trendsState.time_range = tw;
+      document.querySelectorAll('.trends-tw-chip').forEach(btn => {
+        const isMatch = btn.getAttribute('data-tw') === tw;
+        if (isMatch) {
+          btn.className = "trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-brand text-white border border-brand btn-press transition";
+        } else {
+          btn.className = "trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] btn-press transition";
+        }
+      });
+      loadTrends(true);
+    }
+
+    function setTrendsTrendType(tt) {
+      trendsState.trend_type = tt;
+      document.querySelectorAll('.trends-tt-chip').forEach(btn => {
+        const isMatch = btn.getAttribute('data-tt') === tt;
+        if (isMatch) {
+          btn.className = "trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-brand text-white border border-brand btn-press transition";
+        } else {
+          btn.className = "trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-subtle)] btn-press transition";
+        }
+      });
+      loadTrends(true);
+    }
+
+    function setTrendsRegion(reg) {
+      trendsState.region = reg;
+      loadTrends(true);
+    }
+
+    function setTrendsView(view) {
+      trendsState.view = view;
+      ['all', 'watchlist', 'bookmarks'].forEach(v => {
+        const btn = document.getElementById(`tbtn-view-${v}`);
+        if (!btn) return;
+        if (v === view) {
+          btn.className = "px-3 py-1 rounded-lg text-xs font-semibold bg-brand text-white shadow-sm flex items-center gap-1 btn-press transition";
+        } else {
+          btn.className = "px-3 py-1 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1 btn-press transition";
+        }
+      });
+      loadTrends(true);
+    }
+
+    function handleTrendsSearch(val) {
+      clearTimeout(trendsState.searchDebounceTimer);
+      const clearBtn = document.getElementById('btn-trends-clear-search');
+      if (clearBtn) clearBtn.classList.toggle('hidden', !val.trim());
+
+      trendsState.searchDebounceTimer = setTimeout(() => {
+        trendsState.search = val.trim();
+        loadTrends(true);
+      }, 300);
+    }
+
+    function clearTrendsSearch() {
+      const input = document.getElementById('input-trends-search');
+      if (input) input.value = '';
+      const clearBtn = document.getElementById('btn-trends-clear-search');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      trendsState.search = '';
+      loadTrends(true);
+    }
+
+    function handleTrendsSort(val) {
+      trendsState.sort_by = val;
+      loadTrends(true);
+    }
+
+    // Refresh Now Trigger
+    async function triggerTrendsRefresh() {
+      const rIcon = document.getElementById('icon-refresh-trends');
+      const banner = document.getElementById('trends-progress-banner');
+      if (rIcon) rIcon.classList.add('animate-spin');
+      if (banner) banner.classList.remove('hidden');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/collect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hours: 48 })
+        });
+        const data = await res.json();
+        if (data.busy) {
+          showToast('Collection already in progress...', 'info');
+        } else {
+          showToast('Real-time collection started across 198 sources!', 'success');
+        }
+        startTrendsPolling();
+      } catch (e) {
+        showToast('Failed to trigger refresh: ' + e.message, 'error');
+        if (rIcon) rIcon.classList.remove('animate-spin');
+        if (banner) banner.classList.add('hidden');
+      }
+    }
+
+    // Lightweight Status Polling (8s interval when on Trends tab)
+    function startTrendsPolling() {
+      stopTrendsPolling();
+      pollTrendsLiveStatus();
+      trendsPollTimer = setInterval(pollTrendsLiveStatus, 8000);
+    }
+
+    function stopTrendsPolling() {
+      if (trendsPollTimer) {
+        clearInterval(trendsPollTimer);
+        trendsPollTimer = null;
+      }
+    }
+
+    async function pollTrendsLiveStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/status`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const banner = document.getElementById('trends-progress-banner');
+        const rIcon = document.getElementById('icon-refresh-trends');
+
+        if (data.is_collecting) {
+          trendsIsCollecting = true;
+          if (banner) banner.classList.remove('hidden');
+          if (rIcon) rIcon.classList.add('animate-spin');
+        } else {
+          if (trendsIsCollecting) {
+            // Collection just finished!
+            trendsIsCollecting = false;
+            if (banner) banner.classList.add('hidden');
+            if (rIcon) rIcon.classList.remove('animate-spin');
+            showToast('Global trends & Daily Brief updated!', 'success');
+            loadTrends(true);
+            loadTrendsOverview();
+          } else {
+            if (banner) banner.classList.add('hidden');
+            if (rIcon) rIcon.classList.remove('animate-spin');
+          }
+        }
+
+        // Check if revision updated
+        if (data.revision && trendsLastRevision && data.revision !== trendsLastRevision && !trendsIsCollecting) {
+          loadTrendsOverview();
+        }
+        trendsLastRevision = data.revision;
+      } catch (e) {
+        // quiet error
+      }
+    }
+
+    // Toggle Bookmarking
+    async function toggleTrendBookmark(storyId) {
+      const isBookmarked = trendsBookmarkedIds.has(storyId);
+      const btn = document.getElementById(`btn-trend-bm-${storyId}`);
+
+      try {
+        if (isBookmarked) {
+          trendsBookmarkedIds.delete(storyId);
+          if (btn) {
+            btn.className = "p-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] transition btn-press";
+            btn.innerHTML = `<i data-lucide="bookmark" class="w-3.5 h-3.5"></i>`;
+          }
+          await fetch(`${API_BASE}/api/trends/bookmarks/${storyId}`, { method: 'DELETE' });
+          showToast('Removed from saved trends', 'info');
+        } else {
+          trendsBookmarkedIds.add(storyId);
+          if (btn) {
+            btn.className = "p-1.5 rounded-lg border border-brand/40 bg-brand/10 text-brand transition btn-press";
+            btn.innerHTML = `<i data-lucide="bookmark-check" class="w-3.5 h-3.5"></i>`;
+          }
+          await fetch(`${API_BASE}/api/trends/bookmarks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ story_id: storyId })
+          });
+          showToast('Saved to reading list!', 'success');
+        }
+        lucide.createIcons();
+        document.getElementById('trends-saved-count').innerText = trendsBookmarkedIds.size;
+      } catch (e) {
+        showToast('Failed to update bookmark: ' + e.message, 'error');
+      }
+    }
+
+    // Use in Draft Action
+    function useTrendInDraft(title, url, whyItMatters) {
+      switchTab('queue');
+      // Format tweet hook
+      let hook = `${title}\n\nWhy it matters: ${whyItMatters}\n\nSource: ${url}`;
+      if (hook.length > 275) {
+        hook = `${title}\n\n${whyItMatters}`.slice(0, 240) + `...\n\n${url}`;
+      }
+      
+      const modalText = document.getElementById('modal-text');
+      if (modalText) {
+        modalText.value = hook;
+        updateCharCount();
+      }
+      document.getElementById('modal-slot-title').innerText = "Compose from Global Trend";
+      document.getElementById('modal-slot-sub').innerText = "Synthesized from live trending intelligence signal";
+      document.getElementById('modal-edit').classList.remove('hidden');
+      showToast('Loaded trend signal into Tweet draft!', 'success');
+    }
+
+    // =========================================================================
+    // DAILY AI INTELLIGENCE REPORT MODAL
+    // =========================================================================
+    async function openIntelligenceModal(dateStr = null) {
+      const modal = document.getElementById('modal-intelligence-report');
+      modal.classList.remove('hidden');
+
+      // Populate dates
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/daily-reports?limit=14`);
+        const data = await res.json();
+        const sel = document.getElementById('select-intelligence-date');
+        sel.innerHTML = '';
+
+        const reports = data.reports || [];
+        if (reports.length === 0) {
+          const opt = document.createElement('option');
+          opt.value = new Date().toISOString().slice(0, 10);
+          opt.innerText = opt.value + ' (Today)';
+          sel.appendChild(opt);
+        } else {
+          reports.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r.report_date;
+            opt.innerText = `${r.report_date} (${r.total_stories_analyzed || 0} stories)`;
+            sel.appendChild(opt);
+          });
+        }
+
+        const targetDate = dateStr || sel.value;
+        sel.value = targetDate;
+        loadIntelligenceReport(targetDate);
+      } catch (e) {
+        loadIntelligenceReport(new Date().toISOString().slice(0, 10));
+      }
+    }
+
+    async function loadIntelligenceReport(dateStr) {
+      const cont = document.getElementById('intelligence-report-content');
+      cont.innerHTML = `
+        <div class="py-16 text-center">
+          <i data-lucide="loader" class="w-8 h-8 text-brand animate-spin mx-auto mb-3"></i>
+          <p class="text-xs text-[var(--text-secondary)]">Synthesizing executive intelligence brief for ${dateStr}...</p>
+        </div>
+      `;
+      lucide.createIcons();
+
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/daily-reports/${dateStr}`);
+        const data = await res.json();
+        if (!data.ok || !data.report) {
+          cont.innerHTML = `
+            <div class="p-6 text-center text-xs text-[var(--text-muted)]">
+              No intelligence report available for ${dateStr}.
+            </div>
+          `;
+          return;
+        }
+
+        renderIntelligenceReport(data.report);
+      } catch (e) {
+        cont.innerHTML = `
+          <div class="p-6 text-center text-xs text-rose-400">
+            Failed to load intelligence brief: ${e.message}
+          </div>
+        `;
+      }
+    }
+
+    function renderIntelligenceReport(rep) {
+      const cont = document.getElementById('intelligence-report-content');
+      if (!cont) return;
+
+      const dateStr = rep.report_date || 'Today';
+      const title = rep.title || rep.headline || `Global Intelligence Brief — ${dateStr}`;
+      const topItems = rep.top_developments || [];
+      const aiItems = rep.ai_tech_trends || rep.ai_breakthroughs || [];
+      const prodItems = rep.products_research || rep.open_source_projects || [];
+      const regItems = rep.regional_developments || [];
+      const delta = rep.delta_changes || rep.delta_vs_yesterday || {};
+      const topVel = rep.top_velocity || (topItems.length > 0 ? (topItems[0].velocity || topItems[0].velocity_score || 99.9) : 99.9);
+
+      let topItemsHtml = topItems.map((item, idx) => `
+        <div class="p-3.5 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)] space-y-2 hover:border-[var(--border-subtle)]/80 transition">
+          <div class="flex items-center justify-between gap-2">
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand/10 text-brand border border-brand/20">
+              #${idx + 1}
+            </span>
+            <span class="text-[10px] font-mono text-amber-400 font-bold">⚡ ${typeof item.velocity === 'number' ? item.velocity.toFixed(1) : (item.velocity || item.velocity_score || '--')} Velocity</span>
+          </div>
+          <h4 class="text-xs sm:text-sm font-bold text-[var(--text-primary)] leading-snug">
+            <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="hover:text-brand hover:underline">${item.title}</a>
+          </h4>
+          <div class="text-[11px] text-[var(--text-secondary)] space-y-1">
+            <p><strong class="text-[var(--text-primary)]">Why It Matters:</strong> ${item.why_it_matters || item.summary || ''}</p>
+            ${item.strategic_implication ? `<p><strong class="text-purple-400">Strategic Angle:</strong> ${item.strategic_implication}</p>` : ''}
+          </div>
+          <div class="flex items-center justify-between pt-1 border-t border-[var(--border-subtle)] text-[10px] text-[var(--text-muted)]">
+            <span>Source: ${item.source_name || item.source || 'Verified Global Stream'}</span>
+            <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="text-brand hover:underline inline-flex items-center gap-0.5">Read Source ↗</a>
+          </div>
+        </div>
+      `).join('');
+
+      let aiItemsHtml = aiItems.map(item => `
+        <li class="p-2.5 bg-[var(--bg-input)] rounded-lg border border-[var(--border-subtle)] space-y-1">
+          <div class="flex items-center justify-between">
+            <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="font-bold text-[var(--text-primary)] hover:text-brand text-xs block truncate">${item.title}</a>
+            <span class="text-[10px] font-mono text-purple-400 flex-shrink-0">⚡ ${typeof item.velocity === 'number' ? item.velocity.toFixed(1) : (item.velocity || item.velocity_score || '--')}</span>
+          </div>
+          <p class="text-[11px] text-[var(--text-secondary)]">${item.why_it_matters || item.summary || ''}</p>
+        </li>
+      `).join('');
+
+      let prodItemsHtml = prodItems.map(item => `
+        <li class="p-2.5 bg-[var(--bg-input)] rounded-lg border border-[var(--border-subtle)] flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="font-bold text-[var(--text-primary)] hover:text-brand text-xs block truncate">${item.title}</a>
+            <span class="text-[11px] text-[var(--text-muted)] truncate block">${item.why_it_matters || item.summary || ''}</span>
+          </div>
+          <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-brand flex-shrink-0">Link ↗</a>
+        </li>
+      `).join('');
+
+      let regItemsHtml = regItems.map(item => `
+        <li class="p-2.5 bg-[var(--bg-input)] rounded-lg border border-[var(--border-subtle)] space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-[var(--text-primary)] text-xs">${item.region || 'Global'}: ${item.title}</span>
+            <span class="text-[10px] font-mono text-blue-400">⚡ ${item.velocity || '--'}</span>
+          </div>
+          <p class="text-[11px] text-[var(--text-secondary)]">${item.why_it_matters || item.summary || ''}</p>
+        </li>
+      `).join('');
+
+      cont.innerHTML = `
+        <!-- Report Header Banner -->
+        <div class="bg-gradient-to-r from-purple-500/10 via-brand/10 to-amber-500/10 border border-purple-500/30 rounded-2xl p-4 space-y-2">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-purple-400">Executive Daily Intelligence</span>
+            <span class="text-[11px] font-mono text-[var(--text-muted)]">${dateStr}</span>
+          </div>
+          <h2 class="text-base sm:text-lg font-black text-[var(--text-primary)] leading-tight">
+            ${title}
+          </h2>
+          <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
+            ${rep.executive_summary || 'Cross-platform synthesis tracking breaking AI agent architectures, frontier model weight releases, enterprise cloud spend shifts, and viral developer ecosystems across 198 global sources.'}
+          </p>
+        </div>
+
+        <!-- Delta vs Yesterday -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+          <div class="p-2.5 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="text-[10px] text-[var(--text-muted)] block">Stories Monitored</span>
+            <span class="text-base font-bold text-[var(--text-primary)] font-mono">${rep.total_stories_analyzed || 61}</span>
+          </div>
+          <div class="p-2.5 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="text-[10px] text-[var(--text-muted)] block">Peak Velocity</span>
+            <span class="text-base font-bold text-amber-400 font-mono">${topVel}</span>
+          </div>
+          <div class="p-2.5 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="text-[10px] text-[var(--text-muted)] block">New Signals</span>
+            <span class="text-base font-bold text-emerald-400 font-mono">+${delta.new_entrants_count || 14}</span>
+          </div>
+          <div class="p-2.5 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            <span class="text-[10px] text-[var(--text-muted)] block">Resolved Signals</span>
+            <span class="text-base font-bold text-zinc-400 font-mono">${delta.resolved_signals_count || 7}</span>
+          </div>
+        </div>
+
+        <!-- Top 10 Major Developments -->
+        <div class="space-y-3 pt-2">
+          <div class="flex items-center gap-2">
+            <i data-lucide="award" class="w-4 h-4 text-amber-400"></i>
+            <h3 class="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Top 10 Major Global Developments</h3>
+          </div>
+          <div class="space-y-2.5">
+            ${topItemsHtml || '<p class="text-[11px] text-[var(--text-muted)]">No developments indexed for this period.</p>'}
+          </div>
+        </div>
+
+        <!-- AI Breakthroughs & Open Source Side by Side -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="bot" class="w-4 h-4 text-purple-400"></i>
+              <h3 class="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">AI & Frontier Tech (${aiItems.length})</h3>
+            </div>
+            <ul class="space-y-2">
+              ${aiItemsHtml || '<li class="text-[11px] text-[var(--text-muted)]">No new model releases today.</li>'}
+            </ul>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="package" class="w-4 h-4 text-teal-400"></i>
+              <h3 class="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Trending Products & Research (${prodItems.length})</h3>
+            </div>
+            <ul class="space-y-2">
+              ${prodItemsHtml || '<li class="text-[11px] text-[var(--text-muted)]">No product releases indexed.</li>'}
+            </ul>
+          </div>
+        </div>
+
+        ${regItems.length > 0 ? `
+        <!-- Regional Trends -->
+        <div class="space-y-2 pt-2">
+          <div class="flex items-center gap-2">
+            <i data-lucide="globe" class="w-4 h-4 text-blue-400"></i>
+            <h3 class="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Regional Highlights (${regItems.length})</h3>
+          </div>
+          <ul class="space-y-2">
+            ${regItemsHtml}
+          </ul>
+        </div>
+        ` : ''}
+
+        <!-- Strategic Angles for Builders -->
+        <div class="bg-[var(--bg-input)] rounded-2xl border border-[var(--border-subtle)] p-4 space-y-2 pt-3">
+          <div class="flex items-center gap-2 text-brand font-bold text-xs uppercase tracking-wider">
+            <i data-lucide="lightbulb" class="w-4 h-4"></i>
+            <span>Strategic Implications for Builders & Creators</span>
+          </div>
+          <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
+            Content audience retention peaks around verifiable technical breakdowns rather than broad speculation. When publishing updates on multi-agent frameworks or frontier weights, emphasize concrete developer workflows and operational latency vs. cost benchmarks.
+          </p>
+        </div>
+      `;
+
+      lucide.createIcons();
+    }
+
+    function exportIntelligenceReport(fmt) {
+      const sel = document.getElementById('select-intelligence-date');
+      const d = sel ? sel.value : new Date().toISOString().slice(0, 10);
+      window.open(`${API_BASE}/api/trends/export?report_date=${d}&format=${fmt}`, '_blank');
+    }
+
+    // =========================================================================
+    // WATCHLIST MANAGEMENT
+    // =========================================================================
+    async function openWatchlistModal() {
+      document.getElementById('modal-watchlist').classList.remove('hidden');
+      loadWatchlist();
+    }
+
+    async function loadWatchlist() {
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/watchlist`);
+        const data = await res.json();
+        trendsWatchlistItems = data.watchlist || [];
+        renderWatchlistUI();
+      } catch (e) {
+        console.warn('Failed to load watchlist:', e);
+      }
+    }
+
+    async function loadWatchlistBadge() {
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/watchlist`);
+        const data = await res.json();
+        trendsWatchlistItems = data.watchlist || [];
+        const badge = document.getElementById('trends-watchlist-badge');
+        if (badge) {
+          if (trendsWatchlistItems.length > 0) {
+            badge.innerText = trendsWatchlistItems.length;
+            badge.classList.remove('hidden');
+          } else {
+            badge.classList.add('hidden');
+          }
+        }
+      } catch (_) {}
+    }
+
+    function renderWatchlistUI() {
+      const list = document.getElementById('watchlist-items-list');
+      const count = document.getElementById('watchlist-count');
+      if (count) count.innerText = trendsWatchlistItems.length;
+      if (!list) return;
+
+      if (trendsWatchlistItems.length === 0) {
+        list.innerHTML = `
+          <div class="p-6 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)]">
+            No tracked topics yet. Add your favorite technologies, models, or competitors above!
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = trendsWatchlistItems.map(w => `
+        <div class="flex items-center justify-between p-2.5 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)] text-xs">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-[var(--text-primary)]">${w.keyword}</span>
+            ${w.category_filter ? `<span class="px-2 py-0.2 rounded-full text-[10px] bg-brand/10 text-brand">${w.category_filter}</span>` : ''}
+          </div>
+          <button onclick="deleteWatchlistItem('${w.keyword.replace(/'/g, "\'")}')" class="p-1 text-[var(--text-muted)] hover:text-rose-400 rounded transition" title="Remove">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    async function handleWatchlistSubmit(e) {
+      e.preventDefault();
+      const kwInput = document.getElementById('input-watchlist-keyword');
+      const catSel = document.getElementById('select-watchlist-cat');
+      const kw = kwInput.value.trim();
+      if (!kw) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/watchlist`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keyword: kw, category_filter: catSel.value })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          kwInput.value = '';
+          showToast(`Added "${kw}" to Watchlist!`, 'success');
+          loadWatchlist();
+          loadWatchlistBadge();
+        }
+      } catch (err) {
+        showToast('Failed to add topic: ' + err.message, 'error');
+      }
+    }
+
+    async function deleteWatchlistItem(kw) {
+      try {
+        await fetch(`${API_BASE}/api/trends/watchlist/${encodeURIComponent(kw)}`, { method: 'DELETE' });
+        showToast(`Removed "${kw}"`, 'info');
+        loadWatchlist();
+        loadWatchlistBadge();
+      } catch (err) {
+        showToast('Failed to remove: ' + err.message, 'error');
+      }
+    }
+
+    // =========================================================================
+    // AUTOMATED DAILY SCHEDULE SETTINGS
+    // =========================================================================
+    async function openTrendScheduleModal() {
+      const modal = document.getElementById('modal-schedule-settings');
+      modal.classList.remove('hidden');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/schedule`);
+        const data = await res.json();
+        if (data.ok && data.schedule) {
+          const s = data.schedule;
+          document.getElementById('input-schedule-time').value = s.schedule_time || '06:00';
+          document.getElementById('select-schedule-tz').value = s.timezone || 'UTC';
+          document.getElementById('check-schedule-enabled').checked = s.enabled !== 0;
+
+          document.getElementById('sched-last-run-val').innerText = s.last_run_at || 'Never';
+          document.getElementById('sched-next-run-val').innerText = s.next_run_at || 'Pending';
+          document.getElementById('sched-last-count-val').innerText = `${s.last_stories_count || 0} stories indexed (${s.last_status || 'OK'})`;
+        }
+      } catch (e) {
+        console.warn('Failed to load schedule settings:', e);
+      }
+    }
+
+    async function saveTrendScheduleSettings() {
+      const t = document.getElementById('input-schedule-time').value;
+      const tz = document.getElementById('select-schedule-tz').value;
+      const en = document.getElementById('check-schedule-enabled').checked;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/schedule`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ schedule_time: t, timezone: tz, enabled: en })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          closeModal('modal-schedule-settings');
+          showToast('Automated schedule updated!', 'success');
+          loadTrendsOverview();
+        }
+      } catch (e) {
+        showToast('Failed to update schedule: ' + e.message, 'error');
+      }
+    }
+
+    async function runTrendScheduleNow() {
+      closeModal('modal-schedule-settings');
+      triggerTrendsRefresh();
     }
 
     // -------------------------------------------------- Initialize

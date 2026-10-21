@@ -13,6 +13,31 @@ import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+CATEGORY_SLUG_MAP = {
+    "ai": "Artificial Intelligence",
+    "tech": "Technology",
+    "startups": "Startups and Business",
+    "world": "World News",
+    "social": "Social Media Trends",
+    "science": "Science and Research",
+    "developers": "Developer Ecosystem",
+    "dev": "Developer Ecosystem",
+    "finance": "Finance and Economics",
+    "gaming": "Gaming and Entertainment",
+    "education": "Education and Careers",
+    "health": "Health and Environment",
+    "regional": "Regional Trends",
+}
+
+REGION_SLUG_MAP = {
+    "global": "Global",
+    "north_america": "North America",
+    "europe": "Europe",
+    "asia_pacific": "Asia-Pacific",
+    "latin_america": "Latin America",
+    "middle_east_africa": "Middle East & Africa",
+}
 from typing import Any, Dict, List, Optional, Tuple
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -183,6 +208,105 @@ def init_db() -> None:
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_research_stories_collected ON research_stories(collected_at);")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_research_jobs_user ON research_jobs(user_id);")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_research_jobs_status ON research_jobs(status);")
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS global_trend_stories (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    canonical_url TEXT UNIQUE NOT NULL,
+                    title TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    source_id TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    region TEXT NOT NULL DEFAULT 'Global',
+                    country TEXT DEFAULT '',
+                    language TEXT DEFAULT 'en',
+                    trend_type TEXT NOT NULL DEFAULT 'Trending',
+                    score INTEGER DEFAULT 0,
+                    comments INTEGER DEFAULT 0,
+                    velocity_score REAL DEFAULT 0.0,
+                    cross_source_count INTEGER DEFAULT 1,
+                    cluster_id TEXT DEFAULT '',
+                    published_at TEXT,
+                    collected_at TEXT NOT NULL,
+                    extra TEXT
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS daily_intelligence_reports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    report_date TEXT UNIQUE NOT NULL,
+                    title TEXT NOT NULL,
+                    top_developments_json TEXT NOT NULL,
+                    ai_tech_trends_json TEXT NOT NULL,
+                    fastest_growing_json TEXT NOT NULL,
+                    regional_developments_json TEXT NOT NULL,
+                    products_research_json TEXT NOT NULL,
+                    delta_changes_json TEXT NOT NULL,
+                    summary_markdown TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    total_stories_analyzed INTEGER DEFAULT 0
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS trend_collection_schedules (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    schedule_time TEXT NOT NULL DEFAULT '06:00',
+                    timezone TEXT NOT NULL DEFAULT 'UTC',
+                    enabled INTEGER NOT NULL DEFAULT 1,
+                    last_run_at TEXT,
+                    next_run_at TEXT,
+                    last_status TEXT DEFAULT 'idle',
+                    last_error TEXT,
+                    last_stories_count INTEGER DEFAULT 0,
+                    last_new_count INTEGER DEFAULT 0,
+                    updated_at TEXT NOT NULL
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_watchlists (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    topic_keyword TEXT NOT NULL,
+                    category_filter TEXT DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    UNIQUE(user_id, topic_keyword)
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_bookmarks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    story_id INTEGER NOT NULL,
+                    created_at TEXT NOT NULL,
+                    UNIQUE(user_id, story_id)
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_trend_preferences (
+                    user_id TEXT PRIMARY KEY,
+                    preferred_categories TEXT,
+                    preferred_regions TEXT,
+                    preferred_sources TEXT,
+                    preferred_languages TEXT,
+                    updated_at TEXT NOT NULL
+                );
+                """)
+
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_global_trend_cat ON global_trend_stories(category);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_global_trend_reg ON global_trend_stories(region);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_global_trend_type ON global_trend_stories(trend_type);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_global_trend_vel ON global_trend_stories(velocity_score DESC);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_global_trend_pub ON global_trend_stories(published_at DESC);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_global_trend_coll ON global_trend_stories(collected_at DESC);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_intel_reports_date ON daily_intelligence_reports(report_date DESC);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_watchlists_user ON user_watchlists(user_id);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON user_bookmarks(user_id);")
+
 
                 # Automatic schema migrations for multi-currency support
                 cur = conn.cursor()
@@ -1216,5 +1340,598 @@ def reset_user_research_preferences(user_id: str) -> Dict[str, Any]:
             with conn:
                 conn.execute("DELETE FROM user_research_preferences WHERE user_id = ?", (user_id,))
             return get_user_research_preferences(user_id)
+        finally:
+            conn.close()
+
+# =========================================================================
+# GLOBAL TREND INTELLIGENCE & DISCOVERY PLATFORM
+# =========================================================================
+
+def save_global_trend_stories(stories: List[Dict[str, Any]]) -> Dict[str, int]:
+    """Persist and update global trend stories with velocity metrics and deduplication."""
+    if not stories:
+        return {"inserted": 0, "updated": 0, "total": 0}
+    init_db()
+    new_count = 0
+    updated_count = 0
+    now_str = _now_iso()
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                for s in stories:
+                    raw_url = s.get("url") or s.get("canonical_url") or ""
+                    canon = _canonical_url(raw_url)
+                    if not canon:
+                        continue
+
+                    title = (s.get("title") or "").strip()
+                    source = s.get("source") or "unknown"
+                    source_id = s.get("source_id") or source
+                    category = s.get("category") or "Technology"
+                    region = s.get("region") or "Global"
+                    country = s.get("country") or ""
+                    language = s.get("language") or "en"
+                    trend_type = s.get("trend_type") or "Trending"
+                    score = int(s.get("score") or 0)
+                    comments = int(s.get("comments") or 0)
+                    velocity = float(s.get("velocity_score") or s.get("velocity") or 0.0)
+                    cross_sources = int(s.get("cross_source_count") or 1)
+                    cluster_id = s.get("cluster_id") or ""
+                    pub_at = s.get("published_at") or s.get("created") or now_str
+                    extra_json = json.dumps(s.get("extra") or {}, ensure_ascii=False)
+
+                    cur = conn.cursor()
+                    cur.execute("SELECT id, score, velocity_score, cross_source_count FROM global_trend_stories WHERE canonical_url = ?", (canon,))
+                    row = cur.fetchone()
+
+                    if row:
+                        old_score = row["score"] or 0
+                        old_vel = row["velocity_score"] or 0.0
+                        old_cs = row["cross_source_count"] or 1
+                        conn.execute("""
+                            UPDATE global_trend_stories SET
+                                score = MAX(?, score),
+                                comments = MAX(?, comments),
+                                velocity_score = MAX(?, velocity_score),
+                                cross_source_count = MAX(?, cross_source_count),
+                                trend_type = CASE WHEN ? = 'Breaking' THEN 'Breaking' ELSE trend_type END,
+                                collected_at = ?
+                            WHERE canonical_url = ?
+                        """, (score, comments, velocity, cross_sources, trend_type, now_str, canon))
+                        updated_count += 1
+                    else:
+                        conn.execute("""
+                            INSERT INTO global_trend_stories (
+                                canonical_url, title, source, source_id, category, region, country, language,
+                                trend_type, score, comments, velocity_score, cross_source_count, cluster_id,
+                                published_at, collected_at, extra
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            canon, title, source, source_id, category, region, country, language,
+                            trend_type, score, comments, velocity, cross_sources, cluster_id,
+                            pub_at, now_str, extra_json
+                        ))
+                        new_count += 1
+
+            return {"inserted": new_count, "updated": updated_count, "total": len(stories)}
+        finally:
+            conn.close()
+
+def get_global_trend_stories(
+    time_range: str = "today",
+    category: Optional[str] = None,
+    region: Optional[str] = None,
+    trend_type: Optional[str] = None,
+    source: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: str = "velocity",
+    limit: int = 50,
+    offset: int = 0,
+    user_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Query trend stories with multi-dimensional filtering, search, and ranking."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            query_parts = ["SELECT * FROM global_trend_stories WHERE 1=1"]
+            params: List[Any] = []
+
+            # 1. Time range filter
+            now = datetime.now(timezone.utc)
+            if time_range == "24h" or time_range == "today":
+                cutoff = (now - timedelta(hours=24)).isoformat()
+                query_parts.append("AND (published_at >= ? OR collected_at >= ?)")
+                params.extend([cutoff, cutoff])
+            elif time_range == "7d":
+                cutoff = (now - timedelta(days=7)).isoformat()
+                query_parts.append("AND (published_at >= ? OR collected_at >= ?)")
+                params.extend([cutoff, cutoff])
+            elif time_range == "30d":
+                cutoff = (now - timedelta(days=30)).isoformat()
+                query_parts.append("AND (published_at >= ? OR collected_at >= ?)")
+                params.extend([cutoff, cutoff])
+
+            # 2. Category filter
+            if category and category.lower() != "all":
+                cat_target = CATEGORY_SLUG_MAP.get(category.lower(), category).lower()
+                query_parts.append("AND (LOWER(category) = ? OR LOWER(category) LIKE ?)")
+                params.extend([cat_target, f"%{cat_target}%"])
+
+            # 3. Region filter
+            if region and region.lower() != "all" and region.lower() != "global":
+                reg_target = REGION_SLUG_MAP.get(region.lower(), region).lower()
+                query_parts.append("AND (LOWER(region) = ? OR LOWER(region) LIKE ?)")
+                params.extend([reg_target, f"%{reg_target}%"])
+
+            # 4. Trend type filter (Trending, Breaking, Popular, Emerging)
+            if trend_type and trend_type.lower() != "all":
+                query_parts.append("AND LOWER(trend_type) = ?")
+                params.append(trend_type.lower())
+
+            # 5. Source filter
+            if source and source.lower() != "all":
+                query_parts.append("AND (LOWER(source) = ? OR LOWER(source_id) = ?)")
+                params.extend([source.lower(), source.lower()])
+
+            # 6. Search query
+            if search:
+                sq = f"%{search.strip().lower()}%"
+                query_parts.append("AND (LOWER(title) LIKE ? OR LOWER(source) LIKE ? OR LOWER(category) LIKE ?)")
+                params.extend([sq, sq, sq])
+
+            # Total count query
+            count_sql = "SELECT COUNT(*) AS total FROM (" + " ".join(query_parts) + ")"
+            cur.execute(count_sql, params)
+            total_items = int(cur.fetchone()["total"] or 0)
+
+            # Sort order
+            if sort_by == "velocity":
+                query_parts.append("ORDER BY velocity_score DESC, published_at DESC")
+            elif sort_by == "score":
+                query_parts.append("ORDER BY score DESC, comments DESC, published_at DESC")
+            elif sort_by == "recent":
+                query_parts.append("ORDER BY published_at DESC, id DESC")
+            elif sort_by == "cross_source":
+                query_parts.append("ORDER BY cross_source_count DESC, velocity_score DESC")
+            else:
+                query_parts.append("ORDER BY velocity_score DESC, id DESC")
+
+            query_parts.append("LIMIT ? OFFSET ?")
+            params.extend([limit, offset])
+
+            cur.execute(" ".join(query_parts), params)
+            rows = cur.fetchall()
+
+            # Retrieve user bookmarks if user_id is provided
+            user_bookmarked_ids = set()
+            if user_id:
+                cur.execute("SELECT story_id FROM user_bookmarks WHERE user_id = ?", (user_id,))
+                user_bookmarked_ids = {r["story_id"] for r in cur.fetchall()}
+
+            out = []
+            for r in rows:
+                item = dict(r)
+                if item.get("extra"):
+                    try:
+                        item["extra"] = json.loads(item["extra"])
+                    except Exception:
+                        item["extra"] = {}
+                item["is_bookmarked"] = item["id"] in user_bookmarked_ids
+                out.append(item)
+
+            return {
+                "stories": out,
+                "total": total_items,
+                "limit": limit,
+                "offset": offset,
+            }
+        finally:
+            conn.close()
+
+def get_global_trend_overview() -> Dict[str, Any]:
+    """Retrieve high-level trend discovery metrics, category breakdowns, and regional summaries."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            now_iso = _now_iso()
+
+            # Total stories
+            cur.execute("SELECT COUNT(*) AS total FROM global_trend_stories")
+            total = int(cur.fetchone()["total"] or 0)
+
+            # Breaking count (< 24h)
+            cur.execute("SELECT COUNT(*) AS c FROM global_trend_stories WHERE trend_type = 'Breaking'")
+            breaking_count = int(cur.fetchone()["c"] or 0)
+
+            # Active sources
+            cur.execute("SELECT COUNT(DISTINCT source_id) AS c FROM global_trend_stories")
+            active_sources_count = int(cur.fetchone()["c"] or 0)
+
+            # Clustered stories (cross_source_count >= 2)
+            cur.execute("SELECT COUNT(*) AS c FROM global_trend_stories WHERE cross_source_count >= 2")
+            clustered_count = int(cur.fetchone()["c"] or 0)
+
+            # Top 5 highest velocity stories
+            cur.execute("SELECT * FROM global_trend_stories ORDER BY velocity_score DESC LIMIT 5")
+            top_stories = []
+            for r in cur.fetchall():
+                it = dict(r)
+                if it.get("extra"):
+                    try:
+                        it["extra"] = json.loads(it["extra"])
+                    except Exception:
+                        it["extra"] = {}
+                top_stories.append(it)
+
+            # Category distribution
+            cur.execute("""
+                SELECT category, COUNT(*) AS count, ROUND(AVG(velocity_score), 1) AS avg_vel
+                FROM global_trend_stories
+                GROUP BY category
+                ORDER BY count DESC
+            """)
+            category_stats = [dict(r) for r in cur.fetchall()]
+
+            # Regional distribution
+            cur.execute("""
+                SELECT region, COUNT(*) AS count, ROUND(AVG(velocity_score), 1) AS avg_vel
+                FROM global_trend_stories
+                GROUP BY region
+                ORDER BY count DESC
+            """)
+            regional_stats = [dict(r) for r in cur.fetchall()]
+
+            # Emerging topics (high velocity from niche dev/research sources)
+            cur.execute("""
+                SELECT * FROM global_trend_stories
+                WHERE trend_type = 'Emerging'
+                ORDER BY velocity_score DESC LIMIT 6
+            """)
+            emerging_stories = [dict(r) for r in cur.fetchall()]
+
+            top_vel = top_stories[0]["velocity_score"] if top_stories else 0.0
+            return {
+                "total_stories": total,
+                "total_stories_indexed": total,
+                "top_velocity": top_vel,
+                "sources_monitored": 198,
+                "breaking_count": breaking_count,
+                "active_sources_count": active_sources_count,
+                "clustered_count": clustered_count,
+                "trend_type_counts": {
+                    "breaking": breaking_count,
+                    "trending": sum(1 for s in top_stories if s.get("trend_type") == "Trending"),
+                },
+                "top_stories": top_stories,
+                "category_stats": category_stats,
+                "regional_stats": regional_stats,
+                "emerging_stories": emerging_stories,
+                "timestamp": now_iso,
+            }
+        finally:
+            conn.close()
+
+# -------------------------------------------------- Daily Intelligence Reports
+def save_daily_intelligence_report(report_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Store or replace daily executive intelligence brief."""
+    init_db()
+    r_date = report_data["report_date"]
+    now_str = _now_iso()
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    INSERT INTO daily_intelligence_reports (
+                        report_date, title, top_developments_json, ai_tech_trends_json,
+                        fastest_growing_json, regional_developments_json, products_research_json,
+                        delta_changes_json, summary_markdown, created_at, total_stories_analyzed
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(report_date) DO UPDATE SET
+                        title = excluded.title,
+                        top_developments_json = excluded.top_developments_json,
+                        ai_tech_trends_json = excluded.ai_tech_trends_json,
+                        fastest_growing_json = excluded.fastest_growing_json,
+                        regional_developments_json = excluded.regional_developments_json,
+                        products_research_json = excluded.products_research_json,
+                        delta_changes_json = excluded.delta_changes_json,
+                        summary_markdown = excluded.summary_markdown,
+                        created_at = excluded.created_at,
+                        total_stories_analyzed = excluded.total_stories_analyzed;
+                """, (
+                    r_date,
+                    report_data.get("title", f"Daily Intelligence Brief — {r_date}"),
+                    json.dumps(report_data.get("top_developments", []), ensure_ascii=False),
+                    json.dumps(report_data.get("ai_tech_trends", []), ensure_ascii=False),
+                    json.dumps(report_data.get("fastest_growing", []), ensure_ascii=False),
+                    json.dumps(report_data.get("regional_developments", []), ensure_ascii=False),
+                    json.dumps(report_data.get("products_research", []), ensure_ascii=False),
+                    json.dumps(report_data.get("delta_changes", []), ensure_ascii=False),
+                    report_data.get("summary_markdown", ""),
+                    now_str,
+                    int(report_data.get("total_stories_analyzed", 0)),
+                ))
+            return get_daily_intelligence_report(r_date)
+        finally:
+            conn.close()
+
+def get_daily_intelligence_report(report_date: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Retrieve full daily intelligence brief for target date or most recent."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            if report_date:
+                cur.execute("SELECT * FROM daily_intelligence_reports WHERE report_date = ?", (report_date,))
+            else:
+                cur.execute("SELECT * FROM daily_intelligence_reports ORDER BY report_date DESC LIMIT 1")
+            row = cur.fetchone()
+            if not row:
+                return None
+            res = dict(row)
+            for k in ("top_developments_json", "ai_tech_trends_json", "fastest_growing_json",
+                      "regional_developments_json", "products_research_json", "delta_changes_json"):
+                plain_k = k.replace("_json", "")
+                if res.get(k):
+                    try:
+                        res[plain_k] = json.loads(res[k])
+                    except Exception:
+                        res[plain_k] = []
+                else:
+                    res[plain_k] = []
+            return res
+        finally:
+            conn.close()
+
+def list_daily_intelligence_reports(limit: int = 30) -> List[Dict[str, Any]]:
+    """Return historical directory of daily reports."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT id, report_date, title, created_at, total_stories_analyzed
+                FROM daily_intelligence_reports
+                ORDER BY report_date DESC LIMIT ?
+            """, (limit,))
+            return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+# -------------------------------------------------- Schedules & Settings
+def get_trend_schedule() -> Dict[str, Any]:
+    """Retrieve current background trend collection schedule configuration."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM trend_collection_schedules ORDER BY id DESC LIMIT 1")
+            row = cur.fetchone()
+            if row:
+                return dict(row)
+            # Default schedule: Daily at 06:00 UTC
+            now_str = _now_iso()
+            with conn:
+                conn.execute("""
+                    INSERT INTO trend_collection_schedules (
+                        schedule_time, timezone, enabled, last_run_at, next_run_at,
+                        last_status, last_stories_count, last_new_count, updated_at
+                    ) VALUES ('06:00', 'UTC', 1, NULL, NULL, 'idle', 0, 0, ?)
+                """, (now_str,))
+            cur.execute("SELECT * FROM trend_collection_schedules ORDER BY id DESC LIMIT 1")
+            return dict(cur.fetchone())
+        finally:
+            conn.close()
+
+def update_trend_schedule(schedule_time: str, timezone_str: str = "UTC", enabled: bool = True) -> Dict[str, Any]:
+    """Update automated collection schedule time and timezone."""
+    init_db()
+    now_str = _now_iso()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    UPDATE trend_collection_schedules SET
+                        schedule_time = ?,
+                        timezone = ?,
+                        enabled = ?,
+                        updated_at = ?
+                    WHERE id = (SELECT id FROM trend_collection_schedules ORDER BY id DESC LIMIT 1);
+                """, (schedule_time, timezone_str, 1 if enabled else 0, now_str))
+            return get_trend_schedule()
+        finally:
+            conn.close()
+
+def record_trend_schedule_run(
+    status: str,
+    stories_count: int = 0,
+    new_count: int = 0,
+    error_message: Optional[str] = None
+) -> None:
+    init_db()
+    now_str = _now_iso()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    UPDATE trend_collection_schedules SET
+                        last_run_at = ?,
+                        last_status = ?,
+                        last_stories_count = ?,
+                        last_new_count = ?,
+                        last_error = ?,
+                        updated_at = ?
+                    WHERE id = (SELECT id FROM trend_collection_schedules ORDER BY id DESC LIMIT 1);
+                """, (now_str, status, stories_count, new_count, error_message, now_str))
+        finally:
+            conn.close()
+
+# -------------------------------------------------- User Watchlists & Bookmarks
+def get_user_watchlist(user_id: str) -> List[Dict[str, Any]]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM user_watchlists WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+            items = []
+            for r in cur.fetchall():
+                it = dict(r)
+                it["keyword"] = it.get("topic_keyword")
+                items.append(it)
+            return items
+        finally:
+            conn.close()
+
+def add_user_watchlist_item(user_id: str, keyword: str, category_filter: str = "") -> Dict[str, Any]:
+    init_db()
+    clean_kw = keyword.strip()
+    now_str = _now_iso()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    INSERT INTO user_watchlists (user_id, topic_keyword, category_filter, created_at)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(user_id, topic_keyword) DO UPDATE SET
+                        category_filter = excluded.category_filter;
+                """, (user_id, clean_kw, category_filter, now_str))
+            return {"user_id": user_id, "topic_keyword": clean_kw, "keyword": clean_kw, "category_filter": category_filter}
+        finally:
+            conn.close()
+
+def remove_user_watchlist_item(user_id: str, keyword: str) -> bool:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("DELETE FROM user_watchlists WHERE user_id = ? AND topic_keyword = ?", (user_id, keyword.strip()))
+            return True
+        finally:
+            conn.close()
+
+def get_user_bookmarks(user_id: str) -> List[Dict[str, Any]]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT s.*, b.created_at AS bookmarked_at
+                FROM user_bookmarks b
+                JOIN global_trend_stories s ON b.story_id = s.id
+                WHERE b.user_id = ?
+                ORDER BY b.created_at DESC
+            """, (user_id,))
+            rows = cur.fetchall()
+            out = []
+            for r in rows:
+                it = dict(r)
+                if it.get("extra"):
+                    try:
+                        it["extra"] = json.loads(it["extra"])
+                    except Exception:
+                        it["extra"] = {}
+                it["is_bookmarked"] = True
+                out.append(it)
+            return out
+        finally:
+            conn.close()
+
+def add_user_bookmark(user_id: str, story_id: int) -> bool:
+    init_db()
+    now_str = _now_iso()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    INSERT INTO user_bookmarks (user_id, story_id, created_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(user_id, story_id) DO NOTHING;
+                """, (user_id, story_id, now_str))
+            return True
+        finally:
+            conn.close()
+
+def remove_user_bookmark(user_id: str, story_id: int) -> bool:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("DELETE FROM user_bookmarks WHERE user_id = ? AND story_id = ?", (user_id, story_id))
+            return True
+        finally:
+            conn.close()
+
+def get_user_trend_preferences(user_id: str) -> Dict[str, Any]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM user_trend_preferences WHERE user_id = ?", (user_id,))
+            row = cur.fetchone()
+            if row:
+                r = dict(row)
+                return {
+                    "user_id": user_id,
+                    "preferred_categories": json.loads(r.get("preferred_categories") or "[]"),
+                    "preferred_regions": json.loads(r.get("preferred_regions") or "[]"),
+                    "preferred_sources": json.loads(r.get("preferred_sources") or "[]"),
+                    "preferred_languages": json.loads(r.get("preferred_languages") or "[]"),
+                    "updated_at": r.get("updated_at"),
+                }
+            return {
+                "user_id": user_id,
+                "preferred_categories": ["Artificial Intelligence", "Technology", "Startups and Business", "World News"],
+                "preferred_regions": ["Global", "North America", "Europe", "Asia-Pacific"],
+                "preferred_sources": [],
+                "preferred_languages": ["en"],
+                "updated_at": _now_iso(),
+            }
+        finally:
+            conn.close()
+
+def save_user_trend_preferences(user_id: str, prefs: Dict[str, Any]) -> Dict[str, Any]:
+    init_db()
+    now_str = _now_iso()
+    cats = json.dumps(prefs.get("preferred_categories", []))
+    regs = json.dumps(prefs.get("preferred_regions", []))
+    srcs = json.dumps(prefs.get("preferred_sources", []))
+    langs = json.dumps(prefs.get("preferred_languages", ["en"]))
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    INSERT INTO user_trend_preferences (
+                        user_id, preferred_categories, preferred_regions,
+                        preferred_sources, preferred_languages, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        preferred_categories = excluded.preferred_categories,
+                        preferred_regions = excluded.preferred_regions,
+                        preferred_sources = excluded.preferred_sources,
+                        preferred_languages = excluded.preferred_languages,
+                        updated_at = excluded.updated_at;
+                """, (user_id, cats, regs, srcs, langs, now_str))
+            return get_user_trend_preferences(user_id)
         finally:
             conn.close()
