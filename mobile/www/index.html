@@ -1578,9 +1578,14 @@
           <i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-500"></i>
           <span>Official Razorpay SDK · 256-bit SSL encrypted · No hidden fees</span>
         </div>
-        <button onclick="openHistoryModal()" class="text-xs text-brand hover:underline font-medium flex items-center gap-1 self-start sm:self-auto">
-          <i data-lucide="receipt" class="w-3.5 h-3.5"></i> View Invoices & Receipts
-        </button>
+        <div class="flex items-center gap-3">
+          <button onclick="openBillingAdminModal()" class="text-xs text-purple-400 hover:text-purple-300 font-medium flex items-center gap-1 transition">
+            <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Billing Admin
+          </button>
+          <button onclick="openHistoryModal()" class="text-xs text-brand hover:underline font-medium flex items-center gap-1 self-start sm:self-auto">
+            <i data-lucide="receipt" class="w-3.5 h-3.5"></i> View Invoices & Receipts
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1606,6 +1611,173 @@
       </div>
     </div>
   </div>
+
+  <!-- ==================== 5B. MODULAR CHECKOUT MODAL ==================== -->
+  <div id="modal-checkout-method" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 space-y-4 max-h-[92vh] flex flex-col shadow-2xl modal-animate overflow-y-auto custom-scrollbar">
+      
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between border-b border-[var(--border-subtle)] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand shrink-0">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-base text-[var(--text-primary)]">Secure Checkout</h3>
+              <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">256-Bit SSL</span>
+            </div>
+            <p class="text-xs text-[var(--text-secondary)]">Choose your preferred payment method</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-checkout-method')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-surface-elevated)]" aria-label="Close Checkout">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Plan Summary Card -->
+      <div class="bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] rounded-2xl p-4 flex items-center justify-between">
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-2">
+            <span id="checkout-plan-name" class="font-bold text-sm text-[var(--text-primary)]">Monthly Plan</span>
+            <span id="checkout-plan-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand/10 text-brand border border-brand/20">Flexible</span>
+          </div>
+          <p id="checkout-plan-period" class="text-xs text-[var(--text-secondary)]">Billed monthly · Cancel anytime</p>
+        </div>
+        <div class="text-right">
+          <div id="checkout-plan-price" class="text-xl font-black text-[var(--text-primary)]">₹250</div>
+          <span id="checkout-plan-currency" class="text-[10px] font-bold text-[var(--text-muted)] uppercase">INR</span>
+        </div>
+      </div>
+
+      <!-- Payment Method Selection List -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-[var(--text-primary)]">Select Payment Method</label>
+          <span id="checkout-methods-count" class="text-[11px] text-[var(--text-muted)]">Loading available methods...</span>
+        </div>
+        <div id="checkout-methods-list" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+          <!-- Dynamically populated via loadCheckoutMethods() -->
+        </div>
+      </div>
+
+      <!-- Provider Notice & Status Box -->
+      <div id="checkout-status-alert" class="hidden p-3 rounded-xl text-xs font-medium border"></div>
+
+      <!-- Security Notice -->
+      <div class="flex items-center gap-2 text-[11px] text-[var(--text-muted)] bg-[var(--bg-input)]/50 p-2.5 rounded-xl border border-[var(--border-subtle)]">
+        <i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+        <span id="checkout-provider-note">Payment processed with end-to-end encryption. Never store card numbers or CVV.</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="pt-2 flex items-center gap-2.5">
+        <button onclick="closeModal('modal-checkout-method')" class="w-1/3 py-2.5 px-3 rounded-xl text-xs font-semibold bg-[var(--bg-input)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] transition btn-press">
+          Cancel
+        </button>
+        <button id="btn-execute-checkout" onclick="executeModularCheckout()" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-brand hover:bg-brand-hover text-white shadow-md transition btn-press flex items-center justify-center gap-2">
+          <span id="btn-execute-checkout-text">Pay Now</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 5C. BILLING & PAYMENT ADMIN CONFIGURATION MODAL ==================== -->
+  <div id="modal-billing-admin" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full max-w-3xl rounded-2xl shadow-2xl max-h-[92vh] flex flex-col custom-scrollbar modal-animate overflow-hidden">
+      
+      <!-- Admin Header -->
+      <div class="p-4 sm:p-5 border-b border-[var(--border-subtle)] flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center">
+            <i data-lucide="sliders" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-base text-[var(--text-primary)]">Billing & Payment Configuration</h3>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 uppercase">Admin</span>
+            </div>
+            <p class="text-xs text-[var(--text-secondary)]">Manage gateways, toggle payment methods, update regional prices & view ledger</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-billing-admin')" class="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-surface-elevated)]">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex items-center gap-1.5 px-4 pt-3 border-b border-[var(--border-subtle)] bg-[var(--bg-input)]/40 overflow-x-auto text-xs">
+        <button id="admin-tab-btn-providers" onclick="switchAdminBillingTab('providers')" class="px-3.5 py-2 font-bold border-b-2 border-brand text-brand flex items-center gap-1.5">
+          <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Gateways
+        </button>
+        <button id="admin-tab-btn-methods" onclick="switchAdminBillingTab('methods')" class="px-3.5 py-2 font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5">
+          <i data-lucide="credit-card" class="w-3.5 h-3.5"></i> Payment Methods
+        </button>
+        <button id="admin-tab-btn-pricing" onclick="switchAdminBillingTab('pricing')" class="px-3.5 py-2 font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5">
+          <i data-lucide="tag" class="w-3.5 h-3.5"></i> Plans & Pricing
+        </button>
+        <button id="admin-tab-btn-ledger" onclick="switchAdminBillingTab('ledger')" class="px-3.5 py-2 font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5">
+          <i data-lucide="receipt" class="w-3.5 h-3.5"></i> Transactions & Refunds
+        </button>
+      </div>
+
+      <!-- Admin Tab Body Container -->
+      <div class="p-4 sm:p-5 flex-1 overflow-y-auto custom-scrollbar space-y-4">
+        
+        <!-- Tab 1: Providers -->
+        <div id="admin-panel-providers" class="space-y-3">
+          <div class="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+            <span>Modular Payment Provider Adapters</span>
+            <span class="text-[11px] text-[var(--text-muted)]">Toggle active status or fallback priority</span>
+          </div>
+          <div id="admin-providers-list" class="space-y-2.5">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Tab 2: Methods -->
+        <div id="admin-panel-methods" class="space-y-3 hidden">
+          <div class="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+            <span>Customer-Facing Payment Methods</span>
+            <span class="text-[11px] text-[var(--text-muted)]">Enable/disable methods per business requirements</span>
+          </div>
+          <div id="admin-methods-list" class="space-y-2">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Tab 3: Pricing Matrix -->
+        <div id="admin-panel-pricing" class="space-y-3 hidden">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-[var(--text-secondary)]">Database-Backed Pricing Matrix</span>
+            <div class="flex items-center gap-1 bg-[var(--bg-input)] p-1 rounded-lg border border-[var(--border-subtle)]">
+              <button onclick="renderAdminPricingTable('INR', 'india')" class="px-2 py-0.5 rounded text-[11px] font-bold bg-brand text-white">INR (₹)</button>
+              <button onclick="renderAdminPricingTable('USD', 'usa')" class="px-2 py-0.5 rounded text-[11px] font-medium text-[var(--text-secondary)]">USD ($)</button>
+              <button onclick="renderAdminPricingTable('EUR', 'europe')" class="px-2 py-0.5 rounded text-[11px] font-medium text-[var(--text-secondary)]">EUR (€)</button>
+            </div>
+          </div>
+          <div id="admin-pricing-table" class="space-y-2">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Tab 4: Transactions Ledger & Refunds -->
+        <div id="admin-panel-ledger" class="space-y-3 hidden">
+          <div class="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+            <span>Unified Payment Transaction Ledger</span>
+            <button onclick="loadAdminTransactions()" class="text-xs text-brand hover:underline flex items-center gap-1">
+              <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+            </button>
+          </div>
+          <div id="admin-ledger-list" class="space-y-2">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   <!-- ==================== 6. CUSTOMIZE RESEARCH SOURCES MODAL (131+ Sources) ==================== -->
   <div id="modal-sources" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 hidden">
@@ -6376,6 +6548,548 @@ What is your experience?`,
       lucide.createIcons();
       initAuth();
     });
-  </script>
+  
+    // =========================================================================
+    // FLEXIBLE, MODULAR MULTI-PROVIDER PAYMENT CONTROLLER
+    // =========================================================================
+    let currentCheckoutPlan = null;
+    let selectedCheckoutMethod = null;
+    let eligibleCheckoutMethods = [];
+    let adminBillingConfig = null;
+    let adminPricingCurrency = 'INR';
+    let adminPricingRegion = 'india';
+
+    // Open Modular Checkout Modal
+    async function openModularCheckoutModal(planId) {
+      const plan = availablePlans.find(p => p.id === planId);
+      if (!plan) {
+        showToast('Plan not found.', 'error');
+        return;
+      }
+
+      currentCheckoutPlan = plan;
+      const modal = document.getElementById('modal-checkout-method');
+      if (!modal) return;
+
+      // Populate plan summary
+      const pName = document.getElementById('checkout-plan-name');
+      const pBadge = document.getElementById('checkout-plan-badge');
+      const pPeriod = document.getElementById('checkout-plan-period');
+      const pPrice = document.getElementById('checkout-plan-price');
+      const pCurr = document.getElementById('checkout-plan-currency');
+      const btnText = document.getElementById('btn-execute-checkout-text');
+      const alertBox = document.getElementById('checkout-status-alert');
+
+      if (pName) pName.innerText = plan.name;
+      if (pBadge) pBadge.innerText = plan.badge || 'Selected';
+      if (pPeriod) pPeriod.innerText = `${plan.billing_period} access · Cancel anytime`;
+      if (pPrice) pPrice.innerText = plan.formatted_price;
+      if (pCurr) pCurr.innerText = plan.currency;
+      if (btnText) btnText.innerText = `Pay ${plan.formatted_price}`;
+      if (alertBox) alertBox.classList.add('hidden');
+
+      modal.classList.remove('hidden');
+      lucide.createIcons();
+
+      // Load eligible payment methods from backend
+      await loadEligibleCheckoutMethods(plan);
+    }
+
+    async function loadEligibleCheckoutMethods(plan) {
+      const listEl = document.getElementById('checkout-methods-list');
+      const countEl = document.getElementById('checkout-methods-count');
+      if (listEl) {
+        listEl.innerHTML = `<div class="py-6 text-center text-xs text-[var(--text-muted)] animate-pulse">Retrieving authorized payment methods for ${escapeHtml(plan.currency)}...</div>`;
+      }
+
+      try {
+        const res = await apiFetch(`/api/payments/methods?currency=${encodeURIComponent(plan.currency)}&country=${encodeURIComponent(selectedCountry)}&plan_id=${encodeURIComponent(plan.id)}`);
+        if (!res || !res.methods || !res.methods.length) {
+          if (listEl) listEl.innerHTML = `<div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">No payment methods currently enabled for ${escapeHtml(plan.currency)} in ${escapeHtml(selectedCountry)}.</div>`;
+          return;
+        }
+
+        eligibleCheckoutMethods = res.methods;
+        if (countEl) countEl.innerText = `${eligibleCheckoutMethods.length} available methods`;
+
+        // Default to first method
+        selectedCheckoutMethod = eligibleCheckoutMethods[0];
+        renderEligibleMethods();
+      } catch (err) {
+        if (listEl) listEl.innerHTML = `<div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400">Failed to load payment methods: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function renderEligibleMethods() {
+      const listEl = document.getElementById('checkout-methods-list');
+      if (!listEl) return;
+
+      listEl.innerHTML = eligibleCheckoutMethods.map(m => {
+        const isSelected = selectedCheckoutMethod && (selectedCheckoutMethod.id === m.id);
+        const borderClass = isSelected ? "border-brand bg-brand/5 shadow-sm" : "border-[var(--border-subtle)] bg-[var(--bg-input)]/40 hover:bg-[var(--bg-surface-elevated)]";
+        const radioIcon = isSelected ? `<div class="w-4 h-4 rounded-full border-2 border-brand flex items-center justify-center shrink-0"><div class="w-2 h-2 rounded-full bg-brand"></div></div>` : `<div class="w-4 h-4 rounded-full border border-[var(--border-subtle)] shrink-0"></div>`;
+        const badgeHtml = m.badge ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${escapeHtml(m.badge)}</span>` : '';
+
+        return `
+          <div onclick="selectCheckoutMethod('${m.id}', '${m.provider_id}')" class="p-3 rounded-xl border ${borderClass} flex items-center justify-between cursor-pointer transition btn-press">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] flex items-center justify-center text-brand shrink-0">
+                <i data-lucide="${m.icon || 'credit-card'}" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-bold text-[var(--text-primary)]">${escapeHtml(m.name)}</span>
+                  ${badgeHtml}
+                </div>
+                <p class="text-[11px] text-[var(--text-muted)]">${escapeHtml(m.description || '')}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] text-[var(--text-muted)] uppercase font-semibold hidden sm:inline">${escapeHtml(m.provider_name)}</span>
+              ${radioIcon}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+
+      // Update button text and provider note
+      const btnText = document.getElementById('btn-execute-checkout-text');
+      const noteEl = document.getElementById('checkout-provider-note');
+      if (btnText && currentCheckoutPlan && selectedCheckoutMethod) {
+        btnText.innerText = `Pay ${currentCheckoutPlan.formatted_price} via ${selectedCheckoutMethod.name.split(' ')[0]}`;
+      }
+      if (noteEl && selectedCheckoutMethod) {
+        noteEl.innerText = `Processed securely via ${selectedCheckoutMethod.provider_name} · End-to-end encrypted · 256-bit SSL`;
+      }
+    }
+
+    function selectCheckoutMethod(methodId, providerId) {
+      const found = eligibleCheckoutMethods.find(m => m.id === methodId);
+      if (found) {
+        selectedCheckoutMethod = found;
+        renderEligibleMethods();
+      }
+    }
+
+    // Execute Selected Provider Checkout Flow
+    async function executeModularCheckout() {
+      if (!currentCheckoutPlan || !selectedCheckoutMethod) {
+        showToast('Please select a payment method.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-execute-checkout');
+      const btnText = document.getElementById('btn-execute-checkout-text');
+      const alertBox = document.getElementById('checkout-status-alert');
+      const origText = btnText ? btnText.innerText : 'Pay Now';
+
+      if (btn) btn.disabled = true;
+      if (btnText) btnText.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Connecting Gateway...`;
+      if (alertBox) alertBox.classList.add('hidden');
+      lucide.createIcons();
+
+      try {
+        // 1. Create checkout session on backend
+        const sessionRes = await apiFetch('/api/payments/checkout-session', {
+          method: 'POST',
+          body: JSON.stringify({
+            plan_id: currentCheckoutPlan.id,
+            currency: currentCheckoutPlan.currency,
+            country: selectedCountry,
+            payment_method_id: selectedCheckoutMethod.id,
+            provider_id: selectedCheckoutMethod.provider_id
+          })
+        });
+
+        if (!sessionRes || !sessionRes.ok) {
+          throw new Error(sessionRes?.detail || 'Failed to initiate checkout session');
+        }
+
+        const providerId = sessionRes.provider_id;
+        const clientParams = sessionRes.client_params || {};
+
+        // 2. Provider-specific checkout execution
+        if (providerId === 'razorpay') {
+          // If live Razorpay SDK is available and key is non-placeholder
+          if (window.Razorpay && clientParams.key_id && !clientParams.key_id.startsWith('rzp_test_placeholder')) {
+            const options = {
+              key: clientParams.key_id,
+              amount: clientParams.amount,
+              currency: clientParams.currency,
+              name: "Tweets Autonomous Agent",
+              description: `${clientParams.plan_name} (${currentCheckoutPlan.formatted_price})`,
+              order_id: clientParams.order_id,
+              notes: { plan_id: currentCheckoutPlan.id, method: selectedCheckoutMethod.id },
+              handler: async function(rzpResp) {
+                await verifyUniversalPayment('razorpay', {
+                  transaction_id: sessionRes.session_id,
+                  order_id: rzpResp.razorpay_order_id,
+                  payment_id: rzpResp.razorpay_payment_id,
+                  signature: rzpResp.razorpay_signature,
+                  plan_id: currentCheckoutPlan.id,
+                  currency: currentCheckoutPlan.currency,
+                  amount: currentCheckoutPlan.price
+                });
+              },
+              modal: {
+                ondismiss: function() {
+                  showToast("Payment checkout cancelled. You were not charged.", "info");
+                  if (btn) btn.disabled = false;
+                  if (btnText) btnText.innerText = origText;
+                }
+              },
+              theme: { color: "#1d9bf0" }
+            };
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+            return;
+          }
+
+          // In developer sandbox mode: simulate cryptographic verification
+          if (btnText) btnText.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Verifying Cryptographic Signature...`;
+          lucide.createIcons();
+          await new Promise(r => setTimeout(r, 1200));
+
+          await verifyUniversalPayment('razorpay', {
+            transaction_id: sessionRes.session_id,
+            order_id: sessionRes.provider_order_id,
+            payment_id: `pay_dev_${Date.now()}`,
+            signature: 'test_verified_signature',
+            plan_id: currentCheckoutPlan.id,
+            currency: currentCheckoutPlan.currency,
+            amount: currentCheckoutPlan.price
+          });
+
+        } else if (providerId === 'stripe' || providerId === 'paypal') {
+          // For hosted redirect checkouts (Stripe Hosted / PayPal Approval URL)
+          if (sessionRes.redirect_url && !sessionRes.redirect_url.includes('placeholder')) {
+            window.location.href = sessionRes.redirect_url;
+            return;
+          }
+
+          // In developer sandbox mode: simulate cryptographic verification
+          if (btnText) btnText.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Verifying with ${selectedCheckoutMethod.provider_name}...`;
+          lucide.createIcons();
+          await new Promise(r => setTimeout(r, 1200));
+
+          await verifyUniversalPayment(providerId, {
+            transaction_id: sessionRes.session_id,
+            order_id: sessionRes.provider_order_id,
+            payment_id: `pay_${providerId}_dev_${Date.now()}`,
+            signature: `sig_${providerId}_valid_dev`,
+            plan_id: currentCheckoutPlan.id,
+            currency: currentCheckoutPlan.currency,
+            amount: currentCheckoutPlan.price
+          });
+        }
+      } catch (err) {
+        if (alertBox) {
+          alertBox.className = "p-3 rounded-xl text-xs font-medium border bg-rose-500/10 border-rose-500/20 text-rose-400";
+          alertBox.innerText = err.message || "Checkout could not be completed.";
+          alertBox.classList.remove('hidden');
+        }
+        showToast(err.message || 'Payment initiation failed', 'error');
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.innerText = origText;
+      }
+    }
+
+    async function verifyUniversalPayment(providerId, verifyPayload) {
+      const alertBox = document.getElementById('checkout-status-alert');
+      try {
+        const verifyRes = await apiFetch('/api/payments/verify', {
+          method: 'POST',
+          body: JSON.stringify({
+            provider_id: providerId,
+            ...verifyPayload
+          })
+        });
+
+        if (verifyRes && verifyRes.ok) {
+          currentSubscription = verifyRes.subscription;
+          isPro = true;
+          closeModal('modal-checkout-method');
+          closeModal('modal-pricing');
+          showToast(`🎉 Verified via ${providerId.toUpperCase()}! ${currentCheckoutPlan.name} access is now active!`, 'success');
+          updateSubscriptionUI();
+          refreshAll();
+        } else {
+          throw new Error(verifyRes?.detail || "Cryptographic verification rejected.");
+        }
+      } catch (err) {
+        if (alertBox) {
+          alertBox.className = "p-3 rounded-xl text-xs font-medium border bg-rose-500/10 border-rose-500/20 text-rose-400";
+          alertBox.innerText = `Payment verification error: ${err.message}`;
+          alertBox.classList.remove('hidden');
+        }
+        showToast(`Verification failed: ${err.message}`, 'error');
+        const btn = document.getElementById('btn-execute-checkout');
+        const btnText = document.getElementById('btn-execute-checkout-text');
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.innerText = "Retry Payment";
+      }
+    }
+
+    // Override checkoutSubscription to route through modular checkout
+    function checkoutSubscription(planId) {
+      openModularCheckoutModal(planId);
+    }
+
+    // =========================================================================
+    // ADMIN BILLING CONFIGURATION CONTROLLER
+    // =========================================================================
+    async function openBillingAdminModal() {
+      const modal = document.getElementById('modal-billing-admin');
+      if (modal) modal.classList.remove('hidden');
+      lucide.createIcons();
+      await loadAdminBillingConfig();
+    }
+
+    async function loadAdminBillingConfig() {
+      try {
+        const res = await apiFetch('/api/admin/payments/config');
+        if (res && res.ok) {
+          adminBillingConfig = res;
+          renderAdminProviders(res.providers || []);
+          renderAdminMethods(res.methods || []);
+          renderAdminPricingTable(adminPricingCurrency, adminPricingRegion);
+        }
+      } catch (err) {
+        showToast('Error loading billing admin configuration: ' + err.message, 'error');
+      }
+    }
+
+    function switchAdminBillingTab(tab) {
+      ['providers', 'methods', 'pricing', 'ledger'].forEach(t => {
+        const p = document.getElementById(`admin-panel-${t}`);
+        const b = document.getElementById(`admin-tab-btn-${t}`);
+        if (p) p.classList.toggle('hidden', t !== tab);
+        if (b) {
+          if (t === tab) {
+            b.className = "px-3.5 py-2 font-bold border-b-2 border-brand text-brand flex items-center gap-1.5";
+          } else {
+            b.className = "px-3.5 py-2 font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5";
+          }
+        }
+      });
+      lucide.createIcons();
+      if (tab === 'ledger') loadAdminTransactions();
+    }
+
+    function renderAdminProviders(providers) {
+      const el = document.getElementById('admin-providers-list');
+      if (!el) return;
+
+      el.innerHTML = providers.map(p => {
+        const isEnabled = !!p.is_enabled;
+        const statusBadge = isEnabled 
+          ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>`
+          : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">Disabled</span>`;
+        const modeBadge = p.mode === 'live' 
+          ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">Live</span>`
+          : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase">Sandbox</span>`;
+
+        return `
+          <div class="p-3.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex items-center justify-between gap-3">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-[var(--text-primary)]">${escapeHtml(p.name)}</span>
+                ${statusBadge}
+                ${modeBadge}
+              </div>
+              <p class="text-[11px] text-[var(--text-muted)]">Currencies: ${escapeHtml(p.supported_currencies.join(', '))} · Priority: Rank #${p.priority}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick="toggleAdminProvider('${p.provider_id}', ${!isEnabled})" class="px-3 py-1 rounded-lg text-xs font-semibold ${isEnabled ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'} transition btn-press">
+                ${isEnabled ? 'Disable' : 'Enable'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    async function toggleAdminProvider(providerId, isEnabled) {
+      try {
+        const res = await apiFetch(`/api/admin/payments/providers/${providerId}`, {
+          method: 'POST',
+          body: JSON.stringify({ is_enabled: isEnabled })
+        });
+        if (res && res.ok) {
+          showToast(`Provider ${providerId.toUpperCase()} ${isEnabled ? 'enabled' : 'disabled'}.`, 'success');
+          await loadAdminBillingConfig();
+        }
+      } catch (err) {
+        showToast('Error toggling provider: ' + err.message, 'error');
+      }
+    }
+
+    function renderAdminMethods(methods) {
+      const el = document.getElementById('admin-methods-list');
+      if (!el) return;
+
+      el.innerHTML = methods.map(m => {
+        const isEnabled = !!m.is_enabled;
+        return `
+          <div class="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-[var(--bg-input)] border border-[var(--border-subtle)] flex items-center justify-center text-brand">
+                <i data-lucide="${m.icon || 'credit-card'}" class="w-3.5 h-3.5"></i>
+              </div>
+              <div>
+                <span class="text-xs font-bold text-[var(--text-primary)]">${escapeHtml(m.name)}</span>
+                <span class="text-[10px] text-[var(--text-muted)] ml-2 uppercase font-semibold">(${escapeHtml(m.provider_id)})</span>
+              </div>
+            </div>
+            <button onclick="toggleAdminMethod('${m.method_id}', ${!isEnabled})" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold ${isEnabled ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'} transition btn-press">
+              ${isEnabled ? 'Disable' : 'Enable'}
+            </button>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    async function toggleAdminMethod(methodId, isEnabled) {
+      try {
+        const res = await apiFetch(`/api/admin/payments/methods/${methodId}`, {
+          method: 'POST',
+          body: JSON.stringify({ is_enabled: isEnabled })
+        });
+        if (res && res.ok) {
+          showToast(`Method ${methodId} updated.`, 'success');
+          await loadAdminBillingConfig();
+        }
+      } catch (err) {
+        showToast('Error toggling method: ' + err.message, 'error');
+      }
+    }
+
+    function renderAdminPricingTable(currency, region) {
+      adminPricingCurrency = currency;
+      adminPricingRegion = region;
+      const el = document.getElementById('admin-pricing-table');
+      if (!el || !adminBillingConfig || !adminBillingConfig.plans) return;
+
+      const filtered = adminBillingConfig.plans.filter(p => p.currency === currency && p.region === region);
+      el.innerHTML = filtered.map(p => {
+        const isLifetime = (p.plan_id === 'lifetime');
+        const priceVal = (p.price !== null && p.price !== undefined) ? p.price : '';
+        return `
+          <div class="p-3.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-[var(--text-primary)]">${escapeHtml(p.name)}</span>
+                <span class="text-[10px] text-[var(--text-muted)]">(${escapeHtml(p.billing_period)})</span>
+              </div>
+              <p class="text-[11px] text-[var(--text-muted)]">${isLifetime && p.price === null ? 'Configured separately · Checkout currently disabled' : 'Active database-backed pricing'}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-[var(--text-primary)]">${escapeHtml(currency)}</span>
+              <input type="number" id="input-pricing-${p.plan_id}" value="${priceVal}" placeholder="Price" class="w-24 bg-[var(--bg-input)] border border-[var(--border-subtle)] focus:border-brand rounded-lg px-2 py-1 text-xs text-[var(--text-primary)] outline-none" />
+              <button onclick="saveAdminPlanPrice('${p.plan_id}', '${currency}', '${region}')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-brand hover:bg-brand-hover text-white transition btn-press">
+                Save
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    async function saveAdminPlanPrice(planId, currency, region) {
+      const input = document.getElementById(`input-pricing-${planId}`);
+      if (!input) return;
+      const val = parseFloat(input.value);
+      if (isNaN(val) || val <= 0) {
+        showToast('Please enter a valid positive price.', 'error');
+        return;
+      }
+
+      try {
+        const res = await apiFetch(`/api/admin/payments/plans/${planId}/pricing`, {
+          method: 'POST',
+          body: JSON.stringify({
+            currency: currency,
+            region: region,
+            price: val,
+            checkout_enabled: true
+          })
+        });
+        if (res && res.ok) {
+          showToast(`Updated ${planId} price to ${currency} ${val}!`, 'success');
+          await loadAdminBillingConfig();
+          await loadPlans(selectedCountry);
+        }
+      } catch (err) {
+        showToast('Error updating plan price: ' + err.message, 'error');
+      }
+    }
+
+    async function loadAdminTransactions() {
+      const el = document.getElementById('admin-ledger-list');
+      if (!el) return;
+      el.innerHTML = `<div class="py-6 text-center text-xs text-[var(--text-muted)] animate-pulse">Loading transaction records...</div>`;
+
+      try {
+        const res = await apiFetch('/api/admin/payments/transactions?limit=25');
+        if (!res || !res.transactions || !res.transactions.length) {
+          el.innerHTML = `<div class="py-6 text-center text-xs text-[var(--text-muted)]">No transactions recorded yet.</div>`;
+          return;
+        }
+
+        el.innerHTML = res.transactions.map(t => {
+          const isSuccess = t.status === 'successful';
+          const isRefunded = t.status === 'refunded';
+          const badgeClass = isSuccess ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : (isRefunded ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20');
+          const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString() : '';
+
+          return `
+            <div class="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-input)]/40 flex items-center justify-between gap-3 text-xs">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-[var(--text-primary)]">@${escapeHtml(t.user_id)}</span>
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${badgeClass} uppercase">${escapeHtml(t.status)}</span>
+                  <span class="text-[10px] text-[var(--text-muted)] uppercase">(${escapeHtml(t.provider_id)})</span>
+                </div>
+                <p class="text-[11px] text-[var(--text-muted)]">${escapeHtml(t.plan_id)} · ${escapeHtml(t.payment_method_id)} · ${dateStr}</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-black text-xs text-[var(--text-primary)]">${escapeHtml(t.currency)} ${t.amount}</span>
+                ${isSuccess ? `<button onclick="processAdminRefund('${t.transaction_id}')" class="px-2 py-0.5 text-[10px] font-bold rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition">Refund</button>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+        lucide.createIcons();
+      } catch (err) {
+        el.innerHTML = `<div class="p-3 text-xs text-rose-400">Failed to load transactions: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    async function processAdminRefund(transactionId) {
+      const reason = prompt("Enter reason for refund:", "Customer requested refund");
+      if (!reason) return;
+
+      try {
+        const res = await apiFetch(`/api/admin/payments/transactions/${transactionId}/refund`, {
+          method: 'POST',
+          body: JSON.stringify({ reason: reason })
+        });
+        if (res && res.ok) {
+          showToast(res.message || "Refund processed successfully.", "success");
+          await loadAdminTransactions();
+        } else {
+          showToast(res?.detail || "Refund failed.", "error");
+        }
+      } catch (err) {
+        showToast("Refund failed: " + err.message, "error");
+      }
+    }
+
+</script>
 </body>
 </html>

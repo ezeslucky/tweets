@@ -404,6 +404,22 @@ def get_plan(plan_id: str, country_code: Optional[str] = None) -> Optional[Dict[
     """Retrieve trusted plan metadata for a given country."""
     region_id = resolve_region(country_code)
     region = get_region_config(region_id)
+    currency = region["currency"]
+
+    # Check database-backed configuration first
+    try:
+        import database
+        db_id = "six_month" if plan_id in ["six_month", "semiannual"] else plan_id
+        db_p = database.get_db_pricing_plan(db_id, currency, region_id)
+        if db_p:
+            plan = dict(db_p)
+            plan["id"] = plan_id
+            plan["currency"] = currency
+            plan["currency_symbol"] = region["currency_symbol"]
+            return plan
+    except Exception:
+        pass
+
     plan_template = region["plans"].get(plan_id)
     if not plan_template:
         return None

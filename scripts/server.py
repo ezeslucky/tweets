@@ -61,6 +61,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Modular flexible payment provider router
+import payment_routes
+app.include_router(payment_routes.router)
+
 SHOTS_DIR = ROOT_DIR / "shots"
 DRAFTS_DIR = ROOT_DIR / "drafts"
 SWIPE_DIR = ROOT_DIR / "swipe"

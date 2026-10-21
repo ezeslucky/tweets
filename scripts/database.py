@@ -535,6 +535,9 @@ def init_db() -> None:
                     conn.execute("ALTER TABLE subscriptions ADD COLUMN billing_country TEXT DEFAULT 'IN';")
                 if "currency" not in sub_cols:
                     conn.execute("ALTER TABLE subscriptions ADD COLUMN currency TEXT DEFAULT 'INR';")
+
+                import payments_db
+                payments_db.init_payment_system_tables(conn)
         finally:
             conn.close()
 
@@ -3135,3 +3138,21 @@ def get_worldwide_trends_overview() -> Dict[str, Any]:
             }
         finally:
             conn.close()
+
+
+# Re-export flexible payment system DB helpers
+from payments_db import (
+    get_payment_providers_config,
+    update_payment_provider_config,
+    get_payment_methods_config,
+    update_payment_method_config,
+    get_db_pricing_plans,
+    get_db_pricing_plan,
+    update_db_pricing_plan,
+    create_payment_transaction,
+    update_payment_transaction_status,
+    get_payment_transactions,
+    get_payment_transaction_by_id,
+    record_payment_audit_log,
+    get_payment_audit_logs,
+)
