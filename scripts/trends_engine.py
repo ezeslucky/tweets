@@ -368,101 +368,248 @@ def fetch_linkedin_trends(source_meta: Dict[str, Any]) -> Tuple[List[Dict[str, A
         })
     return items, f"ok ({len(items)})"
 
-# ==================== CLUSTERING & TREND VELOCITY SCORING ====================
+# ==================== CANONICAL TOPIC CLUSTERING & RANKING ====================
 
-def _extract_keywords(title: str) -> Set[str]:
-    clean = re.sub(r"[^a-zA-Z0-9\s]", " ", title.lower())
-    words = clean.split()
-    return {w for w in words if len(w) > 2 and w not in STOP_WORDS}
+def clean_publisher_decorations(title: str) -> str:
+    """Remove publisher suffixes and channel prefixes (e.g. ' - TechCrunch', ' | Reuters', 'Show HN:')."""
+    if not title:
+        return ""
+    t = re.sub(r"^(Show HN|Ask HN|Tell HN|Breaking|Update|Exclusive):\s*", "", title, flags=re.IGNORECASE)
+    t = re.sub(
+        r"\s*(\||-|\u2013|\u2014)\s*(TechCrunch|Reuters|BBC|The Verge|Ars Technica|Livemint|Times of India|Hacker News|Reddit|The Hindu|Wired|CNBC|Bloomberg|Nikkei Asia|Al Jazeera|Forbes|The Guardian|Gizmodo|Engadget|VentureBeat|TechCabal|ABC News).*$",
+        "",
+        t,
+        flags=re.IGNORECASE,
+    )
+    t = re.sub(r"\[(r/[^\]]+|HN|Update|Breaking|Exclusive|Live)\]", "", t, flags=re.IGNORECASE)
+    return t.strip()
 
-def cluster_and_score_stories(stories: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Detect cross-publisher stories, compute velocity, and categorize into trend types."""
+def normalize_title_tokens(title: str) -> Set[str]:
+    """Tokenize and stem words to enable similarity matching for different wordings of the same underlying story."""
+    cleaned = clean_publisher_decorations(title)
+    words = re.findall(r"[a-zA-Z0-9]+(?:[-'][a-zA-Z0-9]+)*", cleaned.lower())
+    tokens = set()
+    for w in words:
+        if len(w) > 2 and w not in STOP_WORDS:
+            if w.endswith("ies") and len(w) > 4:
+                stem = w[:-3] + "y"
+            elif w.endswith("ing") and len(w) > 5:
+                stem = w[:-3]
+            elif w.endswith("ed") and len(w) > 4:
+                stem = w[:-2]
+            elif w.endswith("s") and not w.endswith("ss") and len(w) > 3:
+                stem = w[:-1]
+            else:
+                stem = w
+            tokens.add(stem)
+    return tokens
+
+def slugify(text: str) -> str:
+    cleaned = clean_publisher_decorations(text)
+    s = re.sub(r"[^a-zA-Z0-9\s-]", "", cleaned).lower()
+    return re.sub(r"[\s-]+", "-", s).strip("-")[:80]
+
+def compute_similarity(tokens1: Set[str], tokens2: Set[str]) -> float:
+    if not tokens1 or not tokens2:
+        return 0.0
+    inter = len(tokens1 & tokens2)
+    union = len(tokens1 | tokens2)
+    return inter / union
+
+def cluster_and_score_stories(stories: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Group cross-publisher stories into single consolidated Canonical Topics with citations.
+    Calculates transparent scores and assigns verified trend status labels:
+    - Emerging
+    - Rising
+    - High activity
+    - Established
+    - Cooling down
+    """
     now = _now()
-    scored_stories = []
-
-    # 1. Build keyword inverted index for cross-source clustering
     clusters: List[Dict[str, Any]] = []
 
     for s in stories:
-        kws = _extract_keywords(s.get("title", ""))
-        source_name = s.get("source", "")
-        matched_cluster = None
+        raw_title = s.get("title", "")
+        cleaned_title = clean_publisher_decorations(raw_title)
+        tokens = normalize_title_tokens(cleaned_title)
+        source_name = s.get("source", "Web")
+        s_url = s.get("url", "")
 
-        if len(kws) >= 2:
+        matched_cluster = None
+        if len(tokens) >= 2:
             for c in clusters:
-                overlap = len(kws & c["keywords"])
-                # Jaccard or significant token overlap
-                if overlap >= 2 and (overlap / max(1, len(kws | c["keywords"]))) > 0.35:
+                sim = compute_similarity(tokens, c["tokens"])
+                overlap = len(tokens & c["tokens"])
+                # Jaccard >= 0.35 or >= 3 shared key entities or >= 2 high-signal non-generic tokens
+                non_generic_overlap = (tokens & c["tokens"]) - {
+                    "model", "release", "releases", "released", "launch", "announces", "update", "updates",
+                    "new", "test", "tests", "code", "app", "web", "system", "feature", "build", "tool", "tools"
+                }
+                if sim >= 0.35 or overlap >= 3 or len(non_generic_overlap) >= 2:
                     matched_cluster = c
                     break
 
         if matched_cluster:
             matched_cluster["stories"].append(s)
+            matched_cluster["tokens"].update(tokens)
             matched_cluster["sources"].add(source_name)
-            matched_cluster["keywords"].update(kws)
             s["cluster_id"] = matched_cluster["id"]
         else:
-            cid = f"cluster_{abs(hash(s.get('title', '')))}"
+            cid = f"top_{abs(hash(cleaned_title or s_url)) % 1000000000}"
             new_c = {
                 "id": cid,
-                "keywords": set(kws),
+                "canonical_title": cleaned_title or raw_title,
+                "tokens": set(tokens),
                 "sources": {source_name},
                 "stories": [s],
+                "slug": slugify(cleaned_title or raw_title),
+                "category": s.get("category", "Technology"),
+                "region": s.get("region", "Worldwide"),
+                "country": s.get("country", ""),
+                "language": s.get("language", "en"),
+                "primary_url": s_url,
             }
             clusters.append(new_c)
             s["cluster_id"] = cid
 
-    # 2. Score velocity and determine trend type
-    for s in stories:
-        cid = s.get("cluster_id")
-        cluster = next((c for c in clusters if c["id"] == cid), None)
-        cross_source_count = len(cluster["sources"]) if cluster else 1
-        s["cross_source_count"] = cross_source_count
+    canonical_topics: List[Dict[str, Any]] = []
+    scored_raw_stories: List[Dict[str, Any]] = []
 
-        pub_dt = _parse_dt(s.get("published_at")) or now
-        age_hours = max(0.2, (now - pub_dt).total_seconds() / 3600.0)
+    for c in clusters:
+        cluster_stories = c["stories"]
+        source_count = len(c["sources"])
+        
+        # Calculate earliest published time and total discussions
+        earliest_dt = now
+        latest_dt = datetime.fromtimestamp(0, tz=timezone.utc)
+        total_score = 0
+        total_comments = 0
+        summaries = []
 
-        # Engagement factor (normalized)
-        score = s.get("score") or 0
-        comments = s.get("comments") or 0
-        raw_eng = score + (comments * 2)
+        citations = []
+        for st in cluster_stories:
+            dt = _parse_dt(st.get("published_at")) or now
+            if dt < earliest_dt:
+                earliest_dt = dt
+            if dt > latest_dt:
+                latest_dt = dt
+            
+            sc = st.get("score") or 0
+            cm = st.get("comments") or 0
+            total_score += sc
+            total_comments += cm
 
-        # Recency decay (half-life approx 16 hours)
-        recency_weight = math.exp(-0.045 * age_hours)
+            sum_txt = st.get("extra", {}).get("summary") or st.get("summary") or ""
+            if sum_txt and len(sum_txt) > 20:
+                summaries.append(sum_txt)
 
-        # Cross-source multiplier
-        cross_multiplier = 1.0 + (0.45 * (cross_source_count - 1))
+            citations.append({
+                "source_name": st.get("source", "Web"),
+                "source_id": st.get("source_id", "web"),
+                "url": st.get("url", ""),
+                "title": st.get("title", ""),
+                "author": st.get("extra", {}).get("author", ""),
+                "score": sc,
+                "comments": cm,
+                "region": st.get("region", c["region"]),
+                "published_at": dt.isoformat(),
+                "summary": sum_txt[:350],
+            })
 
-        # Publisher tier
-        tier = float(s.get("extra", {}).get("publisher_tier") or 1.2)
+        age_hours = max(0.2, (now - earliest_dt).total_seconds() / 3600.0)
+        total_discussions = total_score + total_comments
 
-        # Raw velocity calculation
-        base_velocity = (min(raw_eng, 800) / 10.0 + 12.0)
-        calc_velocity = base_velocity * recency_weight * cross_multiplier * tier
+        # Transparent mathematical scoring components:
+        # 1. Multi-source confirmation weight (up to 40 pts)
+        multi_source_pts = min(40.0, float(source_count) * 12.0)
+        # 2. Discussion & search engagement weight (up to 30 pts, log scale)
+        discussion_pts = min(30.0, math.log10(max(1.0, float(total_discussions))) * 10.0)
+        # 3. Recency acceleration weight (up to 30 pts, half-life approx 18 hours)
+        recency_pts = 30.0 * math.exp(-0.038 * age_hours)
 
-        velocity_score = round(min(99.9, max(10.0, calc_velocity)), 1)
-        s["velocity_score"] = velocity_score
+        raw_trend_score = multi_source_pts + discussion_pts + recency_pts
+        trend_score = round(min(99.9, max(12.0, raw_trend_score)), 1)
+        velocity_score = round(min(99.9, max(10.0, (multi_source_pts * 1.2) + recency_pts)), 1)
 
-        # Determine Trend Type: Breaking, Trending, Popular, Emerging
-        if age_hours <= 6.5 and (tier >= 1.6 or cross_source_count >= 2):
-            trend_type = "Breaking"
-        elif velocity_score >= 68.0 or cross_source_count >= 3:
-            trend_type = "Trending"
-        elif raw_eng >= 200 or (cross_source_count >= 2 and velocity_score >= 45.0):
-            trend_type = "Popular"
-        elif s.get("source_id") in ("huggingface_papers", "arxiv_cs_ai", "github_trending", "lobsters", "hn"):
-            trend_type = "Emerging"
+        # Grounded Trend Status Classification (strict supported rules)
+        # - Emerging
+        # - Rising
+        # - High activity
+        # - Established
+        # - Cooling down
+        niche_sources = {"arxiv_cs_ai", "arxiv_cs_lg", "huggingface_papers", "github_trending", "hn", "lobsters"}
+        has_niche = any(st.get("source_id") in niche_sources for st in cluster_stories)
+
+        if source_count >= 3 and total_discussions >= 80 and age_hours <= 36.0:
+            trend_status = "High activity"
+        elif age_hours <= 14.0 and (source_count <= 2) and (has_niche or velocity_score >= 50.0):
+            trend_status = "Emerging"
+        elif source_count >= 2 and age_hours <= 28.0 and velocity_score >= 42.0:
+            trend_status = "Rising"
+        elif age_hours > 24.0 and source_count >= 2:
+            trend_status = "Established"
+        elif age_hours >= 36.0 or velocity_score < 30.0:
+            trend_status = "Cooling down"
         else:
-            trend_type = "Trending" if velocity_score > 50.0 else "Popular"
+            trend_status = "Rising" if velocity_score >= 45.0 else "Established"
 
-        s["trend_type"] = trend_type
-        scored_stories.append(s)
+        # Grounded synthesized summary
+        if summaries:
+            primary_summary = summaries[0]
+            if len(summaries) > 1 and len(primary_summary) < 180:
+                primary_summary += f" Also reported by {cluster_stories[1].get('source', 'independent media')}."
+        else:
+            primary_summary = (
+                f"Multi-publisher reporting with {source_count} independent sources covering {c['canonical_title']} "
+                f"across {c['region']}."
+            )
 
-    # Sort descending by velocity
-    scored_stories.sort(key=lambda x: x["velocity_score"], reverse=True)
-    return scored_stories
+        why_it_matters = (
+            f"Accelerating signal with {source_count} independent publisher source{'s' if source_count != 1 else ''} "
+            f"and {total_discussions:,} verified discussions across global communities."
+        )
 
-# ==================== COLLECTION PIPELINE ====================
+        canonical_topic = {
+            "topic_id": c["id"],
+            "canonical_title": c["canonical_title"],
+            "slug": c["slug"],
+            "category": c["category"],
+            "region": c["region"],
+            "country": c["country"],
+            "language": c["language"],
+            "trend_status": trend_status,
+            "trend_score": trend_score,
+            "velocity_score": velocity_score,
+            "first_seen_at": earliest_dt.isoformat(),
+            "last_updated_at": latest_dt.isoformat() if latest_dt.year > 1970 else now.isoformat(),
+            "summary": primary_summary,
+            "why_it_matters": why_it_matters,
+            "source_count": source_count,
+            "discussion_count": total_discussions,
+            "primary_url": c["primary_url"],
+            "keywords": list(c["tokens"])[:12],
+            "sources": citations,
+            "extra": {
+                "multi_source_pts": round(multi_source_pts, 1),
+                "discussion_pts": round(discussion_pts, 1),
+                "recency_pts": round(recency_pts, 1),
+                "age_hours": round(age_hours, 1),
+            }
+        }
+        canonical_topics.append(canonical_topic)
+
+        # Backwards compatibility for raw story records
+        for st in cluster_stories:
+            st_copy = dict(st)
+            st_copy["velocity_score"] = velocity_score
+            st_copy["cross_source_count"] = source_count
+            st_copy["trend_type"] = trend_status
+            st_copy["cluster_id"] = c["id"]
+            scored_raw_stories.append(st_copy)
+
+    # Sort canonical topics descending by trend score
+    canonical_topics.sort(key=lambda x: x["trend_score"], reverse=True)
+    return canonical_topics, scored_raw_stories
 
 def collect_global_trends(
     source_ids: Optional[List[str]] = None,
@@ -529,17 +676,20 @@ def collect_global_trends(
                 else:
                     failed_sources.append(sid)
 
-        # Cluster, score, and rank
-        processed_stories = cluster_and_score_stories(collected_stories)
+        # 1. Cluster cross-publisher stories into consolidated Canonical Topics
+        canonical_topics, scored_raw_stories = cluster_and_score_stories(collected_stories)
 
-        # Persist to database
-        save_stats = database.save_global_trend_stories(processed_stories)
+        # 2. Persist consolidated canonical topics and citations
+        topic_save_stats = database.save_canonical_topics(canonical_topics)
+
+        # 3. Persist raw stories for backwards compatibility
+        story_save_stats = database.save_global_trend_stories(scored_raw_stories)
 
         duration = round(time.time() - start_time, 2)
         database.record_trend_schedule_run(
             status="completed",
-            stories_count=len(processed_stories),
-            new_count=save_stats["inserted"],
+            stories_count=len(canonical_topics),
+            new_count=topic_save_stats["inserted"],
         )
 
         return {
@@ -547,9 +697,10 @@ def collect_global_trends(
             "job_id": job_id,
             "status": "completed",
             "duration_seconds": duration,
-            "total_collected": len(processed_stories),
-            "new_stories": save_stats["inserted"],
-            "updated_stories": save_stats["updated"],
+            "total_raw_collected": len(collected_stories),
+            "total_consolidated_topics": len(canonical_topics),
+            "new_topics": topic_save_stats["inserted"],
+            "updated_topics": topic_save_stats["updated"],
             "sources_completed_count": len(completed_sources),
             "sources_failed_count": len(failed_sources),
             "source_status": source_status,

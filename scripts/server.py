@@ -153,6 +153,15 @@ class XQueueItemUpdateRequest(BaseModel):
 class XQueueRegenerateRequest(BaseModel):
     writing_style: Optional[str] = None
 
+class DeepResearchRequest(BaseModel):
+    topic_id: str
+
+class TopicDraftToQueueRequest(BaseModel):
+    draft_text: str
+    angle_name: Optional[str] = "Research Draft"
+    writing_style: Optional[str] = "thoughtful builder"
+    target_post_url: Optional[str] = None
+
 class TrendPreferencesRequest(BaseModel):
     preferred_categories: Optional[List[str]] = None
     preferred_regions: Optional[List[str]] = None
@@ -956,6 +965,75 @@ async def delete_x_queue_item_endpoint(item_id: int):
 
 # ==================== GLOBAL TREND INTELLIGENCE APIS ====================
 
+# ==================== WORLDWIDE CANONICAL TRENDS APIS ====================
+
+@app.get("/api/trends/topics")
+async def get_canonical_trends_topics(
+    request: Request,
+    time_range: str = "24h",
+    region: Optional[str] = None,
+    category: Optional[str] = None,
+    source: Optional[str] = None,
+    language: Optional[str] = None,
+    trend_status: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: str = "trending",
+    limit: int = 30,
+    offset: int = 0
+):
+    """Retrieve consolidated canonical topics worldwide with full citation references, transparent ranking, and filters."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else None
+
+    res = database.get_canonical_topics(
+        time_range=time_range,
+        region=region,
+        category=category,
+        source=source,
+        language=language,
+        trend_status=trend_status,
+        search=search,
+        sort_by=sort_by,
+        limit=limit,
+        offset=offset,
+        user_id=handle,
+    )
+    return {"ok": True, **res}
+
+@app.get("/api/trends/topics/{topic_id}")
+async def get_canonical_topic_detail(topic_id: str):
+    """Retrieve single canonical topic with all verified citations and historical snapshots."""
+    top = database.get_canonical_topic(topic_id)
+    if not top:
+        raise HTTPException(status_code=404, detail=f"Topic '{topic_id}' not found.")
+    return {"ok": True, "topic": top}
+
+@app.post("/api/trends/deep-research")
+async def execute_topic_deep_research(req: DeepResearchRequest):
+    """Conduct AI deep research on a canonical topic: facts, differing viewpoints, citations, and post drafts."""
+    import topic_researcher
+    try:
+        data = topic_researcher.perform_deep_research(req.topic_id)
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/trends/topics/{topic_id}/draft-to-queue")
+async def save_topic_draft_to_queue(topic_id: str, req: TopicDraftToQueueRequest):
+    """Push an AI research draft into the user's post queue for review, editing, and publishing."""
+    top = database.get_canonical_topic(topic_id)
+    topic_name = top["canonical_title"] if top else "Researched Topic"
+    item = database.add_x_queue_item(
+        item_type="post_draft",
+        content=req.draft_text,
+        writing_style=req.writing_style or req.angle_name or "thoughtful builder",
+        topic_name=topic_name,
+        target_post_url=req.target_post_url or (top.get("primary_url") if top else None),
+        why_relevant=f"Generated via Research This Topic: {req.angle_name}",
+        status="draft"
+    )
+    return {"ok": True, "queue_item": item, "message": "Draft added to queue successfully."}
+
 @app.get("/api/trends/stories")
 async def get_trend_stories(
     request: Request,
@@ -990,7 +1068,7 @@ async def get_trend_stories(
 @app.get("/api/trends/overview")
 async def get_trend_overview():
     """Retrieve intelligence KPI metrics, category breakdowns, regional distributions, and emerging signals."""
-    overview = database.get_global_trend_overview()
+    overview = database.get_worldwide_trends_overview()
     sched = database.get_trend_schedule()
     overview["schedule"] = sched
     return {"ok": True, "overview": overview}

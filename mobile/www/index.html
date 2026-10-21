@@ -723,7 +723,7 @@
       <!-- Filter & Search Toolbar -->
       <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-3.5 sm:p-4 space-y-3 shadow-sm">
         
-        <!-- Search Row & Primary View Tabs -->
+        <!-- Search Row & Primary View Tabs & Sort -->
         <div class="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
           <!-- Fast Search Bar -->
           <div class="relative flex-1">
@@ -732,7 +732,7 @@
               type="text"
               id="input-trends-search"
               oninput="handleTrendsSearch(this.value)"
-              placeholder="Search trending topics, companies, models, keywords..."
+              placeholder="Search worldwide topics, models, companies, citations... (Press / to focus)"
               class="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] focus:border-brand rounded-xl pl-9 pr-8 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition"
             />
             <button
@@ -745,7 +745,7 @@
             </button>
           </div>
 
-          <!-- View Switcher (All Trends / Watchlist / Reading List) -->
+          <!-- View Switcher (All Trends / Watchlist / Saved) -->
           <div class="flex items-center bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-1 gap-1 flex-shrink-0">
             <button
               onclick="setTrendsView('all')"
@@ -753,7 +753,7 @@
               class="px-3 py-1 rounded-lg text-xs font-semibold bg-brand text-white shadow-sm flex items-center gap-1 btn-press transition"
             >
               <i data-lucide="layers" class="w-3 h-3"></i>
-              <span>All Trends</span>
+              <span>All Topics</span>
             </button>
             <button
               onclick="setTrendsView('watchlist')"
@@ -781,116 +781,147 @@
               onchange="handleTrendsSort(this.value)"
               class="bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-xl px-2.5 py-1.5 text-xs outline-none focus:border-brand cursor-pointer"
             >
-              <option value="velocity">⚡ Highest Velocity</option>
-              <option value="recent">🕒 Most Recent</option>
-              <option value="cross_sources">🌐 Most Sources</option>
-              <option value="engagement">🔥 Top Engagement</option>
+              <option value="trending">⚡ Trending (Score)</option>
+              <option value="latest">🕒 Latest (Recent)</option>
+              <option value="relevance">🌐 Most Sources</option>
+              <option value="discussions">💬 Most Discussions</option>
             </select>
           </div>
         </div>
 
-        <!-- Category Horizontal Filter Chips (12 Categories + All) -->
+        <!-- Category Horizontal Filter Chips (11 Categories + All) -->
         <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar" id="trends-category-chips">
           <button onclick="setTrendsCategory('')" data-cat="" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-semibold bg-brand text-white border border-brand whitespace-nowrap btn-press transition">
-            All Topics
+            All Categories
           </button>
           <button onclick="setTrendsCategory('ai')" data-cat="ai" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
-            🤖 Artificial Intelligence
+            🤖 AI & Agents
           </button>
-          <button onclick="setTrendsCategory('tech')" data-cat="tech" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
-            💻 Technology
+          <button onclick="setTrendsCategory('software')" data-cat="software" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            💻 Software Engineering
           </button>
           <button onclick="setTrendsCategory('startups')" data-cat="startups" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
             🚀 Startups & Business
           </button>
+          <button onclick="setTrendsCategory('products')" data-cat="products" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            📱 Tech Products
+          </button>
+          <button onclick="setTrendsCategory('science')" data-cat="science" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
+            🔬 Science & Space
+          </button>
           <button onclick="setTrendsCategory('world')" data-cat="world" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
             🌍 World News
           </button>
-          <button onclick="setTrendsCategory('social')" data-cat="social" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
-            🔥 Social Media
-          </button>
-          <button onclick="setTrendsCategory('science')" data-cat="science" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
-            🔬 Science & Research
-          </button>
-          <button onclick="setTrendsCategory('developers')" data-cat="developers" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
-            🐙 Developer Ecosystem
-          </button>
           <button onclick="setTrendsCategory('finance')" data-cat="finance" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
-            📈 Finance & Economics
+            📈 Finance & Markets
           </button>
           <button onclick="setTrendsCategory('gaming')" data-cat="gaming" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
-            🎮 Gaming
+            🎮 Gaming & Creators
           </button>
           <button onclick="setTrendsCategory('education')" data-cat="education" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
-            🎓 Education & Careers
-          </button>
-          <button onclick="setTrendsCategory('health')" data-cat="health" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
-            🌱 Health & Climate
+            🌱 Education & Climate
           </button>
           <button onclick="setTrendsCategory('regional')" data-cat="regional" class="trends-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] whitespace-nowrap btn-press transition">
             🗺️ Regional Highlights
           </button>
         </div>
 
-        <!-- Secondary Filters Row (Time Window, Signal Type, Region) -->
-        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border-subtle)] text-xs">
-          <!-- Time Window -->
-          <div class="flex items-center gap-1">
-            <span class="text-[11px] text-[var(--text-muted)] mr-1">Window:</span>
-            <button onclick="setTrendsTimeRange('today')" data-tw="today" class="trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-brand text-white border border-brand btn-press transition">Today</button>
-            <button onclick="setTrendsTimeRange('24h')" data-tw="24h" class="trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] btn-press transition">24h</button>
-            <button onclick="setTrendsTimeRange('7d')" data-tw="7d" class="trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] btn-press transition">7d</button>
-            <button onclick="setTrendsTimeRange('30d')" data-tw="30d" class="trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] btn-press transition">30d</button>
-          </div>
-
-          <!-- Trend Signal Type -->
-          <div class="flex items-center gap-1">
-            <span class="text-[11px] text-[var(--text-muted)] mr-1">Signal:</span>
-            <button onclick="setTrendsTrendType('')" data-tt="" class="trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-brand text-white border border-brand btn-press transition">All</button>
-            <button onclick="setTrendsTrendType('breaking')" data-tt="breaking" class="trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-rose-400 border border-[var(--border-subtle)] hover:border-rose-500/40 btn-press transition">🔥 Breaking</button>
-            <button onclick="setTrendsTrendType('trending')" data-tt="trending" class="trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-amber-400 border border-[var(--border-subtle)] hover:border-amber-500/40 btn-press transition">⚡ Trending</button>
-            <button onclick="setTrendsTrendType('popular')" data-tt="popular" class="trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-cyan-400 border border-[var(--border-subtle)] hover:border-cyan-500/40 btn-press transition">⭐ Popular</button>
-            <button onclick="setTrendsTrendType('emerging')" data-tt="emerging" class="trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-emerald-400 border border-[var(--border-subtle)] hover:border-emerald-500/40 btn-press transition">🌱 Emerging</button>
-          </div>
-
-          <!-- Region Dropdown -->
-          <div class="flex items-center gap-1">
-            <span class="text-[11px] text-[var(--text-muted)]">Region:</span>
+        <!-- Secondary Multi-Geo & Source Filters Row -->
+        <div class="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[var(--border-subtle)] text-xs">
+          
+          <!-- Worldwide / Region Selector Dropdown -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] text-[var(--text-muted)] font-medium">Region:</span>
             <select
               id="select-trends-region"
               onchange="setTrendsRegion(this.value)"
-              class="bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-lg px-2 py-0.5 text-xs outline-none focus:border-brand cursor-pointer"
+              class="bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-lg px-2.5 py-1 text-xs outline-none focus:border-brand cursor-pointer font-medium"
             >
-              <option value="">🌐 All Regions</option>
-              <option value="global">🌐 Global</option>
-              <option value="north_america">🇺🇸 North America</option>
+              <option value="">🌐 Worldwide</option>
+              <option value="india">🇮🇳 India</option>
+              <option value="asia">🌏 Asia</option>
               <option value="europe">🇪🇺 Europe</option>
-              <option value="asia_pacific">🇮🇳 Asia-Pacific</option>
-              <option value="latin_america">🌎 Latin America</option>
-              <option value="middle_east_africa">🌍 Middle East & Africa</option>
+              <option value="north_america">🇺🇸 North America</option>
+              <option value="africa">🌍 Africa</option>
+              <option value="south_america">🌎 South America</option>
+              <option value="oceania">🇦🇺 Oceania</option>
             </select>
           </div>
+
+          <!-- Source Selector Dropdown -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] text-[var(--text-muted)] font-medium">Source:</span>
+            <select
+              id="select-trends-source"
+              onchange="setTrendsSource(this.value)"
+              class="bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-lg px-2.5 py-1 text-xs outline-none focus:border-brand cursor-pointer"
+            >
+              <option value="">🌐 All Sources (204)</option>
+              <option value="Google Trends">📈 Google Trends</option>
+              <option value="Hacker News">🟧 Hacker News</option>
+              <option value="GitHub">🐙 GitHub Trending</option>
+              <option value="arXiv">📄 arXiv (cs.AI/ML)</option>
+              <option value="Reuters">📰 Global News Wires</option>
+              <option value="TechCrunch">💻 Tech Media</option>
+              <option value="Reddit">🤖 Reddit Communities</option>
+              <option value="LinkedIn">💼 LinkedIn (Official)</option>
+            </select>
+          </div>
+
+          <!-- Language Selector Dropdown -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] text-[var(--text-muted)] font-medium">Language:</span>
+            <select
+              id="select-trends-language"
+              onchange="setTrendsLanguage(this.value)"
+              class="bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-lg px-2 py-1 text-xs outline-none focus:border-brand cursor-pointer"
+            >
+              <option value="">All Languages</option>
+              <option value="en">English</option>
+              <option value="regional">Regional</option>
+            </select>
+          </div>
+
+          <!-- Time Window Chips (1h, 24h, 7d) -->
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] text-[var(--text-muted)] mr-1">Time:</span>
+            <button onclick="setTrendsTimeRange('1h')" data-tw="1h" class="trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] btn-press transition">1h</button>
+            <button onclick="setTrendsTimeRange('24h')" data-tw="24h" class="trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-brand text-white border border-brand btn-press transition">24h</button>
+            <button onclick="setTrendsTimeRange('7d')" data-tw="7d" class="trends-tw-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] btn-press transition">7d</button>
+          </div>
+
+          <!-- Trend Signal Status Chips -->
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] text-[var(--text-muted)] mr-1">Status:</span>
+            <button onclick="setTrendsTrendType('')" data-tt="" class="trends-tt-chip px-2 py-0.5 rounded-lg text-xs font-medium bg-brand text-white border border-brand btn-press transition">All</button>
+            <button onclick="setTrendsTrendType('emerging')" data-tt="emerging" class="trends-tt-chip px-2 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-emerald-400 border border-[var(--border-subtle)] hover:border-emerald-500/40 btn-press transition" title="Recent discovery from technical & niche feeds">🌱 Emerging</button>
+            <button onclick="setTrendsTrendType('rising')" data-tt="rising" class="trends-tt-chip px-2 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-amber-400 border border-[var(--border-subtle)] hover:border-amber-500/40 btn-press transition" title="Rapid acceleration across multiple sources">⚡ Rising</button>
+            <button onclick="setTrendsTrendType('high_activity')" data-tt="high_activity" class="trends-tt-chip px-2 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-rose-400 border border-[var(--border-subtle)] hover:border-rose-500/40 btn-press transition" title="Intense cross-publisher coverage">🔥 High activity</button>
+            <button onclick="setTrendsTrendType('established')" data-tt="established" class="trends-tt-chip px-2 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-purple-400 border border-[var(--border-subtle)] hover:border-purple-500/40 btn-press transition" title="Sustained worldwide recognition">⭐ Established</button>
+            <button onclick="setTrendsTrendType('cooling_down')" data-tt="cooling_down" class="trends-tt-chip px-2 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-zinc-400 border border-[var(--border-subtle)] hover:border-zinc-500/40 btn-press transition" title="Maturing trend velocity">❄️ Cooling down</button>
+          </div>
+
         </div>
 
       </div>
 
-      <!-- Feed Container & Story Cards -->
+      <!-- Feed Container & Topic Cards -->
       <div id="trends-loading-state" class="hidden py-16 text-center">
         <i data-lucide="loader" class="w-8 h-8 text-brand animate-spin mx-auto mb-3"></i>
-        <p class="text-xs text-[var(--text-secondary)]">Analyzing global intelligence signals...</p>
+        <p class="text-xs text-[var(--text-secondary)] font-medium">Discovering worldwide canonical topics...</p>
       </div>
 
       <div id="trends-empty-state" class="hidden py-16 text-center bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-8">
         <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mx-auto mb-3">
           <i data-lucide="radio" class="w-6 h-6"></i>
         </div>
-        <h3 class="text-sm font-bold text-[var(--text-primary)]">No matching trend signals found</h3>
+        <h3 class="text-sm font-bold text-[var(--text-primary)]">No matching topics found for this filter</h3>
         <p class="text-xs text-[var(--text-secondary)] max-w-md mx-auto mt-1 mb-4">
-          Try broadening your filters, searching for a different keyword, or run a fresh collection job across all 198 global sources.
+          Try broadening your region or category filter, or trigger a live collection scan across all 204 worldwide sources.
         </p>
         <button onclick="triggerTrendsRefresh()" class="px-4 py-2 bg-brand text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 btn-press shadow-sm">
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-          <span>Collect Fresh Stories</span>
+          <span>Collect Fresh Topics</span>
         </button>
       </div>
 
@@ -2174,6 +2205,71 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
   </div>
 
   <!-- ==================== MODAL: X RESEARCH COMPLETED SUMMARY ==================== -->
+  
+  <!-- ==================== MODAL: TOPIC SOURCES ==================== -->
+  <div id="modal-topic-sources" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl max-w-xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-4 sm:p-5 border-b border-[var(--border-subtle)] flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
+            <i data-lucide="layers" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-[var(--text-primary)]" id="mts-topic-title">Verified Source Citations</h3>
+            <p class="text-xs text-[var(--text-secondary)]">Independent publishers reporting on this consolidated topic</p>
+          </div>
+        </div>
+        <button onclick="closeTopicSourcesModal()" class="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-2.5 custom-scrollbar" id="mts-sources-list">
+        <!-- Rendered by openTopicSourcesModal -->
+      </div>
+
+      <div class="p-3 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex justify-end">
+        <button onclick="closeTopicSourcesModal()" class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface)] transition btn-press">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: TOPIC DEEP RESEARCH & POST ANGLES ==================== -->
+  <div id="modal-topic-deep-research" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-4 sm:p-5 border-b border-[var(--border-subtle)] flex items-center justify-between">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <div class="min-w-0">
+            <h3 class="font-bold text-sm text-[var(--text-primary)] truncate" id="mdr-topic-title">Topic Deep Research</h3>
+            <p class="text-xs text-[var(--text-secondary)]">Verified evidence, contrasting viewpoints, and 4 original draft post angles</p>
+          </div>
+        </div>
+        <button onclick="closeDeepResearchModal()" class="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] transition shrink-0">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 custom-scrollbar" id="mdr-body-content">
+        <!-- Rendered by openDeepResearchModal -->
+      </div>
+
+      <div class="p-3 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex items-center justify-between">
+        <span class="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Grounded in collected source citations</span>
+        </span>
+        <button onclick="closeDeepResearchModal()" class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface)] transition btn-press">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-x-research-summary" class="fixed inset-0 bg-[var(--modal-overlay)] backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
     <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4 shadow-2xl modal-animate text-center">
       
@@ -4271,22 +4367,7 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
     // =========================================================================
     // GLOBAL TRENDING INTELLIGENCE CONTROLLER
     // =========================================================================
-    const trendsState = {
-      stories: [],
-      total: 0,
-      limit: 24,
-      offset: 0,
-      category: '',
-      region: '',
-      trend_type: '',
-      time_range: 'today',
-      search: '',
-      sort_by: 'velocity',
-      view: 'all', // 'all', 'watchlist', 'bookmarks'
-      isLoading: false,
-      hasMore: false,
-      searchDebounceTimer: null
-    };
+
 
     let trendsWatchlistItems = [];
     let trendsBookmarkedIds = new Set();
@@ -4311,19 +4392,55 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
     };
 
     const TREND_TYPE_STYLES = {
-      breaking: { label: 'Breaking', pill: 'bg-rose-500/15 text-rose-400 border-rose-500/30', icon: 'flame' },
-      trending: { label: 'Trending', pill: 'bg-amber-500/15 text-amber-400 border-amber-500/30', icon: 'zap' },
-      popular: { label: 'Popular', pill: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30', icon: 'star' },
-      emerging: { label: 'Emerging', pill: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', icon: 'sprout' }
+      'emerging': { label: 'Emerging', pill: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', icon: 'sprout' },
+      'rising': { label: 'Rising', pill: 'bg-amber-500/15 text-amber-400 border-amber-500/30', icon: 'zap' },
+      'high activity': { label: 'High activity', pill: 'bg-rose-500/15 text-rose-400 border-rose-500/30', icon: 'flame' },
+      'high_activity': { label: 'High activity', pill: 'bg-rose-500/15 text-rose-400 border-rose-500/30', icon: 'flame' },
+      'established': { label: 'Established', pill: 'bg-purple-500/15 text-purple-400 border-purple-500/30', icon: 'star' },
+      'cooling down': { label: 'Cooling down', pill: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30', icon: 'snowflake' },
+      'cooling_down': { label: 'Cooling down', pill: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30', icon: 'snowflake' },
+      // aliases
+      'breaking': { label: 'High activity', pill: 'bg-rose-500/15 text-rose-400 border-rose-500/30', icon: 'flame' },
+      'trending': { label: 'Rising', pill: 'bg-amber-500/15 text-amber-400 border-amber-500/30', icon: 'zap' },
+      'popular': { label: 'Established', pill: 'bg-purple-500/15 text-purple-400 border-purple-500/30', icon: 'star' }
     };
 
     const REGION_FLAGS = {
-      global: '🌐',
-      north_america: '🇺🇸',
-      europe: '🇪🇺',
-      asia_pacific: '🇮🇳',
-      latin_america: '🌎',
-      middle_east_africa: '🌍'
+      'worldwide': '🌐',
+      'global': '🌐',
+      'india': '🇮🇳',
+      'asia': '🌏',
+      'asia-pacific': '🌏',
+      'asia_pacific': '🌏',
+      'europe': '🇪🇺',
+      'north america': '🇺🇸',
+      'north_america': '🇺🇸',
+      'africa': '🌍',
+      'middle east & africa': '🌍',
+      'middle_east_africa': '🌍',
+      'south america': '🌎',
+      'latin america': '🌎',
+      'latin_america': '🌎',
+      'oceania': '🇦🇺'
+    };
+
+    const trendsState = {
+      view: 'all', // all | watchlist | bookmarks
+      time_range: '24h',
+      region: '',
+      category: '',
+      source: '',
+      language: '',
+      trend_status: '',
+      sort_by: 'trending',
+      search: '',
+      limit: 24,
+      offset: 0,
+      total: 0,
+      topics: [],
+      hasMore: true,
+      isLoading: false,
+      searchDebounceTimer: null
     };
 
     // Load Overview KPI Metrics & Schedule
@@ -4336,20 +4453,20 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
 
         const ov = data.overview;
         const topVelEl = document.getElementById('kpi-top-velocity');
-        if (topVelEl) topVelEl.innerText = ov.top_velocity ? ov.top_velocity.toFixed(1) : '--';
+        if (topVelEl) topVelEl.innerText = ov.peak_trend_score ? ov.peak_trend_score.toFixed(1) : (ov.top_velocity ? ov.top_velocity.toFixed(1) : '--');
 
         const brkEl = document.getElementById('kpi-breaking-count');
         if (brkEl) {
-          const typeCounts = ov.trend_type_counts || {};
-          const brkTotal = (typeCounts.breaking || 0) + (typeCounts.trending || 0);
+          const sDist = ov.status_distribution || ov.trend_type_counts || {};
+          const brkTotal = (sDist['High activity'] || sDist['high_activity'] || 0) + (sDist['Rising'] || sDist['rising'] || 0);
           brkEl.innerText = brkTotal || '--';
         }
 
         const srcEl = document.getElementById('kpi-sources-count');
-        if (srcEl) srcEl.innerText = ov.sources_monitored || '198';
+        if (srcEl) srcEl.innerText = ov.total_sources_analyzed || ov.sources_monitored || '204';
 
         const stCountEl = document.getElementById('kpi-stories-count');
-        if (stCountEl) stCountEl.innerText = ov.total_stories_indexed || ov.recent_24h_count || '--';
+        if (stCountEl) stCountEl.innerText = ov.total_topics || ov.total_stories_indexed || '--';
 
         // Schedule next run badge
         if (ov.schedule) {
@@ -4371,11 +4488,11 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
       }
     }
 
-    // Load Trends Feed with Filters & Pagination
+    // Load Worldwide Canonical Topics Feed with Multi-Geo Filtering & Pagination
     async function loadTrends(resetPage = false) {
       if (resetPage) {
         trendsState.offset = 0;
-        trendsState.stories = [];
+        trendsState.topics = [];
       }
 
       const grid = document.getElementById('trends-feed-grid');
@@ -4392,7 +4509,7 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
       trendsState.isLoading = true;
 
       try {
-        let endpoint = `${API_BASE}/api/trends/stories`;
+        let endpoint = `${API_BASE}/api/trends/topics`;
         const params = new URLSearchParams({
           time_range: trendsState.time_range,
           sort_by: trendsState.sort_by,
@@ -4402,7 +4519,9 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
 
         if (trendsState.category) params.set('category', trendsState.category);
         if (trendsState.region) params.set('region', trendsState.region);
-        if (trendsState.trend_type) params.set('trend_type', trendsState.trend_type);
+        if (trendsState.source) params.set('source', trendsState.source);
+        if (trendsState.language) params.set('language', trendsState.language);
+        if (trendsState.trend_status) params.set('trend_status', trendsState.trend_status);
         if (trendsState.search) params.set('search', trendsState.search);
 
         // Handle bookmarks view
@@ -4431,30 +4550,30 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
           return;
         }
 
-        let stories = data.stories || [];
+        let topics = data.topics || [];
 
         // Handle Watchlist filtering on client side if watchlist view is active
         if (trendsState.view === 'watchlist') {
           if (trendsWatchlistItems.length > 0) {
             const kws = trendsWatchlistItems.map(w => w.keyword.toLowerCase());
-            stories = stories.filter(s => {
-              const full = (s.title + ' ' + (s.summary || '') + ' ' + (s.why_it_matters || '')).toLowerCase();
+            topics = topics.filter(t => {
+              const full = ((t.canonical_title || '') + ' ' + (t.summary || '') + ' ' + (t.why_it_matters || '')).toLowerCase();
               return kws.some(kw => full.includes(kw));
             });
           }
         }
 
-        trendsState.total = data.total || stories.length;
+        trendsState.total = data.total || topics.length;
         if (resetPage) {
-          trendsState.stories = stories;
+          trendsState.topics = topics;
         } else {
-          trendsState.stories = trendsState.stories.concat(stories);
+          trendsState.topics = trendsState.topics.concat(topics);
         }
 
-        // Render stories
-        renderTrendsCards(stories, !resetPage);
+        // Render consolidated topics
+        renderTrendsCards(topics, !resetPage);
 
-        // Update load more
+        // Update load more button
         const hasMore = (trendsState.offset + trendsState.limit) < data.total;
         trendsState.hasMore = hasMore;
         if (loadMoreCont) {
@@ -4462,27 +4581,27 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
         }
 
         // Empty state check
-        if (trendsState.stories.length === 0) {
+        if (trendsState.topics.length === 0) {
           if (empty) empty.classList.remove('hidden');
         } else {
           if (empty) empty.classList.add('hidden');
         }
       } catch (e) {
-        console.error('Failed to load trend stories:', e);
+        console.error('Failed to load canonical topics:', e);
         if (loading) loading.classList.add('hidden');
         if (empty) empty.classList.remove('hidden');
         trendsState.isLoading = false;
       }
     }
 
-    // Render Trends Cards
-    function renderTrendsCards(stories, append = false) {
+    // Render Distinct Consolidated Canonical Topic Cards
+    function renderTrendsCards(topics, append = false) {
       const grid = document.getElementById('trends-feed-grid');
       if (!grid) return;
 
       if (!append) grid.innerHTML = '';
 
-      if (!stories || stories.length === 0) {
+      if (!topics || topics.length === 0) {
         if (!append) {
           const empty = document.getElementById('trends-empty-state');
           if (empty) empty.classList.remove('hidden');
@@ -4492,62 +4611,41 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
 
       const fragment = document.createDocumentFragment();
 
-      stories.forEach(s => {
+      topics.forEach(t => {
         const card = document.createElement('div');
-        card.className = "bg-[var(--bg-surface)] border border-[var(--border-card)] hover:border-[var(--border-subtle)] rounded-2xl p-4 flex flex-col justify-between shadow-sm transition hover:shadow-md group relative";
-        card.id = `trend-card-${s.id}`;
+        card.className = "bg-[var(--bg-surface)] border border-[var(--border-card)] hover:border-[var(--border-subtle)] rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm transition hover:shadow-md group relative";
+        card.id = `trend-card-${t.id || t.topic_id}`;
 
-        const catMeta = TREND_CAT_STYLES[s.category] || { label: s.category || 'Global', badge: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30' };
-        const typeMeta = TREND_TYPE_STYLES[s.trend_type] || { label: 'Signal', pill: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30', icon: 'zap' };
-        const regionFlag = REGION_FLAGS[s.region] || '🌐';
-        const velScore = (s.velocity_score || 0).toFixed(1);
-        const isSaved = s.is_bookmarked || trendsBookmarkedIds.has(s.id);
+        const statusKey = (t.trend_status || 'Rising').toLowerCase();
+        const typeMeta = TREND_TYPE_STYLES[statusKey] || { label: t.trend_status || 'Rising', pill: 'bg-amber-500/15 text-amber-400 border-amber-500/30', icon: 'zap' };
 
-        // Relative time helper
-        let timeStr = 'Just now';
-        if (s.published_at) {
-          try {
-            const dt = new Date(s.published_at);
-            const diffHours = Math.floor((Date.now() - dt.getTime()) / (1000 * 60 * 60));
-            if (diffHours < 1) timeStr = 'Just now';
-            else if (diffHours < 24) timeStr = `${diffHours}h ago`;
-            else timeStr = `${Math.floor(diffHours / 24)}d ago`;
-          } catch (_) {}
-        }
+        const catKey = (t.category || '').toLowerCase();
+        const catMeta = TREND_CAT_STYLES[catKey] || { label: t.category || 'General', badge: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30' };
 
-        // Velocity color accent
-        let velColor = 'text-emerald-400';
-        let velBg = 'bg-emerald-500/15 border-emerald-500/30';
-        if (s.velocity_score >= 80) {
-          velColor = 'text-rose-400';
-          velBg = 'bg-rose-500/15 border-rose-500/30';
-        } else if (s.velocity_score >= 50) {
-          velColor = 'text-amber-400';
-          velBg = 'bg-amber-500/15 border-amber-500/30';
-        }
+        const regKey = (t.region || '').toLowerCase();
+        const regFlag = REGION_FLAGS[regKey] || '🌐';
+        const score = (t.trend_score || t.velocity_score || 50.0).toFixed(1);
+        const isSaved = t.is_bookmarked || trendsBookmarkedIds.has(t.id);
 
-        // Multi-publisher badge
-        const crossCount = s.cross_source_count || 1;
-        const crossBadgeHtml = crossCount > 1 
-          ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-brand/10 text-brand border border-brand/20" title="${crossCount} independent sources reporting">
-              <i data-lucide="layers" class="w-2.5 h-2.5"></i>
-              <span>${crossCount} sources</span>
-            </span>`
-          : '';
+        const firstSeenStr = t.first_seen_at ? formatTimeAgo(t.first_seen_at) : 'recently';
+        const updatedStr = t.last_updated_at ? formatTimeAgo(t.last_updated_at) : 'recently';
 
-        // Safe escaped text for draft
-        const cleanTitle = (s.title || '').replace(/'/g, "\'").replace(/"/g, '&quot;');
-        const cleanWhy = (s.why_it_matters || s.summary || '').replace(/'/g, "\'").replace(/"/g, '&quot;');
-        const cleanUrl = (s.url || '').replace(/'/g, "\'");
+        const sourceCount = t.source_count || (t.sources ? t.sources.length : 1);
+        const discCount = t.discussion_count || 0;
+
+        const cleanTitle = (t.canonical_title || t.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const cleanWhy = (t.why_it_matters || t.summary || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const cleanUrl = (t.primary_url || t.url || '#').replace(/'/g, "\\'");
+        const topicId = t.topic_id || t.id;
 
         card.innerHTML = `
           <div>
             <!-- Top Badges Row -->
             <div class="flex items-center justify-between gap-1.5 mb-2.5 flex-wrap">
               <div class="flex items-center gap-1.5 flex-wrap">
-                <!-- Classification Pill -->
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${typeMeta.pill}">
-                  <i data-lucide="${typeMeta.icon}" class="w-2.5 h-2.5"></i>
+                <!-- Trend Status Pill -->
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${typeMeta.pill}">
+                  <i data-lucide="${typeMeta.icon}" class="w-3 h-3"></i>
                   <span>${typeMeta.label}</span>
                 </span>
 
@@ -4556,79 +4654,95 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
                   ${catMeta.label}
                 </span>
 
-                ${crossBadgeHtml}
+                <!-- Region Badge -->
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border border-[var(--border-subtle)] bg-[var(--bg-input)] text-[var(--text-secondary)]">
+                  <span>${regFlag}</span>
+                  <span>${t.region || 'Worldwide'}</span>
+                </span>
               </div>
 
-              <!-- Velocity Meter Pill -->
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold border ${velBg} ${velColor}" title="Velocity Score: ${velScore}/100">
+              <!-- Score Badge with Signal Tooltip -->
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold border border-brand/30 bg-brand/10 text-brand cursor-help" title="${escapeHtml(t.signal_explanation || 'Mathematical trend velocity score')}">
                 <i data-lucide="zap" class="w-3 h-3"></i>
-                <span>${velScore}</span>
+                <span>${score}</span>
               </span>
             </div>
 
-            <!-- Story Title -->
+            <!-- Topic Title -->
             <h3 class="text-xs sm:text-sm font-bold text-[var(--text-primary)] leading-snug group-hover:text-brand transition mb-2">
-              <a href="${s.url || '#'}" target="_blank" rel="noopener noreferrer" class="hover:underline">
-                ${s.title || 'Untitled Global Trend Signal'}
+              <a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="hover:underline">
+                ${escapeHtml(t.canonical_title || t.title || 'Untitled Topic')}
               </a>
             </h3>
 
-            <!-- Strategic Why It Matters Callout -->
+            <!-- Grounded Evidence Summary -->
             <div class="bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-2.5 mb-3 text-[11px] leading-relaxed text-[var(--text-secondary)]">
               <div class="flex items-center gap-1 font-semibold text-[var(--text-primary)] mb-0.5 text-[10px] uppercase tracking-wider">
                 <i data-lucide="sparkles" class="w-3 h-3 text-purple-400"></i>
-                <span>Why It Matters</span>
+                <span>Verified Evidence</span>
               </div>
               <p class="line-clamp-3">
-                ${s.why_it_matters || s.summary || 'Real-time cross-platform acceleration indicating significant developer and industry attention.'}
+                ${escapeHtml(t.summary || t.why_it_matters || 'Multi-publisher signal cross-confirmed across independent global sources.')}
               </p>
             </div>
           </div>
 
           <!-- Bottom Meta & Actions Row -->
           <div class="pt-2 border-t border-[var(--border-subtle)] space-y-2.5">
-            <!-- Source Attribution & Region -->
-            <div class="flex items-center justify-between text-[11px] text-[var(--text-muted)]">
-              <span class="inline-flex items-center gap-1 truncate max-w-[65%]" title="Source: ${s.source_name || s.source_id}">
-                <span>${regionFlag}</span>
-                <span class="font-medium text-[var(--text-secondary)] truncate">${s.source_name || s.source_id}</span>
+            <!-- Discussion Metric & Timestamps -->
+            <div class="flex items-center justify-between text-[11px] text-[var(--text-muted)] flex-wrap gap-1">
+              <span class="inline-flex items-center gap-1 font-medium text-[var(--text-secondary)]">
+                <i data-lucide="layers" class="w-3 h-3 text-brand"></i>
+                <span>${sourceCount} independent source${sourceCount !== 1 ? 's' : ''}</span>
+                ${discCount > 0 ? `<span>• ${discCount.toLocaleString()} discussions</span>` : ''}
               </span>
-              <span class="flex-shrink-0">${timeStr}</span>
+              <span class="text-[10px] text-[var(--text-muted)]">
+                Seen ${firstSeenStr} • Updated ${updatedStr}
+              </span>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="flex items-center justify-between gap-1.5 pt-0.5">
-              <!-- Bookmark Toggle -->
+            <!-- Action Buttons Row -->
+            <div class="flex items-center justify-between gap-1.5 pt-1 flex-wrap">
+              <!-- Bookmark -->
               <button
-                onclick="toggleTrendBookmark(${s.id})"
-                id="btn-trend-bm-${s.id}"
+                onclick="toggleTrendBookmark(${t.id || 0})"
+                id="btn-trend-bm-${t.id || 0}"
                 class="p-1.5 rounded-lg border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-elevated)] ${isSaved ? 'text-brand border-brand/40 bg-brand/10' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'} transition btn-press"
-                title="${isSaved ? 'Remove from Saved' : 'Save to Reading List'}"
+                title="${isSaved ? 'Remove from Saved' : 'Save Topic'}"
               >
                 <i data-lucide="${isSaved ? 'bookmark-check' : 'bookmark'}" class="w-3.5 h-3.5"></i>
               </button>
 
-              <div class="flex items-center gap-1.5">
-                <!-- Use in Draft Button -->
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <!-- View Sources Action -->
                 <button
-                  onclick="useTrendInDraft('${cleanTitle}', '${cleanUrl}', '${cleanWhy}')"
-                  class="px-2.5 py-1 bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-lg text-xs font-medium flex items-center gap-1 btn-press transition"
-                  title="Generate Tweet draft from this trend"
+                  onclick="openTopicSourcesModal('${topicId}')"
+                  class="px-2.5 py-1 bg-[var(--bg-input)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg text-xs font-medium flex items-center gap-1 btn-press transition"
+                  title="View independent publisher source citations"
                 >
-                  <i data-lucide="edit-3" class="w-3 h-3 text-brand"></i>
-                  <span>Use in Draft</span>
+                  <i data-lucide="external-link" class="w-3 h-3 text-cyan-400"></i>
+                  <span>Sources (${sourceCount})</span>
                 </button>
 
-                <!-- Read Source External Link -->
-                <a
-                  href="${s.url || '#'}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="p-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] transition btn-press flex items-center"
-                  title="Open original article"
+                <!-- Research This Topic Action -->
+                <button
+                  onclick="openDeepResearchModal('${topicId}')"
+                  class="px-2.5 py-1 bg-gradient-to-r from-purple-500/15 to-brand/15 hover:from-purple-500/25 hover:to-brand/25 border border-purple-500/30 text-[var(--text-primary)] rounded-lg text-xs font-semibold flex items-center gap-1 btn-press transition shadow-sm"
+                  title="Synthesize facts, viewpoints & generate post drafts"
                 >
-                  <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                </a>
+                  <i data-lucide="sparkles" class="w-3 h-3 text-purple-400"></i>
+                  <span>Research</span>
+                </button>
+
+                <!-- Draft Post Action -->
+                <button
+                  onclick="useTrendInDraft('${cleanTitle}', '${cleanUrl}', '${cleanWhy}')"
+                  class="px-2.5 py-1 bg-brand hover:bg-brand-hover text-white rounded-lg text-xs font-semibold flex items-center gap-1 btn-press transition shadow-sm"
+                  title="Draft Tweet from this topic"
+                >
+                  <i data-lucide="edit-3" class="w-3 h-3"></i>
+                  <span>Draft</span>
+                </button>
               </div>
             </div>
           </div>
@@ -4639,6 +4753,264 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
 
       grid.appendChild(fragment);
       lucide.createIcons();
+    }
+
+    // Modal: Open Topic Sources Modal
+    async function openTopicSourcesModal(topicId) {
+      const modal = document.getElementById('modal-topic-sources');
+      const titleEl = document.getElementById('mts-topic-title');
+      const listEl = document.getElementById('mts-sources-list');
+      if (!modal) return;
+
+      modal.classList.remove('hidden');
+      if (titleEl) titleEl.innerText = "Loading verified source citations...";
+      if (listEl) listEl.innerHTML = `<div class="py-8 text-center text-xs text-[var(--text-secondary)] animate-pulse">Fetching publisher citations...</div>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/topics/${topicId}`);
+        const data = await res.json();
+        if (!data.ok || !data.topic) {
+          listEl.innerHTML = `<div class="p-4 text-xs text-rose-400">Unable to load source citations.</div>`;
+          return;
+        }
+
+        const top = data.topic;
+        if (titleEl) titleEl.innerText = top.canonical_title;
+
+        const sources = top.sources || [];
+        if (sources.length === 0) {
+          listEl.innerHTML = `<div class="p-4 text-xs text-[var(--text-secondary)]">No separate source citations recorded.</div>`;
+          return;
+        }
+
+        listEl.innerHTML = sources.map((s) => `
+          <div class="bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-xl p-3 flex flex-col gap-1.5 hover:border-brand/40 transition">
+            <div class="flex items-center justify-between text-[11px] gap-2">
+              <span class="font-bold text-brand uppercase tracking-wider text-[10px] bg-brand/10 px-2 py-0.5 rounded-full border border-brand/20">
+                ${escapeHtml(s.source_name)}
+              </span>
+              <span class="text-[var(--text-muted)] font-mono text-[10px]">
+                ${s.score ? `🔥 ${s.score} pts` : ''} ${s.comments ? `💬 ${s.comments}` : ''} • ${s.published_at ? formatTimeAgo(s.published_at) : 'recently'}
+              </span>
+            </div>
+            <a href="${s.url}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-[var(--text-primary)] hover:underline flex items-baseline gap-1">
+              <span>${escapeHtml(s.title || top.canonical_title)}</span>
+              <i data-lucide="external-link" class="w-2.5 h-2.5 text-[var(--text-muted)] shrink-0"></i>
+            </a>
+            ${s.summary ? `<p class="text-[11px] text-[var(--text-secondary)] line-clamp-2 leading-relaxed">${escapeHtml(s.summary)}</p>` : ''}
+            <div class="pt-1 flex items-center justify-between text-[10px] text-[var(--text-muted)] border-t border-[var(--border-subtle)]/50">
+              <span class="truncate max-w-[70%] font-mono">${escapeHtml(s.url)}</span>
+              <a href="${s.url}" target="_blank" class="text-brand font-semibold hover:underline flex items-center gap-0.5">
+                Visit Source <i data-lucide="arrow-right" class="w-2.5 h-2.5"></i>
+              </a>
+            </div>
+          </div>
+        `).join('');
+
+        lucide.createIcons();
+      } catch (err) {
+        listEl.innerHTML = `<div class="p-4 text-xs text-rose-400">Failed to load sources: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function closeTopicSourcesModal() {
+      const modal = document.getElementById('modal-topic-sources');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    // Modal: Open Topic Deep Research Modal
+    async function openDeepResearchModal(topicId) {
+      const modal = document.getElementById('modal-topic-deep-research');
+      const titleEl = document.getElementById('mdr-topic-title');
+      const bodyEl = document.getElementById('mdr-body-content');
+      if (!modal) return;
+
+      modal.classList.remove('hidden');
+      if (titleEl) titleEl.innerText = "Synthesizing Deep Research...";
+      if (bodyEl) {
+        bodyEl.innerHTML = `
+          <div class="py-16 text-center space-y-3">
+            <i data-lucide="loader" class="w-8 h-8 text-brand animate-spin mx-auto"></i>
+            <p class="text-xs text-[var(--text-primary)] font-bold">Conducting Deep Intelligence Research</p>
+            <p class="text-[11px] text-[var(--text-secondary)] max-w-sm mx-auto">
+              Extracting facts, analyzing contrasting perspectives, verifying citations, and drafting post angles grounded in real evidence...
+            </p>
+          </div>
+        `;
+        lucide.createIcons();
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/deep-research`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic_id: topicId })
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          bodyEl.innerHTML = `<div class="p-6 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-2xl">Research failed: ${escapeHtml(data.detail || 'Unknown error')}</div>`;
+          return;
+        }
+
+        if (titleEl) titleEl.innerText = data.canonical_title;
+
+        bodyEl.innerHTML = `
+          <!-- Executive Brief -->
+          <div class="bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-2xl p-4 space-y-2">
+            <div class="flex items-center gap-1.5 font-bold text-xs text-brand uppercase tracking-wider">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+              <span>Executive Intelligence Brief</span>
+            </div>
+            <p class="text-xs text-[var(--text-primary)] leading-relaxed whitespace-pre-line">
+              ${escapeHtml(data.executive_summary)}
+            </p>
+          </div>
+
+          <!-- Verified Key Facts -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+              <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+              <span>Verified Key Facts (${data.key_facts.length})</span>
+            </h4>
+            <div class="space-y-1.5">
+              ${data.key_facts.map(f => `
+                <div class="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-2.5 text-xs flex items-start justify-between gap-2">
+                  <div class="space-y-0.5">
+                    <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider ${f.confidence === 'Confirmed' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'}">
+                      ${f.confidence}
+                    </span>
+                    <p class="font-medium text-[var(--text-primary)] mt-1">${escapeHtml(f.fact)}</p>
+                    ${f.detail ? `<p class="text-[11px] text-[var(--text-secondary)]">${escapeHtml(f.detail)}</p>` : ''}
+                  </div>
+                  <a href="${f.url}" target="_blank" class="p-1 text-[var(--text-muted)] hover:text-brand shrink-0" title="Visit Source">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                  </a>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Contrasting Viewpoints -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+              <i data-lucide="split" class="w-4 h-4 text-purple-400"></i>
+              <span>Differing Perspectives & Context</span>
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+              ${data.differing_viewpoints.map(v => `
+                <div class="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3 text-xs space-y-1">
+                  <span class="font-bold text-purple-400 text-[11px] block">${escapeHtml(v.perspective)}</span>
+                  <span class="text-[10px] text-[var(--text-muted)] font-mono block">${escapeHtml(v.stakeholders)}</span>
+                  <p class="text-[11px] text-[var(--text-secondary)] leading-normal">${escapeHtml(v.stance)}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Original Post Draft Angles -->
+          <div class="space-y-2.5 pt-2 border-t border-[var(--border-subtle)]">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-4 h-4 text-brand"></i>
+                <span>Original Post Angles Grounded in Research (4)</span>
+              </h4>
+              <span class="text-[10px] text-[var(--text-muted)]">Review & approve before posting</span>
+            </div>
+
+            <div class="space-y-3">
+              ${data.draft_post_angles.map((a, idx) => `
+                <div class="bg-[var(--bg-input)] border border-[var(--border-subtle)] rounded-2xl p-3.5 space-y-2 hover:border-brand/40 transition">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <span class="font-bold text-xs text-[var(--text-primary)]">${escapeHtml(a.angle_name)}</span>
+                      <p class="text-[10px] text-[var(--text-muted)]">${escapeHtml(a.description)}</p>
+                    </div>
+                    <span class="text-[10px] font-mono text-[var(--text-muted)]">${a.draft_text.length} chars</span>
+                  </div>
+
+                  <div class="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3 font-sans text-xs text-[var(--text-primary)] leading-relaxed whitespace-pre-line select-text">
+                    ${escapeHtml(a.draft_text)}
+                  </div>
+
+                  <div class="flex items-center justify-between pt-1 text-xs">
+                    <span class="text-[10px] text-[var(--text-muted)] truncate max-w-[50%]">
+                      Citing: ${escapeHtml((a.sources_cited || []).join(', '))}
+                    </span>
+                    <div class="flex items-center gap-1.5">
+                      <button
+                        onclick="copyResearchDraft(${idx})"
+                        id="btn-copy-draft-${idx}"
+                        class="px-2.5 py-1 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-lg text-xs font-medium flex items-center gap-1 btn-press transition"
+                      >
+                        <i data-lucide="copy" class="w-3 h-3"></i>
+                        <span>Copy</span>
+                      </button>
+                      <button
+                        onclick="sendDraftToQueue('${data.topic_id}', ${idx})"
+                        id="btn-send-queue-${idx}"
+                        class="px-3 py-1 bg-brand hover:bg-brand-hover text-white rounded-lg text-xs font-semibold flex items-center gap-1 btn-press transition shadow-sm"
+                      >
+                        <i data-lucide="send" class="w-3 h-3"></i>
+                        <span>Send to Queue</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+
+        window.__currentResearchDrafts = data.draft_post_angles;
+        lucide.createIcons();
+      } catch (err) {
+        bodyEl.innerHTML = `<div class="p-6 text-xs text-rose-400">Error conducting research: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function closeDeepResearchModal() {
+      const modal = document.getElementById('modal-topic-deep-research');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function copyResearchDraft(idx) {
+      const drafts = window.__currentResearchDrafts || [];
+      if (drafts[idx]) {
+        navigator.clipboard.writeText(drafts[idx].draft_text);
+        showToast("Draft copied to clipboard!", "success");
+      }
+    }
+
+    async function sendDraftToQueue(topicId, idx) {
+      const drafts = window.__currentResearchDrafts || [];
+      const draft = drafts[idx];
+      if (!draft) return;
+
+      const btn = document.getElementById(`btn-send-queue-${idx}`);
+      if (btn) btn.disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/trends/topics/${topicId}/draft-to-queue`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            draft_text: draft.draft_text,
+            angle_name: draft.angle_name
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast("Draft added to post queue! Switch to Queue tab to review.", "success");
+          if (btn) btn.innerHTML = `<i data-lucide="check" class="w-3 h-3 text-emerald-400"></i> Added`;
+          lucide.createIcons();
+        } else {
+          showToast(data.detail || "Failed to add draft.", "error");
+          if (btn) btn.disabled = false;
+        }
+      } catch (e) {
+        showToast("Error adding draft to queue.", "error");
+        if (btn) btn.disabled = false;
+      }
     }
 
     // Load More Pagination
@@ -4676,13 +5048,13 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
     }
 
     function setTrendsTrendType(tt) {
-      trendsState.trend_type = tt;
+      trendsState.trend_status = tt;
       document.querySelectorAll('.trends-tt-chip').forEach(btn => {
         const isMatch = btn.getAttribute('data-tt') === tt;
         if (isMatch) {
-          btn.className = "trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-brand text-white border border-brand btn-press transition";
+          btn.className = "trends-tt-chip px-2 py-0.5 rounded-lg text-xs font-medium bg-brand text-white border border-brand btn-press transition";
         } else {
-          btn.className = "trends-tt-chip px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-subtle)] btn-press transition";
+          btn.className = "trends-tt-chip px-2 py-0.5 rounded-lg text-xs font-medium bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-subtle)] btn-press transition";
         }
       });
       loadTrends(true);
@@ -4690,6 +5062,16 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
 
     function setTrendsRegion(reg) {
       trendsState.region = reg;
+      loadTrends(true);
+    }
+
+    function setTrendsSource(src) {
+      trendsState.source = src;
+      loadTrends(true);
+    }
+
+    function setTrendsLanguage(lang) {
+      trendsState.language = lang;
       loadTrends(true);
     }
 
@@ -4749,7 +5131,7 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
         if (data.busy) {
           showToast('Collection already in progress...', 'info');
         } else {
-          showToast('Real-time collection started across 198 sources!', 'success');
+          showToast('Real-time worldwide collection started across 204 sources!', 'success');
         }
         startTrendsPolling();
       } catch (e) {
@@ -4788,11 +5170,10 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
           if (rIcon) rIcon.classList.add('animate-spin');
         } else {
           if (trendsIsCollecting) {
-            // Collection just finished!
             trendsIsCollecting = false;
             if (banner) banner.classList.add('hidden');
             if (rIcon) rIcon.classList.remove('animate-spin');
-            showToast('Global trends & Daily Brief updated!', 'success');
+            showToast('Worldwide canonical trends & Daily Brief updated!', 'success');
             loadTrends(true);
             loadTrendsOverview();
           } else {
@@ -4801,7 +5182,6 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
           }
         }
 
-        // Check if revision updated
         if (data.revision && trendsLastRevision && data.revision !== trendsLastRevision && !trendsIsCollecting) {
           loadTrendsOverview();
         }
@@ -4848,26 +5228,22 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
     // Use in Draft Action
     function useTrendInDraft(title, url, whyItMatters) {
       switchTab('queue');
-      // Format tweet hook
       let hook = `${title}\n\nWhy it matters: ${whyItMatters}\n\nSource: ${url}`;
       if (hook.length > 275) {
         hook = `${title}\n\n${whyItMatters}`.slice(0, 240) + `...\n\n${url}`;
       }
-      
+
       const modalText = document.getElementById('modal-text');
       if (modalText) {
         modalText.value = hook;
         updateCharCount();
       }
-      document.getElementById('modal-slot-title').innerText = "Compose from Global Trend";
-      document.getElementById('modal-slot-sub').innerText = "Synthesized from live trending intelligence signal";
+      document.getElementById('modal-slot-title').innerText = "Compose from Worldwide Trend";
+      document.getElementById('modal-slot-sub').innerText = "Synthesized from verified worldwide canonical signal";
       document.getElementById('modal-edit').classList.remove('hidden');
       showToast('Loaded trend signal into Tweet draft!', 'success');
     }
 
-    // =========================================================================
-    // DAILY AI INTELLIGENCE REPORT MODAL
-    // =========================================================================
     async function openIntelligenceModal(dateStr = null) {
       const modal = document.getElementById('modal-intelligence-report');
       modal.classList.remove('hidden');

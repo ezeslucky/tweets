@@ -40,3 +40,6 @@ mobile/android/capacitor-cordova-android-plugins/build/
 mobile/android/app/src/main/assets/public/
 mobile/android/app/src/main/assets/capacitor.config.json
 mobile/android/app/src/main/assets/capacitor.plugins.json
+
+*.aab
+*.apk

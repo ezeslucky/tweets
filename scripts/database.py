@@ -16,28 +16,63 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 CATEGORY_SLUG_MAP = {
+    "all": "All",
     "ai": "Artificial Intelligence",
+    "ml": "Artificial Intelligence",
+    "agents": "Artificial Intelligence",
     "tech": "Technology",
+    "technology": "Technology",
+    "software": "Software Engineering",
+    "programming": "Software Engineering",
+    "developers": "Software Engineering",
+    "dev": "Software Engineering",
     "startups": "Startups and Business",
+    "business": "Startups and Business",
+    "products": "Technology Products",
+    "launches": "Technology Products",
+    "science": "Science and Space",
+    "space": "Science and Space",
     "world": "World News",
-    "social": "Social Media Trends",
-    "science": "Science and Research",
-    "developers": "Developer Ecosystem",
-    "dev": "Developer Ecosystem",
-    "finance": "Finance and Economics",
-    "gaming": "Gaming and Entertainment",
-    "education": "Education and Careers",
-    "health": "Health and Environment",
+    "news": "World News",
+    "finance": "Finance and Markets",
+    "markets": "Finance and Markets",
+    "gaming": "Gaming and Creators",
+    "entertainment": "Gaming and Creators",
+    "creators": "Gaming and Creators",
+    "education": "Education, Climate & Health",
+    "health": "Education, Climate & Health",
+    "climate": "Education, Climate & Health",
     "regional": "Regional Trends",
+    "social": "Social Media Trends",
 }
 
 REGION_SLUG_MAP = {
-    "global": "Global",
-    "north_america": "North America",
+    "all": "Worldwide",
+    "worldwide": "Worldwide",
+    "global": "Worldwide",
+    "india": "India",
+    "in": "India",
+    "asia": "Asia",
+    "asia_pacific": "Asia",
+    "jp": "Asia",
     "europe": "Europe",
-    "asia_pacific": "Asia-Pacific",
-    "latin_america": "Latin America",
-    "middle_east_africa": "Middle East & Africa",
+    "eu": "Europe",
+    "uk": "Europe",
+    "gb": "Europe",
+    "de": "Europe",
+    "fr": "Europe",
+    "north_america": "North America",
+    "us": "North America",
+    "usa": "North America",
+    "africa": "Africa",
+    "za": "Africa",
+    "middle_east_africa": "Africa",
+    "south_america": "South America",
+    "latin_america": "South America",
+    "br": "South America",
+    "oceania": "Oceania",
+    "au": "Oceania",
+    "australia": "Oceania",
 }
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -408,6 +443,78 @@ def init_db() -> None:
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_x_queue_status ON x_posts_queue(status, item_type);")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_x_queue_job ON x_posts_queue(job_id);")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_x_jobs_created ON x_research_jobs(created_at DESC);")
+
+                # Worldwide Canonical Topics & Cross-Publisher Citations
+                conn.execute('''
+                CREATE TABLE IF NOT EXISTS canonical_topics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    topic_id TEXT UNIQUE NOT NULL,
+                    canonical_title TEXT NOT NULL,
+                    slug TEXT UNIQUE NOT NULL,
+                    category TEXT NOT NULL,
+                    region TEXT NOT NULL,
+                    country TEXT DEFAULT '',
+                    language TEXT DEFAULT 'en',
+                    trend_status TEXT NOT NULL,
+                    trend_score REAL NOT NULL,
+                    velocity_score REAL NOT NULL,
+                    first_seen_at TEXT NOT NULL,
+                    last_updated_at TEXT NOT NULL,
+                    summary TEXT,
+                    why_it_matters TEXT,
+                    source_count INTEGER DEFAULT 1,
+                    discussion_count INTEGER DEFAULT 0,
+                    primary_url TEXT,
+                    keywords_json TEXT,
+                    extra_json TEXT
+                );
+                ''')
+
+                conn.execute('''
+                CREATE TABLE IF NOT EXISTS topic_source_citations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    topic_id TEXT NOT NULL,
+                    source_name TEXT NOT NULL,
+                    source_id TEXT NOT NULL,
+                    url TEXT UNIQUE NOT NULL,
+                    title TEXT NOT NULL,
+                    author TEXT DEFAULT '',
+                    score INTEGER DEFAULT 0,
+                    comments INTEGER DEFAULT 0,
+                    region TEXT DEFAULT 'Global',
+                    published_at TEXT,
+                    collected_at TEXT NOT NULL,
+                    summary TEXT
+                );
+                ''')
+
+                conn.execute('''
+                CREATE TABLE IF NOT EXISTS topic_snapshots (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    topic_id TEXT NOT NULL,
+                    snapshot_time TEXT NOT NULL,
+                    source_count INTEGER NOT NULL,
+                    discussion_count INTEGER NOT NULL,
+                    trend_score REAL NOT NULL,
+                    trend_status TEXT NOT NULL
+                );
+                ''')
+
+                conn.execute('CREATE INDEX IF NOT EXISTS idx_canonical_topics_id ON canonical_topics(topic_id);')
+                conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_canonical_topics_slug ON canonical_topics(slug);')
+                conn.execute('CREATE INDEX IF NOT EXISTS idx_canonical_topics_cat ON canonical_topics(category);')
+                conn.execute('CREATE INDEX IF NOT EXISTS idx_canonical_topics_reg ON canonical_topics(region);')
+                conn.execute('CREATE INDEX IF NOT EXISTS idx_canonical_topics_stat ON canonical_topics(trend_status);')
+                conn.execute('CREATE INDEX IF NOT EXISTS idx_canonical_topics_score ON canonical_topics(trend_score DESC);')
+                conn.execute('CREATE INDEX IF NOT EXISTS idx_canonical_topics_updated ON canonical_topics(last_updated_at DESC);')
+                conn.execute('CREATE INDEX IF NOT EXISTS idx_topic_sources_topic ON topic_source_citations(topic_id);')
+                conn.execute('CREATE INDEX IF NOT EXISTS idx_topic_sources_pub ON topic_source_citations(published_at DESC);')
+                conn.execute('CREATE INDEX IF NOT EXISTS idx_topic_snapshots_time ON topic_snapshots(topic_id, snapshot_time DESC);')
+                try:
+                    conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_x_topics_name_unique ON x_trend_topics(LOWER(topic_name));')
+                except Exception:
+                    pass
+
 
 
 
@@ -2144,33 +2251,49 @@ def disconnect_x_account(user_id: str) -> bool:
 def save_x_trend_topics(topics: List[Dict[str, Any]]) -> int:
     init_db()
     now_str = _now_iso()
-    inserted = 0
+    saved_count = 0
     with _lock:
         conn = get_connection()
         try:
             with conn:
                 for t in topics:
-                    name = t.get("topic_name") or t.get("name") or "Trending Conversation"
-                    conn.execute("""
-                        INSERT INTO x_trend_topics (
-                            topic_name, hashtag, niche, relevance_score,
-                            evidence_of_growth, post_volume, sample_posts_json,
-                            suggested_ideas_json, suggested_replies_json, discovered_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        name,
-                        t.get("hashtag") or f"#{re.sub(r'[^a-zA-Z0-9]', '', name)}",
-                        t.get("niche") or "Technology",
-                        float(t.get("relevance_score") or 75.0),
-                        t.get("evidence_of_growth") or "+45% conversation volume",
-                        int(t.get("post_volume") or 1200),
-                        json.dumps(t.get("sample_posts") or t.get("sample_posts_json") or []),
-                        json.dumps(t.get("suggested_ideas") or t.get("suggested_ideas_json") or []),
-                        json.dumps(t.get("suggested_replies") or t.get("suggested_replies_json") or []),
-                        now_str
-                    ))
-                    inserted += 1
-            return inserted
+                    name = (t.get("topic_name") or t.get("name") or "Trending Conversation").strip()
+                    hashtag = t.get("hashtag") or f"#{re.sub(r'[^a-zA-Z0-9]', '', name)}"
+                    niche = t.get("niche") or "Technology"
+                    score = float(t.get("relevance_score") or 75.0)
+                    growth = t.get("evidence_of_growth") or "+45% conversation volume"
+                    volume = int(t.get("post_volume") or 1200)
+                    sample_json = json.dumps(t.get("sample_posts") or t.get("sample_posts_json") or [])
+                    ideas_json = json.dumps(t.get("suggested_ideas") or t.get("suggested_ideas_json") or [])
+                    replies_json = json.dumps(t.get("suggested_replies") or t.get("suggested_replies_json") or [])
+
+                    cur = conn.cursor()
+                    cur.execute("SELECT id FROM x_trend_topics WHERE LOWER(topic_name) = ?", (name.lower(),))
+                    existing = cur.fetchone()
+                    if existing:
+                        conn.execute("""
+                            UPDATE x_trend_topics SET
+                                hashtag = ?,
+                                niche = ?,
+                                relevance_score = MAX(relevance_score, ?),
+                                evidence_of_growth = ?,
+                                post_volume = MAX(post_volume, ?),
+                                sample_posts_json = ?,
+                                suggested_ideas_json = ?,
+                                suggested_replies_json = ?,
+                                discovered_at = ?
+                            WHERE id = ?
+                        """, (hashtag, niche, score, growth, volume, sample_json, ideas_json, replies_json, now_str, existing["id"]))
+                    else:
+                        conn.execute("""
+                            INSERT INTO x_trend_topics (
+                                topic_name, hashtag, niche, relevance_score,
+                                evidence_of_growth, post_volume, sample_posts_json,
+                                suggested_ideas_json, suggested_replies_json, discovered_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (name, hashtag, niche, score, growth, volume, sample_json, ideas_json, replies_json, now_str))
+                    saved_count += 1
+            return saved_count
         finally:
             conn.close()
 
@@ -2367,8 +2490,9 @@ def add_x_queue_item(
                     target_post_author, target_post_text, why_relevant,
                     scheduled_for, idempotency_key, now_str, now_str
                 ))
-                new_id = cur.lastrowid
-            return get_x_queue_item(new_id) or {}
+                cur.execute("SELECT * FROM x_posts_queue WHERE idempotency_key = ?", (idempotency_key,))
+                row = cur.fetchone()
+                return dict(row) if row else (get_x_queue_item(cur.lastrowid) or {})
         finally:
             conn.close()
 
@@ -2609,5 +2733,405 @@ def update_x_agent_settings(
                 params.append(user_id)
                 conn.execute(f"UPDATE x_agent_settings SET {', '.join(updates)} WHERE user_id = ?", tuple(params))
             return get_x_agent_settings(user_id)
+        finally:
+            conn.close()
+
+
+# ==================== CANONICAL TOPIC DISCOVERY & CONSOLIDATION ====================
+
+def save_canonical_topics(topics: List[Dict[str, Any]]) -> Dict[str, int]:
+    """Persist consolidated topics and link multiple publisher source citations.
+    Ensures that identical stories from multiple outlets merge into a single canonical topic card.
+    """
+    init_db()
+    now_str = _now_iso()
+    inserted = 0
+    updated = 0
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                for top in topics:
+                    top_id = top.get("topic_id") or f"top_{abs(hash(top.get('slug') or top.get('canonical_title')))}"
+                    title = top.get("canonical_title") or "Untitled Topic"
+                    slug = top.get("slug") or re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:80]
+                    category = top.get("category") or "Technology"
+                    region = top.get("region") or "Worldwide"
+                    country = top.get("country") or ""
+                    language = top.get("language") or "en"
+                    trend_status = top.get("trend_status") or "Rising"
+                    trend_score = float(top.get("trend_score") or 60.0)
+                    velocity_score = float(top.get("velocity_score") or 50.0)
+                    summary = top.get("summary") or ""
+                    why_it_matters = top.get("why_it_matters") or ""
+                    primary_url = top.get("primary_url") or ""
+                    keywords = json.dumps(list(top.get("keywords") or []))
+                    extra = json.dumps(top.get("extra") or {})
+
+                    cur = conn.cursor()
+                    cur.execute("SELECT id, topic_id, first_seen_at FROM canonical_topics WHERE topic_id = ? OR slug = ?", (top_id, slug))
+                    existing = cur.fetchone()
+
+                    if existing:
+                        actual_top_id = existing["topic_id"]
+                        conn.execute("""
+                            UPDATE canonical_topics SET
+                                canonical_title = ?,
+                                category = ?,
+                                region = ?,
+                                country = CASE WHEN country = '' THEN ? ELSE country END,
+                                language = ?,
+                                trend_status = ?,
+                                trend_score = MAX(trend_score, ?),
+                                velocity_score = MAX(velocity_score, ?),
+                                summary = CASE WHEN LENGTH(?) > LENGTH(COALESCE(summary, '')) THEN ? ELSE summary END,
+                                why_it_matters = CASE WHEN LENGTH(?) > LENGTH(COALESCE(why_it_matters, '')) THEN ? ELSE why_it_matters END,
+                                primary_url = CASE WHEN primary_url = '' THEN ? ELSE primary_url END,
+                                keywords_json = ?,
+                                extra_json = ?,
+                                last_updated_at = ?
+                            WHERE topic_id = ?
+                        """, (
+                            title, category, region, country, language, trend_status,
+                            trend_score, velocity_score, summary, summary, why_it_matters, why_it_matters,
+                            primary_url, keywords, extra, now_str, actual_top_id
+                        ))
+                        target_id = actual_top_id
+                        updated += 1
+                    else:
+                        first_seen = top.get("first_seen_at") or now_str
+                        conn.execute("""
+                            INSERT INTO canonical_topics (
+                                topic_id, canonical_title, slug, category, region, country, language,
+                                trend_status, trend_score, velocity_score, first_seen_at, last_updated_at,
+                                summary, why_it_matters, source_count, discussion_count, primary_url,
+                                keywords_json, extra_json
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            top_id, title, slug, category, region, country, language,
+                            trend_status, trend_score, velocity_score, first_seen, now_str,
+                            summary, why_it_matters, 1, 0, primary_url, keywords, extra
+                        ))
+                        target_id = top_id
+                        inserted += 1
+
+                    # Save source citations for this topic
+                    sources = top.get("sources") or []
+                    for s in sources:
+                        url = s.get("url") or ""
+                        if not url:
+                            continue
+                        s_name = s.get("source_name") or s.get("source") or "Web"
+                        s_id = s.get("source_id") or "web"
+                        s_title = s.get("title") or title
+                        author = s.get("author") or ""
+                        score = int(s.get("score") or 0)
+                        comments = int(s.get("comments") or 0)
+                        s_reg = s.get("region") or region
+                        pub_at = s.get("published_at") or now_str
+                        s_sum = s.get("summary") or ""
+
+                        conn.execute("""
+                            INSERT INTO topic_source_citations (
+                                topic_id, source_name, source_id, url, title, author,
+                                score, comments, region, published_at, collected_at, summary
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ON CONFLICT(url) DO UPDATE SET
+                                score = MAX(score, excluded.score),
+                                comments = MAX(comments, excluded.comments),
+                                collected_at = excluded.collected_at
+                        """, (
+                            target_id, s_name, s_id, url, s_title, author,
+                            score, comments, s_reg, pub_at, now_str, s_sum
+                        ))
+
+                    # Update aggregated source_count and discussion_count from citations
+                    cur.execute("""
+                        SELECT COUNT(DISTINCT source_name) AS sc, COALESCE(SUM(score + comments), 0) AS dc
+                        FROM topic_source_citations WHERE topic_id = ?
+                    """, (target_id,))
+                    agg = cur.fetchone()
+                    sc = agg["sc"] if agg else 1
+                    dc = agg["dc"] if agg else 0
+
+                    conn.execute("""
+                        UPDATE canonical_topics SET
+                            source_count = ?,
+                            discussion_count = ?
+                        WHERE topic_id = ?
+                    """, (sc, dc, target_id))
+
+                    # Record snapshot for history
+                    conn.execute("""
+                        INSERT INTO topic_snapshots (
+                            topic_id, snapshot_time, source_count, discussion_count, trend_score, trend_status
+                        ) VALUES (?, ?, ?, ?, ?, ?)
+                    """, (target_id, now_str, sc, dc, trend_score, trend_status))
+
+            return {"inserted": inserted, "updated": updated, "total": len(topics)}
+        finally:
+            conn.close()
+
+def get_canonical_topics(
+    time_range: str = "24h",
+    region: Optional[str] = None,
+    category: Optional[str] = None,
+    source: Optional[str] = None,
+    language: Optional[str] = None,
+    trend_status: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: str = "trending",
+    limit: int = 30,
+    offset: int = 0,
+    user_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Retrieve consolidated canonical topics with full citation details, filtering, and transparent ranking."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            query_parts = ["SELECT t.* FROM canonical_topics t WHERE 1=1"]
+            params: List[Any] = []
+
+            # 1. Time range filter
+            now = datetime.now(timezone.utc)
+            if time_range == "1h":
+                cutoff = (now - timedelta(hours=1)).isoformat()
+                query_parts.append("AND (t.last_updated_at >= ? OR t.first_seen_at >= ?)")
+                params.extend([cutoff, cutoff])
+            elif time_range == "24h" or time_range == "today":
+                cutoff = (now - timedelta(hours=24)).isoformat()
+                query_parts.append("AND (t.last_updated_at >= ? OR t.first_seen_at >= ?)")
+                params.extend([cutoff, cutoff])
+            elif time_range == "7d":
+                cutoff = (now - timedelta(days=7)).isoformat()
+                query_parts.append("AND (t.last_updated_at >= ? OR t.first_seen_at >= ?)")
+                params.extend([cutoff, cutoff])
+            elif time_range == "30d":
+                cutoff = (now - timedelta(days=30)).isoformat()
+                query_parts.append("AND (t.last_updated_at >= ? OR t.first_seen_at >= ?)")
+                params.extend([cutoff, cutoff])
+
+            # 2. Region filter
+            if region and region.lower() not in ("all", "worldwide", "global"):
+                reg_name = REGION_SLUG_MAP.get(region.lower(), region)
+                query_parts.append("AND (LOWER(t.region) = ? OR LOWER(t.region) LIKE ? OR LOWER(t.country) = ?)")
+                params.extend([reg_name.lower(), f"%{reg_name.lower()}%", region.lower()])
+
+            # 3. Category filter
+            if category and category.lower() not in ("all", "all topics"):
+                cat_name = CATEGORY_SLUG_MAP.get(category.lower(), category)
+                query_parts.append("AND (LOWER(t.category) = ? OR LOWER(t.category) LIKE ?)")
+                params.extend([cat_name.lower(), f"%{cat_name.lower()}%"])
+
+            # 4. Trend status filter (Emerging, Rising, High activity, Established, Cooling down)
+            if trend_status and trend_status.lower() != "all":
+                status_clean = trend_status.replace("_", " ").lower()
+                query_parts.append("AND LOWER(t.trend_status) = ?")
+                params.append(status_clean)
+
+            # 5. Language filter
+            if language and language.lower() not in ("all", ""):
+                query_parts.append("AND LOWER(t.language) = ?")
+                params.append(language.lower())
+
+            # 6. Source filter
+            if source and source.lower() not in ("all", ""):
+                s_low = source.lower()
+                query_parts.append("""
+                    AND EXISTS (
+                        SELECT 1 FROM topic_source_citations c
+                        WHERE c.topic_id = t.topic_id
+                        AND (LOWER(c.source_name) LIKE ? OR LOWER(c.source_id) LIKE ?)
+                    )
+                """)
+                params.extend([f"%{s_low}%", f"%{s_low}%"])
+
+            # 7. Search query
+            if search:
+                sq = f"%{search.strip().lower()}%"
+                query_parts.append("""
+                    AND (
+                        LOWER(t.canonical_title) LIKE ?
+                        OR LOWER(t.summary) LIKE ?
+                        OR LOWER(t.why_it_matters) LIKE ?
+                        OR EXISTS (
+                            SELECT 1 FROM topic_source_citations c
+                            WHERE c.topic_id = t.topic_id AND LOWER(c.title) LIKE ?
+                        )
+                    )
+                """)
+                params.extend([sq, sq, sq, sq])
+
+            # Total count query
+            count_sql = "SELECT COUNT(*) AS total FROM (" + " ".join(query_parts) + ")"
+            cur.execute(count_sql, params)
+            total_items = int(cur.fetchone()["total"] or 0)
+
+            # Sort order
+            if sort_by in ("trending", "velocity"):
+                query_parts.append("ORDER BY t.trend_score DESC, t.velocity_score DESC, t.last_updated_at DESC")
+            elif sort_by in ("latest", "recent"):
+                query_parts.append("ORDER BY t.last_updated_at DESC, t.id DESC")
+            elif sort_by in ("relevance", "sources"):
+                query_parts.append("ORDER BY t.source_count DESC, t.trend_score DESC")
+            elif sort_by == "discussions":
+                query_parts.append("ORDER BY t.discussion_count DESC, t.trend_score DESC")
+            else:
+                query_parts.append("ORDER BY t.trend_score DESC, t.id DESC")
+
+            query_parts.append("LIMIT ? OFFSET ?")
+            params.extend([limit, offset])
+
+            cur.execute(" ".join(query_parts), params)
+            rows = cur.fetchall()
+
+            # Retrieve user bookmarks
+            user_bookmarked_ids = set()
+            if user_id:
+                cur.execute("SELECT story_id FROM user_bookmarks WHERE user_id = ?", (user_id,))
+                user_bookmarked_ids = {r["story_id"] for r in cur.fetchall()}
+
+            topics_out = []
+            for r in rows:
+                item = dict(r)
+                tid = item["topic_id"]
+
+                # Fetch linked source citations
+                cur.execute("""
+                    SELECT source_name, source_id, url, title, author, score, comments, region, published_at, summary
+                    FROM topic_source_citations
+                    WHERE topic_id = ?
+                    ORDER BY score DESC, published_at DESC
+                """, (tid,))
+                sources = [dict(s) for s in cur.fetchall()]
+
+                # Parse JSON fields
+                try:
+                    item["keywords"] = json.loads(item["keywords_json"]) if item.get("keywords_json") else []
+                except Exception:
+                    item["keywords"] = []
+
+                try:
+                    item["extra"] = json.loads(item["extra_json"]) if item.get("extra_json") else {}
+                except Exception:
+                    item["extra"] = {}
+
+                item["sources"] = sources
+                item["source_count"] = len(sources) if sources else int(item.get("source_count") or 1)
+                item["is_bookmarked"] = item["id"] in user_bookmarked_ids
+
+                # Transparent signal explanation
+                sc = item["source_count"]
+                dc = item.get("discussion_count", 0)
+                score = item.get("trend_score", 0.0)
+                status = item.get("trend_status", "Rising")
+                item["signal_explanation"] = (
+                    f"Trend Score {score:.1f}/100 • {sc} independent source{'s' if sc != 1 else ''} • "
+                    f"{dc:,} verified interactions/comments • Status: {status}"
+                )
+
+                topics_out.append(item)
+
+            return {
+                "topics": topics_out,
+                "total": total_items,
+                "limit": limit,
+                "offset": offset,
+            }
+        finally:
+            conn.close()
+
+def get_canonical_topic(topic_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieve single canonical topic with all citations and historical snapshots."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM canonical_topics WHERE topic_id = ? OR id = ? OR slug = ?", (topic_id, topic_id, topic_id))
+            row = cur.fetchone()
+            if not row:
+                return None
+            item = dict(row)
+            tid = item["topic_id"]
+
+            cur.execute("""
+                SELECT source_name, source_id, url, title, author, score, comments, region, published_at, summary
+                FROM topic_source_citations
+                WHERE topic_id = ?
+                ORDER BY score DESC, published_at DESC
+            """, (tid,))
+            item["sources"] = [dict(s) for s in cur.fetchall()]
+
+            cur.execute("""
+                SELECT snapshot_time, source_count, discussion_count, trend_score, trend_status
+                FROM topic_snapshots
+                WHERE topic_id = ?
+                ORDER BY snapshot_time ASC
+            """, (tid,))
+            item["history"] = [dict(h) for h in cur.fetchall()]
+
+            try:
+                item["keywords"] = json.loads(item["keywords_json"]) if item.get("keywords_json") else []
+            except Exception:
+                item["keywords"] = []
+
+            return item
+        finally:
+            conn.close()
+
+def get_worldwide_trends_overview() -> Dict[str, Any]:
+    """Retrieve worldwide trend summary: totals, active regions, top categories, and signal distributions."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) AS total FROM canonical_topics")
+            total_topics = int(cur.fetchone()["total"] or 0)
+
+            cur.execute("SELECT COUNT(*) AS total_sources FROM topic_source_citations")
+            total_sources = int(cur.fetchone()["total_sources"] or 0)
+
+            cur.execute("""
+                SELECT trend_status, COUNT(*) AS count
+                FROM canonical_topics
+                GROUP BY trend_status
+            """)
+            status_dist = {r["trend_status"]: r["count"] for r in cur.fetchall()}
+
+            cur.execute("""
+                SELECT region, COUNT(*) AS count
+                FROM canonical_topics
+                GROUP BY region
+                ORDER BY count DESC
+            """)
+            regional_dist = [dict(r) for r in cur.fetchall()]
+
+            cur.execute("""
+                SELECT category, COUNT(*) AS count
+                FROM canonical_topics
+                GROUP BY category
+                ORDER BY count DESC LIMIT 8
+            """)
+            category_dist = [dict(r) for r in cur.fetchall()]
+
+            cur.execute("SELECT MAX(trend_score) AS max_score FROM canonical_topics")
+            top_score = float(cur.fetchone()["max_score"] or 0.0)
+
+            sched = get_trend_schedule()
+
+            return {
+                "total_topics": total_topics,
+                "total_sources_analyzed": total_sources,
+                "peak_trend_score": top_score,
+                "status_distribution": status_dist,
+                "regional_distribution": regional_dist,
+                "category_distribution": category_dist,
+                "schedule": sched,
+            }
         finally:
             conn.close()
