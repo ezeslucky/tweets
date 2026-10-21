@@ -5,6 +5,7 @@ and trial abuse prevention with full ACID transaction safety.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import secrets
@@ -306,6 +307,108 @@ def init_db() -> None:
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_intel_reports_date ON daily_intelligence_reports(report_date DESC);")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_watchlists_user ON user_watchlists(user_id);")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON user_bookmarks(user_id);")
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS x_connected_accounts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT UNIQUE NOT NULL,
+                    x_user_id TEXT NOT NULL,
+                    x_username TEXT NOT NULL,
+                    display_name TEXT,
+                    profile_image_url TEXT,
+                    access_token TEXT,
+                    refresh_token TEXT,
+                    token_expires_at TEXT,
+                    scopes TEXT,
+                    is_connected INTEGER NOT NULL DEFAULT 1,
+                    connected_at TEXT NOT NULL,
+                    last_synced_at TEXT NOT NULL
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS x_trend_topics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    topic_name TEXT NOT NULL,
+                    hashtag TEXT,
+                    niche TEXT NOT NULL,
+                    relevance_score REAL NOT NULL DEFAULT 50.0,
+                    evidence_of_growth TEXT,
+                    post_volume INTEGER DEFAULT 0,
+                    sample_posts_json TEXT NOT NULL DEFAULT '[]',
+                    suggested_ideas_json TEXT NOT NULL DEFAULT '[]',
+                    suggested_replies_json TEXT NOT NULL DEFAULT '[]',
+                    discovered_at TEXT NOT NULL,
+                    is_selected INTEGER NOT NULL DEFAULT 0
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS x_research_jobs (
+                    id TEXT PRIMARY KEY,
+                    status TEXT NOT NULL DEFAULT 'running',
+                    progress_pct INTEGER NOT NULL DEFAULT 0,
+                    stage TEXT NOT NULL DEFAULT 'initializing',
+                    topics_discovered INTEGER NOT NULL DEFAULT 0,
+                    drafts_generated INTEGER NOT NULL DEFAULT 0,
+                    replies_suggested INTEGER NOT NULL DEFAULT 0,
+                    items_approved INTEGER NOT NULL DEFAULT 0,
+                    items_published INTEGER NOT NULL DEFAULT 0,
+                    error_message TEXT,
+                    created_at TEXT NOT NULL,
+                    completed_at TEXT
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS x_posts_queue (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    job_id TEXT,
+                    item_type TEXT NOT NULL DEFAULT 'post_draft',
+                    status TEXT NOT NULL DEFAULT 'draft',
+                    topic_id INTEGER,
+                    topic_name TEXT,
+                    content TEXT NOT NULL,
+                    writing_style TEXT NOT NULL DEFAULT 'conversational',
+                    target_post_id TEXT,
+                    target_post_url TEXT,
+                    target_post_author TEXT,
+                    target_post_text TEXT,
+                    why_relevant TEXT,
+                    media_urls_json TEXT NOT NULL DEFAULT '[]',
+                    scheduled_for TEXT,
+                    published_at TEXT,
+                    x_post_id TEXT,
+                    failure_reason TEXT,
+                    retry_count INTEGER NOT NULL DEFAULT 0,
+                    idempotency_key TEXT UNIQUE,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                """)
+
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS x_agent_settings (
+                    user_id TEXT PRIMARY KEY,
+                    auto_research_enabled INTEGER NOT NULL DEFAULT 0,
+                    selected_niches_json TEXT NOT NULL DEFAULT '["AI & LLMs", "Software Engineering", "Startups & Tech", "Cloud Architecture"]',
+                    excluded_topics_json TEXT NOT NULL DEFAULT '["crypto", "politics", "controversies"]',
+                    preferred_languages_json TEXT NOT NULL DEFAULT '["en"]',
+                    daily_schedule_time TEXT NOT NULL DEFAULT '08:00',
+                    max_research_candidates INTEGER NOT NULL DEFAULT 20,
+                    max_drafts_per_job INTEGER NOT NULL DEFAULT 6,
+                    max_replies_per_job INTEGER NOT NULL DEFAULT 8,
+                    publishing_rate_limit_per_hour INTEGER NOT NULL DEFAULT 5,
+                    writing_profile_json TEXT NOT NULL DEFAULT '{"tone": "thoughtful builder", "avoid_emojis": true, "avoid_hashtags": true, "hook_style": "direct question or clear insight"}',
+                    updated_at TEXT NOT NULL
+                );
+                """)
+
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_x_topics_score ON x_trend_topics(relevance_score DESC);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_x_queue_status ON x_posts_queue(status, item_type);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_x_queue_job ON x_posts_queue(job_id);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_x_jobs_created ON x_research_jobs(created_at DESC);")
+
 
 
                 # Automatic schema migrations for multi-currency support
@@ -1933,5 +2036,578 @@ def save_user_trend_preferences(user_id: str, prefs: Dict[str, Any]) -> Dict[str
                         updated_at = excluded.updated_at;
                 """, (user_id, cats, regs, srcs, langs, now_str))
             return get_user_trend_preferences(user_id)
+        finally:
+            conn.close()
+
+# ==============================================================================
+# X (TWITTER) INTELLIGENCE & ENGAGEMENT PERSISTENCE HELPERS
+# ==============================================================================
+
+# -------------------------------------------------- Connected Accounts
+def save_x_connected_account(
+    user_id: str,
+    x_user_id: str,
+    x_username: str,
+    display_name: str = "",
+    profile_image_url: str = "",
+    access_token: str = "",
+    refresh_token: str = "",
+    token_expires_at: str = "",
+    scopes: str = "tweet.read tweet.write users.read offline.access"
+) -> Dict[str, Any]:
+    init_db()
+    now_str = _now_iso()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    INSERT INTO x_connected_accounts (
+                        user_id, x_user_id, x_username, display_name,
+                        profile_image_url, access_token, refresh_token,
+                        token_expires_at, scopes, is_connected,
+                        connected_at, last_synced_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        x_user_id = excluded.x_user_id,
+                        x_username = excluded.x_username,
+                        display_name = excluded.display_name,
+                        profile_image_url = excluded.profile_image_url,
+                        access_token = excluded.access_token,
+                        refresh_token = excluded.refresh_token,
+                        token_expires_at = excluded.token_expires_at,
+                        scopes = excluded.scopes,
+                        is_connected = 1,
+                        last_synced_at = excluded.last_synced_at;
+                """, (
+                    user_id, x_user_id, x_username, display_name,
+                    profile_image_url, access_token, refresh_token,
+                    token_expires_at, scopes, now_str, now_str
+                ))
+            return get_x_connected_account(user_id) or {}
+        finally:
+            conn.close()
+
+def get_x_connected_account(user_id: str) -> Optional[Dict[str, Any]]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT id, user_id, x_user_id, x_username, display_name,
+                       profile_image_url, token_expires_at, scopes,
+                       is_connected, connected_at, last_synced_at,
+                       CASE WHEN access_token IS NOT NULL AND access_token != '' THEN 1 ELSE 0 END AS has_token
+                FROM x_connected_accounts
+                WHERE user_id = ?
+            """, (user_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+def get_x_account_credentials(user_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieve secret tokens for backend API publishing (never exposed to client)."""
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT access_token, refresh_token, token_expires_at, scopes, x_user_id, x_username
+                FROM x_connected_accounts
+                WHERE user_id = ? AND is_connected = 1
+            """, (user_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+def disconnect_x_account(user_id: str) -> bool:
+    init_db()
+    now_str = _now_iso()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    UPDATE x_connected_accounts
+                    SET is_connected = 0, access_token = NULL, refresh_token = NULL, last_synced_at = ?
+                    WHERE user_id = ?
+                """, (now_str, user_id))
+            return True
+        finally:
+            conn.close()
+
+# -------------------------------------------------- Trend Topics
+def save_x_trend_topics(topics: List[Dict[str, Any]]) -> int:
+    init_db()
+    now_str = _now_iso()
+    inserted = 0
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                for t in topics:
+                    name = t.get("topic_name") or t.get("name") or "Trending Conversation"
+                    conn.execute("""
+                        INSERT INTO x_trend_topics (
+                            topic_name, hashtag, niche, relevance_score,
+                            evidence_of_growth, post_volume, sample_posts_json,
+                            suggested_ideas_json, suggested_replies_json, discovered_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        name,
+                        t.get("hashtag") or f"#{re.sub(r'[^a-zA-Z0-9]', '', name)}",
+                        t.get("niche") or "Technology",
+                        float(t.get("relevance_score") or 75.0),
+                        t.get("evidence_of_growth") or "+45% conversation volume",
+                        int(t.get("post_volume") or 1200),
+                        json.dumps(t.get("sample_posts") or t.get("sample_posts_json") or []),
+                        json.dumps(t.get("suggested_ideas") or t.get("suggested_ideas_json") or []),
+                        json.dumps(t.get("suggested_replies") or t.get("suggested_replies_json") or []),
+                        now_str
+                    ))
+                    inserted += 1
+            return inserted
+        finally:
+            conn.close()
+
+def get_x_trend_topics(limit: int = 20, niche: Optional[str] = None) -> List[Dict[str, Any]]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            query = "SELECT * FROM x_trend_topics WHERE 1=1"
+            params: List[Any] = []
+            if niche:
+                query += " AND LOWER(niche) = ?"
+                params.append(niche.lower())
+            query += " ORDER BY relevance_score DESC, id DESC LIMIT ?"
+            params.append(limit)
+            cur.execute(query, tuple(params))
+            out = []
+            for r in cur.fetchall():
+                it = dict(r)
+                for fld in ("sample_posts_json", "suggested_ideas_json", "suggested_replies_json"):
+                    if it.get(fld):
+                        try:
+                            it[fld.replace("_json", "")] = json.loads(it[fld])
+                        except Exception:
+                            it[fld.replace("_json", "")] = []
+                out.append(it)
+            return out
+        finally:
+            conn.close()
+
+def clear_old_x_trend_topics(keep_top: int = 50) -> None:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    DELETE FROM x_trend_topics
+                    WHERE id NOT IN (
+                        SELECT id FROM x_trend_topics ORDER BY relevance_score DESC LIMIT ?
+                    )
+                """, (keep_top,))
+        finally:
+            conn.close()
+
+# -------------------------------------------------- Research Jobs
+def create_x_research_job(job_id: str) -> Dict[str, Any]:
+    init_db()
+    now_str = _now_iso()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    INSERT INTO x_research_jobs (
+                        id, status, progress_pct, stage,
+                        topics_discovered, drafts_generated, replies_suggested,
+                        items_approved, items_published, created_at
+                    ) VALUES (?, 'running', 10, 'Initializing authorized X conversation scanner...', 0, 0, 0, 0, 0, ?)
+                """, (job_id, now_str))
+            return get_x_research_job(job_id) or {}
+        finally:
+            conn.close()
+
+def update_x_research_job(
+    job_id: str,
+    status: Optional[str] = None,
+    progress_pct: Optional[int] = None,
+    stage: Optional[str] = None,
+    topics_discovered: Optional[int] = None,
+    drafts_generated: Optional[int] = None,
+    replies_suggested: Optional[int] = None,
+    items_approved: Optional[int] = None,
+    items_published: Optional[int] = None,
+    error_message: Optional[str] = None
+) -> Dict[str, Any]:
+    init_db()
+    now_str = _now_iso()
+    updates = []
+    params: List[Any] = []
+
+    if status is not None:
+        updates.append("status = ?")
+        params.append(status)
+        if status in ("completed", "failed", "cancelled"):
+            updates.append("completed_at = ?")
+            params.append(now_str)
+    if progress_pct is not None:
+        updates.append("progress_pct = ?")
+        params.append(progress_pct)
+    if stage is not None:
+        updates.append("stage = ?")
+        params.append(stage)
+    if topics_discovered is not None:
+        updates.append("topics_discovered = ?")
+        params.append(topics_discovered)
+    if drafts_generated is not None:
+        updates.append("drafts_generated = ?")
+        params.append(drafts_generated)
+    if replies_suggested is not None:
+        updates.append("replies_suggested = ?")
+        params.append(replies_suggested)
+    if items_approved is not None:
+        updates.append("items_approved = ?")
+        params.append(items_approved)
+    if items_published is not None:
+        updates.append("items_published = ?")
+        params.append(items_published)
+    if error_message is not None:
+        updates.append("error_message = ?")
+        params.append(error_message)
+
+    if not updates:
+        return get_x_research_job(job_id) or {}
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                params.append(job_id)
+                conn.execute(f"UPDATE x_research_jobs SET {', '.join(updates)} WHERE id = ?", tuple(params))
+            return get_x_research_job(job_id) or {}
+        finally:
+            conn.close()
+
+def get_x_research_job(job_id: str) -> Optional[Dict[str, Any]]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM x_research_jobs WHERE id = ?", (job_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+def get_latest_x_research_job() -> Optional[Dict[str, Any]]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM x_research_jobs ORDER BY created_at DESC LIMIT 1")
+            row = cur.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+# -------------------------------------------------- Unified Publishing Queue
+def add_x_queue_item(
+    item_type: str,            # 'post_draft' or 'reply'
+    content: str,
+    writing_style: str = "conversational",
+    topic_id: Optional[int] = None,
+    topic_name: Optional[str] = None,
+    job_id: Optional[str] = None,
+    target_post_id: Optional[str] = None,
+    target_post_url: Optional[str] = None,
+    target_post_author: Optional[str] = None,
+    target_post_text: Optional[str] = None,
+    why_relevant: Optional[str] = None,
+    scheduled_for: Optional[str] = None,
+    status: str = "draft"
+) -> Dict[str, Any]:
+    init_db()
+    now_str = _now_iso()
+    # Unique idempotency key based on target post or content hash
+    clean_content = content.strip()
+    idempotency_raw = f"{item_type}:{target_post_id or ''}:{clean_content[:80]}"
+    idempotency_key = hashlib.sha256(idempotency_raw.encode("utf-8")).hexdigest()
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                cur = conn.cursor()
+                cur.execute("""
+                    INSERT INTO x_posts_queue (
+                        job_id, item_type, status, topic_id, topic_name,
+                        content, writing_style, target_post_id, target_post_url,
+                        target_post_author, target_post_text, why_relevant,
+                        scheduled_for, idempotency_key, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(idempotency_key) DO UPDATE SET
+                        content = excluded.content,
+                        writing_style = excluded.writing_style,
+                        why_relevant = excluded.why_relevant,
+                        updated_at = excluded.updated_at
+                """, (
+                    job_id, item_type, status, topic_id, topic_name,
+                    clean_content, writing_style, target_post_id, target_post_url,
+                    target_post_author, target_post_text, why_relevant,
+                    scheduled_for, idempotency_key, now_str, now_str
+                ))
+                new_id = cur.lastrowid
+            return get_x_queue_item(new_id) or {}
+        finally:
+            conn.close()
+
+def get_x_queue_item(item_id: int) -> Optional[Dict[str, Any]]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM x_posts_queue WHERE id = ?", (item_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+def get_x_queue_items(
+    item_type: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0
+) -> Dict[str, Any]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            query_parts = ["SELECT * FROM x_posts_queue WHERE 1=1"]
+            count_parts = ["SELECT COUNT(*) AS total FROM x_posts_queue WHERE 1=1"]
+            params: List[Any] = []
+
+            if item_type and item_type.lower() != "all":
+                query_parts.append("AND item_type = ?")
+                count_parts.append("AND item_type = ?")
+                params.append(item_type)
+
+            if status and status.lower() != "all":
+                query_parts.append("AND status = ?")
+                count_parts.append("AND status = ?")
+                params.append(status)
+
+            # Count total
+            cur.execute(" ".join(count_parts), tuple(params))
+            total = int(cur.fetchone()["total"] or 0)
+
+            # Retrieve page
+            query_parts.append("ORDER BY id DESC LIMIT ? OFFSET ?")
+            query_params = list(params) + [limit, offset]
+            cur.execute(" ".join(query_parts), tuple(query_params))
+
+            items = [dict(r) for r in cur.fetchall()]
+            return {"items": items, "total": total, "limit": limit, "offset": offset}
+        finally:
+            conn.close()
+
+def get_x_queue_summary_counts() -> Dict[str, int]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT status, item_type, COUNT(*) AS c
+                FROM x_posts_queue
+                GROUP BY status, item_type
+            """)
+            counts: Dict[str, int] = {
+                "post_drafts": 0,
+                "suggested_replies": 0,
+                "approved": 0,
+                "scheduled": 0,
+                "published": 0,
+                "failed": 0,
+                "total": 0
+            }
+            for r in cur.fetchall():
+                st = r["status"]
+                itype = r["item_type"]
+                cnt = int(r["c"] or 0)
+                counts["total"] += cnt
+
+                if st == "draft" and itype == "post_draft":
+                    counts["post_drafts"] += cnt
+                elif (st == "suggested" or st == "draft") and itype == "reply":
+                    counts["suggested_replies"] += cnt
+                elif st == "approved":
+                    counts["approved"] += cnt
+                elif st == "scheduled":
+                    counts["scheduled"] += cnt
+                elif st == "published":
+                    counts["published"] += cnt
+                elif st == "failed":
+                    counts["failed"] += cnt
+
+            return counts
+        finally:
+            conn.close()
+
+def update_x_queue_item(
+    item_id: int,
+    content: Optional[str] = None,
+    status: Optional[str] = None,
+    writing_style: Optional[str] = None,
+    scheduled_for: Optional[str] = None,
+    x_post_id: Optional[str] = None,
+    failure_reason: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    init_db()
+    now_str = _now_iso()
+    updates = ["updated_at = ?"]
+    params: List[Any] = [now_str]
+
+    if content is not None:
+        updates.append("content = ?")
+        params.append(content.strip())
+    if status is not None:
+        updates.append("status = ?")
+        params.append(status)
+        if status == "published":
+            updates.append("published_at = ?")
+            params.append(now_str)
+    if writing_style is not None:
+        updates.append("writing_style = ?")
+        params.append(writing_style)
+    if scheduled_for is not None:
+        updates.append("scheduled_for = ?")
+        params.append(scheduled_for)
+    if x_post_id is not None:
+        updates.append("x_post_id = ?")
+        params.append(x_post_id)
+    if failure_reason is not None:
+        updates.append("failure_reason = ?")
+        params.append(failure_reason)
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                params.append(item_id)
+                conn.execute(f"UPDATE x_posts_queue SET {', '.join(updates)} WHERE id = ?", tuple(params))
+            return get_x_queue_item(item_id)
+        finally:
+            conn.close()
+
+def delete_x_queue_item(item_id: int) -> bool:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("DELETE FROM x_posts_queue WHERE id = ?", (item_id,))
+            return True
+        finally:
+            conn.close()
+
+# -------------------------------------------------- Agent Settings
+def get_x_agent_settings(user_id: str = "default") -> Dict[str, Any]:
+    init_db()
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM x_agent_settings WHERE user_id = ?", (user_id,))
+            row = cur.fetchone()
+            if not row:
+                # Insert defaults
+                now_str = _now_iso()
+                conn.execute("""
+                    INSERT OR IGNORE INTO x_agent_settings (user_id, updated_at)
+                    VALUES (?, ?)
+                """, (user_id, now_str))
+                conn.commit()
+                cur.execute("SELECT * FROM x_agent_settings WHERE user_id = ?", (user_id,))
+                row = cur.fetchone()
+
+            it = dict(row)
+            for fld in ("selected_niches_json", "excluded_topics_json", "preferred_languages_json", "writing_profile_json"):
+                try:
+                    it[fld.replace("_json", "")] = json.loads(it[fld])
+                except Exception:
+                    it[fld.replace("_json", "")] = [] if "profile" not in fld else {}
+            return it
+        finally:
+            conn.close()
+
+def update_x_agent_settings(
+    user_id: str = "default",
+    auto_research_enabled: Optional[bool] = None,
+    selected_niches: Optional[List[str]] = None,
+    excluded_topics: Optional[List[str]] = None,
+    preferred_languages: Optional[List[str]] = None,
+    daily_schedule_time: Optional[str] = None,
+    max_research_candidates: Optional[int] = None,
+    max_drafts_per_job: Optional[int] = None,
+    max_replies_per_job: Optional[int] = None,
+    publishing_rate_limit_per_hour: Optional[int] = None,
+    writing_profile: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    init_db()
+    now_str = _now_iso()
+    updates = ["updated_at = ?"]
+    params: List[Any] = [now_str]
+
+    if auto_research_enabled is not None:
+        updates.append("auto_research_enabled = ?")
+        params.append(1 if auto_research_enabled else 0)
+    if selected_niches is not None:
+        updates.append("selected_niches_json = ?")
+        params.append(json.dumps(selected_niches))
+    if excluded_topics is not None:
+        updates.append("excluded_topics_json = ?")
+        params.append(json.dumps(excluded_topics))
+    if preferred_languages is not None:
+        updates.append("preferred_languages_json = ?")
+        params.append(json.dumps(preferred_languages))
+    if daily_schedule_time is not None:
+        updates.append("daily_schedule_time = ?")
+        params.append(daily_schedule_time)
+    if max_research_candidates is not None:
+        updates.append("max_research_candidates = ?")
+        params.append(max_research_candidates)
+    if max_drafts_per_job is not None:
+        updates.append("max_drafts_per_job = ?")
+        params.append(max_drafts_per_job)
+    if max_replies_per_job is not None:
+        updates.append("max_replies_per_job = ?")
+        params.append(max_replies_per_job)
+    if publishing_rate_limit_per_hour is not None:
+        updates.append("publishing_rate_limit_per_hour = ?")
+        params.append(publishing_rate_limit_per_hour)
+    if writing_profile is not None:
+        updates.append("writing_profile_json = ?")
+        params.append(json.dumps(writing_profile))
+
+    with _lock:
+        conn = get_connection()
+        try:
+            with conn:
+                params.append(user_id)
+                conn.execute(f"UPDATE x_agent_settings SET {', '.join(updates)} WHERE user_id = ?", tuple(params))
+            return get_x_agent_settings(user_id)
         finally:
             conn.close()

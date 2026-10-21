@@ -39,6 +39,7 @@ import daily_intelligence
 import global_trends_catalog
 import trends_engine
 import trends_scheduler
+import x_service
 import settings
 import subscription
 import x_auth
@@ -117,6 +118,40 @@ class TrendScheduleUpdateRequest(BaseModel):
     schedule_time: str = "06:00"
     timezone: str = "UTC"
     enabled: bool = True
+
+class XSettingsUpdateRequest(BaseModel):
+    auto_research_enabled: Optional[bool] = None
+    selected_niches: Optional[List[str]] = None
+    excluded_topics: Optional[List[str]] = None
+    preferred_languages: Optional[List[str]] = None
+    daily_schedule_time: Optional[str] = None
+    max_research_candidates: Optional[int] = None
+    max_drafts_per_job: Optional[int] = None
+    max_replies_per_job: Optional[int] = None
+    publishing_rate_limit_per_hour: Optional[int] = None
+    writing_profile: Optional[Dict[str, Any]] = None
+
+class XQueueItemCreateRequest(BaseModel):
+    item_type: str = "post_draft"
+    content: str
+    writing_style: str = "conversational"
+    topic_id: Optional[int] = None
+    topic_name: Optional[str] = None
+    target_post_id: Optional[str] = None
+    target_post_url: Optional[str] = None
+    target_post_author: Optional[str] = None
+    target_post_text: Optional[str] = None
+    why_relevant: Optional[str] = None
+    status: str = "draft"
+
+class XQueueItemUpdateRequest(BaseModel):
+    content: Optional[str] = None
+    status: Optional[str] = None
+    writing_style: Optional[str] = None
+    scheduled_for: Optional[str] = None
+
+class XQueueRegenerateRequest(BaseModel):
+    writing_style: Optional[str] = None
 
 class TrendPreferencesRequest(BaseModel):
     preferred_categories: Optional[List[str]] = None
@@ -784,6 +819,139 @@ async def get_latest_research(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== X (TWITTER) INTELLIGENCE & ENGAGEMENT APIS ====================
+
+@app.get("/api/x/status")
+async def get_x_status(request: Request):
+    """Retrieve connected X account status, connection mode, and setup guide."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "default"
+    info = x_service.get_x_connection_info(handle)
+    return info
+
+@app.post("/api/x/disconnect")
+async def disconnect_x_endpoint(request: Request):
+    """Disconnect X account and revoke credentials server-side."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "default"
+    ok = x_service.disconnect_user_x_account(handle)
+    return {"ok": ok, "message": "X account disconnected successfully."}
+
+@app.get("/api/x/settings")
+async def get_x_settings_endpoint(request: Request):
+    """Retrieve X research automation settings, niches, writing profile, and limits."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "default"
+    s = database.get_x_agent_settings(handle)
+    return {"ok": True, "settings": s}
+
+@app.post("/api/x/settings")
+async def update_x_settings_endpoint(req: XSettingsUpdateRequest, request: Request):
+    """Update X research niches, schedule, limits, and writing profile."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "default"
+    s = database.update_x_agent_settings(
+        user_id=handle,
+        auto_research_enabled=req.auto_research_enabled,
+        selected_niches=req.selected_niches,
+        excluded_topics=req.excluded_topics,
+        preferred_languages=req.preferred_languages,
+        daily_schedule_time=req.daily_schedule_time,
+        max_research_candidates=req.max_research_candidates,
+        max_drafts_per_job=req.max_drafts_per_job,
+        max_replies_per_job=req.max_replies_per_job,
+        publishing_rate_limit_per_hour=req.publishing_rate_limit_per_hour,
+        writing_profile=req.writing_profile
+    )
+    return {"ok": True, "settings": s}
+
+@app.get("/api/x/topics")
+async def get_x_topics_endpoint(niche: Optional[str] = None, limit: int = 20):
+    """Retrieve discovered X topics with sample conversations, metrics, and ideas."""
+    topics = database.get_x_trend_topics(limit=limit, niche=niche)
+    return {"ok": True, "topics": topics, "count": len(topics)}
+
+@app.post("/api/x/research/start")
+async def start_x_research_endpoint(request: Request):
+    """One-click 'Start X Research' trigger. Discovers topics, generates post drafts and reply opportunities."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "default"
+    res = x_service.start_x_research_pipeline(user_id=handle)
+    return res
+
+@app.get("/api/x/research/status")
+async def get_x_research_status_endpoint():
+    """Check live status and progress of the active or latest X research job."""
+    job = x_service.get_active_research_job()
+    is_busy = x_service.is_research_running()
+    return {"ok": True, "is_running": is_busy, "job": job}
+
+@app.get("/api/x/queue")
+async def get_x_queue_endpoint(
+    item_type: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0
+):
+    """Retrieve unified publishing queue items with counts for each tab."""
+    res = database.get_x_queue_items(item_type=item_type, status=status, limit=limit, offset=offset)
+    counts = database.get_x_queue_summary_counts()
+    return {"ok": True, **res, "summary_counts": counts}
+
+@app.post("/api/x/queue/item")
+async def add_x_queue_item_endpoint(req: XQueueItemCreateRequest):
+    """Manually add a post draft or suggested reply to the queue."""
+    item = database.add_x_queue_item(
+        item_type=req.item_type,
+        content=req.content,
+        writing_style=req.writing_style,
+        topic_id=req.topic_id,
+        topic_name=req.topic_name,
+        target_post_id=req.target_post_id,
+        target_post_url=req.target_post_url,
+        target_post_author=req.target_post_author,
+        target_post_text=req.target_post_text,
+        why_relevant=req.why_relevant,
+        status=req.status
+    )
+    return {"ok": True, "item": item}
+
+@app.put("/api/x/queue/item/{item_id}")
+async def update_x_queue_item_endpoint(item_id: int, req: XQueueItemUpdateRequest):
+    """Edit draft text, update writing style, or change status (approved, rejected, scheduled)."""
+    item = database.update_x_queue_item(
+        item_id=item_id,
+        content=req.content,
+        status=req.status,
+        writing_style=req.writing_style,
+        scheduled_for=req.scheduled_for
+    )
+    if not item:
+        raise HTTPException(status_code=404, detail=f"Queue item #{item_id} not found")
+    return {"ok": True, "item": item}
+
+@app.post("/api/x/queue/item/{item_id}/regenerate")
+async def regenerate_x_queue_item_endpoint(item_id: int, req: Optional[XQueueRegenerateRequest] = None):
+    """Regenerate a draft or reply with a new writing style."""
+    style = req.writing_style if req else None
+    res = x_service.regenerate_queue_item(item_id, new_style=style)
+    return res
+
+@app.post("/api/x/queue/item/{item_id}/publish")
+async def publish_x_queue_item_endpoint(item_id: int, request: Request):
+    """Publish an approved post or reply to X through authorized API access."""
+    user = get_current_user_optional(request)
+    handle = user["username"] if user else "default"
+    res = x_service.publish_queue_item(item_id, user_id=handle)
+    return res
+
+@app.delete("/api/x/queue/item/{item_id}")
+async def delete_x_queue_item_endpoint(item_id: int):
+    """Delete an item from the queue."""
+    ok = database.delete_x_queue_item(item_id)
+    return {"ok": ok, "deleted_id": item_id}
 
 
 # ==================== GLOBAL TREND INTELLIGENCE APIS ====================
