@@ -2464,7 +2464,7 @@ def add_x_queue_item(
     now_str = _now_iso()
     # Unique idempotency key based on target post or content hash
     clean_content = content.strip()
-    idempotency_raw = f"{item_type}:{target_post_id or ''}:{clean_content[:80]}"
+    idempotency_raw = f"{item_type}:{target_post_id or ''}:{clean_content}"
     idempotency_key = hashlib.sha256(idempotency_raw.encode("utf-8")).hexdigest()
 
     with _lock:

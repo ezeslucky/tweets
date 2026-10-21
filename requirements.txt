@@ -1,6 +1,7 @@
-# tweetytweets — one dependency.
-#
-# The whole pipeline is stdlib + this. No Playwright, no Selenium, no browser
-# automation framework: the CDP driver in scripts/browser.py talks to Chrome's
-# debugging port directly.
+# Core Tweets backend & API server dependencies
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pydantic>=2.0
+python-dotenv>=1.0.0
+requests>=2.28.0
 websockets>=12.0

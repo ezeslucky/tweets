@@ -1517,7 +1517,9 @@ async def serve_download_landing_page():
 if WWW_DIR.exists():
     app.mount("/", StaticFiles(directory=str(WWW_DIR), html=True), name="static")
 
-def run(host: str = "0.0.0.0", port: int = 8000):
+def run(host: str = "0.0.0.0", port: int = None):
+    if port is None:
+        port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host=host, port=port)
 
 if __name__ == "__main__":
