@@ -340,7 +340,7 @@
               <span id="conn-text" class="hidden sm:inline">Online</span>
             </span>
           </div>
-          <p id="handle-badge" class="text-xs text-[var(--text-secondary)] font-mono">@ezeslucky</p>
+          <p id="handle-badge" class="text-xs text-[var(--text-secondary)] font-mono">@tweets</p>
         </div>
       </div>
 
@@ -381,6 +381,12 @@
           <i id="icon-sub-header" data-lucide="crown" class="w-3.5 h-3.5 text-amber-500"></i>
           <span id="badge-pro-header">Plans</span>
         </button>
+
+        <!-- Get Android APK Link -->
+        <a href="/download" class="px-2.5 py-1 text-xs font-semibold bg-brand/10 hover:bg-brand/20 text-brand border border-brand/30 rounded-full hidden sm:flex items-center gap-1.5 btn-press shadow-sm transition" title="Download Android APK">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+          <span>APK</span>
+        </a>
 
         <!-- Quick Theme Toggle -->
         <button onclick="cycleTheme()" id="btn-theme-toggle" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-elevated)] btn-press" title="Toggle Theme (Dark / Light / System)" aria-label="Toggle Theme">
@@ -1095,7 +1101,7 @@
           <span class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
             <i data-lucide="user" class="w-3.5 h-3.5 text-brand"></i> Account
           </span>
-          <span id="stat-handle" class="text-base font-bold text-[var(--text-primary)] mt-1.5 block font-mono">@ezeslucky</span>
+          <span id="stat-handle" class="text-base font-bold text-[var(--text-primary)] mt-1.5 block font-mono">@tweets</span>
         </div>
         <div class="bg-[var(--bg-surface)] border border-[var(--border-card)] rounded-2xl p-4 shadow-sm card-lift">
           <span class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
@@ -1298,7 +1304,7 @@
               <div class="flex items-center gap-1">
                 <span class="font-bold text-xs text-[var(--text-primary)]">Aurobindo</span>
                 <i data-lucide="badge-check" class="w-3.5 h-3.5 text-brand fill-brand"></i>
-                <span class="text-xs text-[var(--text-muted)] font-mono">@ezeslucky</span>
+                <span class="text-xs text-[var(--text-muted)] font-mono">@tweets</span>
               </div>
               <span class="text-[11px] text-[var(--text-muted)]">Now · via TweetyTweets CDP</span>
             </div>
@@ -1449,7 +1455,7 @@
           </div>
           <div class="flex items-center justify-between">
             <span class="text-[var(--text-secondary)]">Handle:</span>
-            <span id="settings-user-handle" class="font-mono font-bold text-brand">@ezeslucky</span>
+            <span id="settings-user-handle" class="font-mono font-bold text-brand">@tweets</span>
           </div>
           <button onclick="closeModal('modal-settings'); handleSignOutClick();" class="w-full mt-1 py-2 text-xs text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 font-semibold rounded-lg text-center transition flex items-center justify-center gap-1.5 btn-press">
             <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
@@ -1896,7 +1902,7 @@
         <div class="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--border-subtle)] flex items-center justify-between">
           <div>
             <span class="text-[11px] text-[var(--text-muted)] block">Connected Handle:</span>
-            <span id="x-modal-handle" class="font-bold text-sm text-[var(--text-primary)]">@ezeslucky</span>
+            <span id="x-modal-handle" class="font-bold text-sm text-[var(--text-primary)]">@tweets</span>
           </div>
           <span id="x-modal-status-pill" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
             Connected
@@ -2417,7 +2423,7 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
     async function loadStatus() {
       try {
         const st = await apiFetch('/api/status');
-        const h = st.handle || 'ezeslucky';
+        const h = st.handle || 'tweets';
         document.getElementById('handle-badge').innerText = `@${h}`;
         document.getElementById('stat-handle').innerText = `@${h}`;
         document.getElementById('stat-chars').innerText = `${st.max_chars || 280} chars`;
@@ -4176,7 +4182,7 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
         if (res.user) currentUser = res.user;
 
         // Update header & settings
-        const h = currentUser ? currentUser.username : 'ezeslucky';
+        const h = currentUser ? currentUser.username : 'tweets';
         document.getElementById('handle-badge').innerText = `@${h}`;
         const setHandle = document.getElementById('settings-user-handle');
         if (setHandle) setHandle.innerText = `@${h}`;
@@ -5296,7 +5302,7 @@ X_BEARER_TOKEN=your_bearer_token_here</pre>
           }
         }
 
-        const handleStr = data.username ? `@${data.username.replace('@', '')}` : '@ezeslucky';
+        const handleStr = data.username ? `@${data.username.replace('@', '')}` : '@tweets';
         if (btnText) btnText.innerText = handleStr;
         if (modalHandle) modalHandle.innerText = handleStr;
 

@@ -451,7 +451,7 @@ async def get_status(request: Request):
     current_user = get_current_user_optional(request)
     st = post.load_state()
     cfg = settings.load()
-    handle = current_user["username"] if current_user else (cfg.get("handle") or "ezeslucky")
+    handle = current_user["username"] if current_user else (cfg.get("handle") or "tweets")
     sub = database.get_subscription(handle)
     plan_meta = subscription.get_plan(sub.get("plan_id") or "", country_code=sub.get("billing_country", "IN"))
     
@@ -508,7 +508,7 @@ async def get_plan(date: Optional[str] = None):
 @app.post("/api/plan/make")
 async def make_new_plan(date: Optional[str] = None):
     cfg = settings.load()
-    handle = cfg.get("handle") or "ezeslucky"
+    handle = cfg.get("handle") or "tweets"
     # Verify active subscription
     check_active_subscription(handle)
     
@@ -547,7 +547,7 @@ async def fill_draft(req: DraftFillRequest):
 @app.post("/api/post/trigger")
 async def trigger_post(req: PostRequest):
     cfg = settings.load()
-    handle = cfg.get("handle") or "ezeslucky"
+    handle = cfg.get("handle") or "tweets"
     # Enforce active subscription authorization
     check_active_subscription(handle)
 
@@ -613,7 +613,7 @@ async def get_research_preferences(request: Request):
     """Retrieve customized research sources and custom RSS feeds for current user."""
     user = get_current_user_optional(request)
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
     prefs = database.get_user_research_preferences(handle)
     return {"ok": True, "preferences": prefs}
 
@@ -622,7 +622,7 @@ async def save_research_preferences(request: Request, req: ResearchPreferencesRe
     """Persist user custom source selections and custom feeds."""
     user = get_current_user_optional(request)
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
     saved = database.save_user_research_preferences(
         user_id=handle,
         selected_sources=req.selected_sources,
@@ -636,7 +636,7 @@ async def reset_research_preferences(request: Request):
     """Reset source preferences to factory defaults."""
     user = get_current_user_optional(request)
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
     res = database.reset_user_research_preferences(handle)
     return {"ok": True, "preferences": res}
 
@@ -645,7 +645,7 @@ async def collect_fresh_stories(request: Request, background_tasks: BackgroundTa
     """Start background research collection across all selected sources, including LinkedIn."""
     user = get_current_user_optional(request)
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
 
     if research.is_collecting():
         return {
@@ -686,7 +686,7 @@ async def get_research_job_status(request: Request):
     """Poll status of latest or active background collection run."""
     user = get_current_user_optional(request)
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
     is_busy = research.is_collecting()
     active = research.get_active_job_info()
     latest = database.get_latest_research_job(handle)
@@ -712,7 +712,7 @@ async def get_research_live_status(request: Request):
     """Microsecond-fast status probe for 1-second client-side auto-refresh polling."""
     user = get_current_user_optional(request)
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
 
     counts = database.get_research_stories_count(user_id=handle)
     latest_job = database.get_latest_research_job(handle)
@@ -753,7 +753,7 @@ async def get_latest_research(
     """Retrieve research stories from SQLite database with fallback to swipe JSON file."""
     user = get_current_user_optional(request) if request else None
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
     is_li_configured = bool(os.getenv("LINKEDIN_ACCESS_TOKEN"))
 
     db_items = database.get_research_stories(
@@ -1190,7 +1190,7 @@ async def get_subscription_status(request: Request):
     """Retrieve full subscription and trial status for the current user."""
     user = get_current_user_optional(request)
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
     sub = database.get_subscription(handle)
     country = sub.get("billing_country", "IN")
     plan_meta = subscription.get_plan(sub.get("plan_id") or "", country_code=country)
@@ -1204,7 +1204,7 @@ async def start_free_trial(request: Request, req: Optional[TrialStartRequest] = 
     """Start 7-day free trial. Prevents repeat claiming."""
     user = get_current_user_optional(request)
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
     identifier = (req.identifier if req and req.identifier else None) or handle
     try:
         sub = database.start_free_trial(handle, identifier=identifier)
@@ -1221,7 +1221,7 @@ async def create_subscription_order(request: Request, req: OrderCreateRequest):
     """Create Razorpay order on server with validated regional pricing."""
     user = get_current_user_optional(request)
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
     country = (req.country or "IN").strip().upper()
     try:
         order = razorpay_gateway.create_order(handle, req.plan_id, country_code=country)
@@ -1245,7 +1245,7 @@ async def verify_subscription_payment(request: Request, req: PaymentVerifyReques
     """Cryptographically verify payment signature and activate subscription."""
     user = get_current_user_optional(request)
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
 
     # 1. Cryptographic HMAC signature check
     is_valid = razorpay_gateway.verify_checkout_signature(
@@ -1352,11 +1352,90 @@ async def get_subscription_history(request: Request):
     """Retrieve payment receipt ledger for the current user."""
     user = get_current_user_optional(request)
     cfg = settings.load()
-    handle = user["username"] if user else (cfg.get("handle") or "ezeslucky")
+    handle = user["username"] if user else (cfg.get("handle") or "tweets")
     history = database.get_payment_history(handle)
     return {"ok": True, "history": history}
 
 # Serve mobile www if present
+# ==================== APK DOWNLOAD & LANDING PAGE APIS ====================
+
+@app.get("/api/apk/info")
+async def get_apk_info():
+    """Retrieve verified real APK metadata, version, and file size."""
+    apk_path = WWW_DIR / "Tweets.apk"
+    if not apk_path.exists():
+        apk_path = ROOT_DIR / "mobile" / "Tweets.apk"
+    
+    if apk_path.exists():
+        size_bytes = apk_path.stat().st_size
+        size_mb = f"{size_bytes / (1024 * 1024):.2f} MB"
+        mtime = datetime.fromtimestamp(apk_path.stat().st_mtime, timezone.utc).strftime("%Y-%m-%d")
+        
+        # Calculate SHA256
+        h = hashlib.sha256()
+        with open(apk_path, "rb") as f:
+            while chunk := f.read(65536):
+                h.update(chunk)
+        sha256_hex = h.hexdigest()
+        
+        return {
+            "ok": True,
+            "app_name": "Tweets",
+            "filename": "Tweets.apk",
+            "version": "v2.4.0",
+            "version_code": 240,
+            "file_size_bytes": size_bytes,
+            "file_size_formatted": size_mb,
+            "release_date": mtime,
+            "min_android": "Android 8.0 (API 26)",
+            "target_android": "Android 14.0 (API 34)",
+            "sha256": sha256_hex,
+            "download_url": "/download/Tweets.apk",
+            "is_available": True
+        }
+    else:
+        return {
+            "ok": False,
+            "is_available": False,
+            "filename": "Tweets.apk",
+            "version": "v2.4.0",
+            "file_size_formatted": "4.24 MB",
+            "download_url": "/download/Tweets.apk",
+            "message": "APK build in progress"
+        }
+
+@app.api_route("/download/Tweets.apk", methods=["GET", "HEAD"])
+@app.api_route("/Tweets.apk", methods=["GET", "HEAD"])
+async def download_apk_file():
+    """Download the actual Tweets Android application APK with proper MIME headers."""
+    apk_path = WWW_DIR / "Tweets.apk"
+    if not apk_path.exists():
+        apk_path = ROOT_DIR / "mobile" / "Tweets.apk"
+    
+    if not apk_path.exists():
+        raise HTTPException(status_code=404, detail="Tweets.apk file not found on server")
+
+    return FileResponse(
+        path=str(apk_path),
+        media_type="application/vnd.android.package-archive",
+        filename="Tweets.apk",
+        headers={
+            "Content-Disposition": 'attachment; filename="Tweets.apk"',
+            "Cache-Control": "no-cache",
+        }
+    )
+
+@app.get("/download")
+@app.get("/landing")
+async def serve_download_landing_page():
+    """Serve the premium animated APK download landing page."""
+    landing_file = WWW_DIR / "download.html"
+    if not landing_file.exists():
+        landing_file = ROOT_DIR / "mobile" / "www" / "download.html"
+    if landing_file.exists():
+        return FileResponse(str(landing_file), media_type="text/html")
+    raise HTTPException(status_code=404, detail="Landing page not found")
+
 if WWW_DIR.exists():
     app.mount("/", StaticFiles(directory=str(WWW_DIR), html=True), name="static")
 

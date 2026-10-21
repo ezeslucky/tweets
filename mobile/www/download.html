@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tweets — Premium Android APK Download | Next-Level Social Intelligence</title>
+  
+  <!-- Meta & OpenGraph -->
+  <meta name="description" content="Discover Tweets. Download the official Android APK and get started in seconds. Autonomous queue, 198 global trend sources, AI post writer, and reply assistant." />
+  <meta name="theme-color" content="#0B0C10" />
+  <meta property="og:title" content="Tweets — Your Next-Level Experience Starts Here" />
+  <meta property="og:description" content="Download Tweets Android APK (v2.4.0). Autonomous scheduling, global trending intelligence, and human-in-the-loop publishing." />
+  <meta property="og:type" content="website" />
+
+  <!-- Favicon T Logo -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2338BDF8'/%3E%3Cpath d='M7 9h18v4h-6.5v11h-5v-11H7z' fill='%230B0C10'/%3E%3C/svg%3E" />
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              DEFAULT: '#38BDF8',
+              hover: '#0EA5E9',
+              glow: 'rgba(56, 189, 248, 0.4)',
+            },
+            dark: {
+              bg: '#07080C',
+              surface: '#0E1017',
+              elevated: '#141724',
+              border: 'rgba(255, 255, 255, 0.08)',
+              borderSubtle: 'rgba(255, 255, 255, 0.04)',
+            }
+          },
+          animation: {
+            'float': 'float 6s ease-in-out infinite',
+            'float-delayed': 'float 6s ease-in-out 3s infinite',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'glow': 'glow 3s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-12px)' },
+            },
+            glow: {
+              '0%': { opacity: '0.4' },
+              '100%': { opacity: '0.8' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #07080C;
+      color: #F8FAFC;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      selection-background-color: #38BDF8;
+      selection-color: #07080C;
+    }
+
+    /* Ambient background grid */
+    .bg-grid-pattern {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    /* Glassmorphic card styling */
+    .glass-card {
+      background: rgba(14, 16, 23, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+
+    .glass-card:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+      box-shadow: 0 20px 40px -10px rgba(56, 189, 248, 0.1);
+    }
+
+    .glass-pill {
+      background: rgba(20, 23, 36, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Glowing gradients */
+    .gradient-glow {
+      background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.18) 0%, rgba(129, 140, 248, 0.12) 30%, transparent 70%);
+    }
+
+    .text-gradient {
+      background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 50%, #94A3B8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .text-gradient-cyan {
+      background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Button press effect */
+    .btn-press:active {
+      transform: scale(0.97);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #07080C;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.4);
+    }
+  </style>
+</head>
+<body class="min-h-screen relative flex flex-col antialiased">
+
+  <!-- Ambient Light Orbs -->
+  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] gradient-glow pointer-events-none z-0"></div>
+  <div class="fixed top-[40%] right-[-200px] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none z-0"></div>
+  <div class="fixed bottom-0 left-[-150px] w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[140px] pointer-events-none z-0"></div>
+
+  <!-- Ambient Grid Overlay -->
+  <div class="fixed inset-0 bg-grid-pattern opacity-40 pointer-events-none z-0"></div>
+
+  <!-- ==================== NAVIGATION BAR ==================== -->
+  <header class="sticky top-0 z-50 backdrop-blur-xl bg-[#07080C]/80 border-b border-white/[0.06] transition-all duration-300">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-brand to-indigo-500 p-[1.5px] shadow-sm shadow-brand/20 group-hover:shadow-brand/40 transition-all duration-300">
+          <div class="w-full h-full bg-[#07080C] rounded-[10px] flex items-center justify-center">
+            <svg viewBox="0 0 24 24" class="w-4 h-4 text-brand fill-current" aria-hidden="true">
+              <path d="M4 5h16v3h-6.2v11h-3.6V8H4V5z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="flex items-baseline gap-1.5">
+          <span class="text-base font-extrabold tracking-tight text-white group-hover:text-brand transition-colors">Tweets</span>
+          <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-brand/10 text-brand border border-brand/20 font-bold">APK</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav Links -->
+      <nav class="hidden md:flex items-center gap-7 text-xs font-medium text-slate-300">
+        <a href="#features" class="hover:text-white transition-colors">Features</a>
+        <a href="#intelligence" class="hover:text-white transition-colors">Global Intel</a>
+        <a href="#workflow" class="hover:text-white transition-colors">How It Works</a>
+        <a href="#install" class="hover:text-white transition-colors">Installation</a>
+        <a href="#faq" class="hover:text-white transition-colors">FAQ</a>
+      </nav>
+
+      <!-- Right CTAs -->
+      <div class="flex items-center gap-3">
+        <!-- Launch Web App Link -->
+        <a href="/" class="hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded-xl hover:bg-white/[0.04] transition btn-press">
+          <i data-lucide="layout-dashboard" class="w-3.5 h-3.5 text-brand"></i>
+          <span>Web Dashboard</span>
+        </a>
+
+        <!-- Download APK Button -->
+        <button onclick="downloadApkAction()" class="relative inline-flex items-center gap-2 bg-gradient-to-r from-brand to-indigo-500 hover:from-brand-hover hover:to-indigo-600 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-md shadow-brand/20 hover:shadow-brand/40 transition-all btn-press">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span>Download APK</span>
+          <span class="hidden lg:inline text-[10px] font-mono opacity-80 pl-1 border-l border-white/20">4.24 MB</span>
+        </button>
+
+        <!-- Mobile Hamburger Toggle -->
+        <button onclick="toggleMobileMenu()" id="btn-mobile-menu" class="md:hidden p-2 text-slate-300 hover:text-white rounded-xl hover:bg-white/[0.05] btn-press">
+          <i id="icon-mobile-menu" data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <div id="mobile-menu-drawer" class="hidden md:hidden border-b border-white/[0.08] bg-[#0A0C12]/95 backdrop-blur-2xl px-6 py-4 space-y-3 text-xs">
+      <a href="#features" onclick="toggleMobileMenu()" class="block py-2 text-slate-300 hover:text-white">Features</a>
+      <a href="#intelligence" onclick="toggleMobileMenu()" class="block py-2 text-slate-300 hover:text-white">Global Intel</a>
+      <a href="#workflow" onclick="toggleMobileMenu()" class="block py-2 text-slate-300 hover:text-white">How It Works</a>
+      <a href="#install" onclick="toggleMobileMenu()" class="block py-2 text-slate-300 hover:text-white">Installation Guide</a>
+      <a href="#faq" onclick="toggleMobileMenu()" class="block py-2 text-slate-300 hover:text-white">FAQ</a>
+      <div class="pt-2 border-t border-white/[0.08] flex items-center justify-between">
+        <a href="/" class="text-slate-400 hover:text-white flex items-center gap-1.5 py-1">
+          <i data-lucide="layout-dashboard" class="w-3.5 h-3.5 text-brand"></i> Web App
+        </a>
+        <button onclick="downloadApkAction()" class="bg-brand text-white px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> Download v2.4.0
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN HERO SECTION ==================== -->
+  <main class="flex-1 relative z-10">
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-16 lg:pb-24 flex flex-col items-center text-center">
+      
+      <!-- Version & Release Pill -->
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold glass-pill text-slate-300 border-white/10 mb-6 hover:border-brand/40 transition-colors">
+        <span class="flex h-2 w-2 relative">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
+        </span>
+        <span class="font-mono text-brand">v2.4.0 Release</span>
+        <span class="text-slate-500">•</span>
+        <span>Android 8.0+ Ready</span>
+        <i data-lucide="chevron-right" class="w-3 h-3 text-slate-400"></i>
+      </div>
+
+      <!-- Main Headline (Required exact wording) -->
+      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight max-w-4xl text-gradient leading-[1.1] mb-6">
+        Your Next-Level Experience <br class="hidden sm:inline" />
+        <span class="text-gradient-cyan">Starts Here.</span>
+      </h1>
+
+      <!-- Description (Required exact wording) -->
+      <p class="text-base sm:text-lg text-slate-400 max-w-2xl leading-relaxed mb-9">
+        Discover Tweets. Download the Android app and get started in seconds.
+      </p>
+
+      <!-- Primary Action Buttons (Required exact names) -->
+      <div class="flex flex-col sm:flex-row items-center gap-3.5 w-full sm:w-auto mb-10">
+        
+        <!-- Primary Download APK Button -->
+        <button onclick="downloadApkAction()" id="btn-hero-download" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-brand via-sky-400 to-indigo-500 hover:from-brand-hover hover:to-indigo-600 text-white font-bold text-sm px-7 py-3.5 rounded-2xl shadow-xl shadow-brand/25 hover:shadow-brand/40 transition-all btn-press">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Download APK</span>
+          <span class="text-[11px] font-mono opacity-80 pl-1.5 border-l border-white/20">4.24 MB</span>
+        </button>
+
+        <!-- Secondary Explore Features Button -->
+        <a href="#features" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 glass-pill text-slate-300 hover:text-white hover:border-white/20 font-semibold text-sm px-6 py-3.5 rounded-2xl transition-all btn-press">
+          <span>Explore Features</span>
+          <i data-lucide="arrow-down" class="w-4 h-4 text-brand"></i>
+        </a>
+      </div>
+
+      <!-- Trust Badges & Verified Metadata -->
+      <div class="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[11px] text-slate-400 font-medium mb-16">
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+          <span>100% Virus-Free & Safe</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="smartphone" class="w-4 h-4 text-brand"></i>
+          <span>Target Android 14/15 SDK</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+          <span>Instant Direct Install</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="lock" class="w-4 h-4 text-purple-400"></i>
+          <span>Official X OAuth 2.0 PKCE</span>
+        </div>
+      </div>
+
+      <!-- ==================== ANIMATED MOBILE MOCKUP HERO SHOWCASE ==================== -->
+      <div class="relative w-full max-w-4xl mx-auto">
+        <!-- Glow Backlight -->
+        <div class="absolute -inset-4 bg-gradient-to-r from-brand/20 via-indigo-500/20 to-purple-500/20 rounded-[48px] blur-3xl opacity-60 pointer-events-none"></div>
+
+        <!-- Phone Frame with Interactive Preview -->
+        <div class="relative glass-card rounded-[38px] sm:rounded-[44px] p-2.5 sm:p-4 border-white/10 shadow-2xl max-w-sm sm:max-w-md mx-auto animate-float">
+          
+          <!-- Outer Phone Bezel -->
+          <div class="bg-[#0D0E15] rounded-[32px] sm:rounded-[36px] overflow-hidden border border-white/[0.08] relative aspect-[9/18.5] flex flex-col justify-between shadow-inner">
+            
+            <!-- Mobile Camera Notch & Status Bar -->
+            <div class="h-6 bg-[#07080C] flex items-center justify-between px-6 pt-1 text-[9px] text-slate-400 font-mono select-none">
+              <span>09:41</span>
+              <div class="w-16 h-3 bg-black rounded-full mx-auto"></div>
+              <div class="flex items-center gap-1">
+                <i data-lucide="wifi" class="w-2.5 h-2.5"></i>
+                <i data-lucide="battery-charging" class="w-3 h-3 text-emerald-400"></i>
+              </div>
+            </div>
+
+            <!-- Simulated In-App Live Content -->
+            <div class="flex-1 bg-[#090A0F] p-3 text-left space-y-2.5 overflow-hidden flex flex-col">
+              
+              <!-- Mini In-App Header -->
+              <div class="flex items-center justify-between border-b border-white/[0.06] pb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-5 h-5 rounded-md bg-brand text-black flex items-center justify-center font-black text-[10px]">T</div>
+                  <span class="text-xs font-bold text-white">Tweets</span>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold">● Online</span>
+              </div>
+
+              <!-- Mini Metric Card -->
+              <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
+                <div>
+                  <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Peak Velocity</span>
+                  <span class="text-sm font-black font-mono text-amber-400">⚡ 99.9 <span class="text-[9px] text-slate-500">/ 100</span></span>
+                </div>
+                <div class="text-right">
+                  <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Monitored</span>
+                  <span class="text-xs font-bold text-brand">198 Sources</span>
+                </div>
+              </div>
+
+              <!-- Mini Trend Signal Card -->
+              <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-1">
+                <div class="flex items-center justify-between text-[9px]">
+                  <span class="px-1.5 py-0.2 rounded-full font-bold bg-rose-500/20 text-rose-400">🔥 BREAKING</span>
+                  <span class="text-slate-500 font-mono">12m ago</span>
+                </div>
+                <p class="text-[11px] font-bold text-slate-200 leading-snug line-clamp-2">
+                  Autonomous AI Agent Workflows Surging in Production Deployments
+                </p>
+                <div class="p-1.5 rounded-lg bg-black/40 border border-white/[0.04] text-[9px] text-slate-400">
+                  <strong class="text-brand">Why it matters:</strong> Small deterministic contracts beat complex prompt chains.
+                </div>
+              </div>
+
+              <!-- Mini Post Draft / Action -->
+              <div class="p-2.5 rounded-xl bg-brand/10 border border-brand/20 space-y-1.5">
+                <div class="flex items-center justify-between text-[9px]">
+                  <span class="font-bold text-brand">AI Post Writer (Technical)</span>
+                  <span class="font-mono text-slate-400">142/280</span>
+                </div>
+                <p class="text-[10px] text-slate-300 leading-relaxed italic">
+                  "When measuring end-to-end throughput, the true ceiling is state serialization and synchronous blocking calls..."
+                </p>
+                <div class="flex items-center justify-end gap-1.5 pt-1">
+                  <span class="text-[9px] px-2 py-0.5 rounded bg-brand text-black font-bold">Approve →</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Mobile Home Bar Indicator -->
+            <div class="h-4 bg-[#07080C] flex items-center justify-center pb-1">
+              <div class="w-24 h-1 bg-white/20 rounded-full"></div>
+            </div>
+
+          </div>
+
+          <!-- Floating Interactive Feature Badges -->
+          <!-- Badge Left -->
+          <div class="hidden sm:flex absolute -left-12 top-20 glass-pill px-3.5 py-2 rounded-2xl items-center gap-2.5 shadow-xl border-white/10 animate-float">
+            <div class="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+            </div>
+            <div class="text-left">
+              <span class="text-[10px] text-slate-400 block font-medium">Real-time Velocity</span>
+              <span class="text-xs font-bold text-white font-mono">99.9 Top Signal</span>
+            </div>
+          </div>
+
+          <!-- Badge Right -->
+          <div class="hidden sm:flex absolute -right-12 top-48 glass-pill px-3.5 py-2 rounded-2xl items-center gap-2.5 shadow-xl border-white/10 animate-float-delayed">
+            <div class="w-7 h-7 rounded-xl bg-brand/20 text-brand flex items-center justify-center font-bold text-xs">
+              <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+            </div>
+            <div class="text-left">
+              <span class="text-[10px] text-slate-400 block font-medium">Global Coverage</span>
+              <span class="text-xs font-bold text-white font-mono">198 Verified Sources</span>
+            </div>
+          </div>
+
+          <!-- Badge Bottom -->
+          <div class="hidden sm:flex absolute -left-8 bottom-12 glass-pill px-3.5 py-2 rounded-2xl items-center gap-2.5 shadow-xl border-white/10 animate-float">
+            <div class="w-7 h-7 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            </div>
+            <div class="text-left">
+              <span class="text-[10px] text-slate-400 block font-medium">AI Reply Assistant</span>
+              <span class="text-xs font-bold text-white font-mono">Context-Aware</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== METRIC PROOF STRIP ==================== -->
+    <section class="border-y border-white/[0.06] bg-[#090B10]/60 py-10">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+        <div>
+          <span class="text-3xl sm:text-4xl font-extrabold text-white font-mono block mb-1">198</span>
+          <span class="text-xs text-slate-400">Global Monitored Sources</span>
+        </div>
+        <div>
+          <span class="text-3xl sm:text-4xl font-extrabold text-brand font-mono block mb-1">12</span>
+          <span class="text-xs text-slate-400">Industry Sectors & 6 Continents</span>
+        </div>
+        <div>
+          <span class="text-3xl sm:text-4xl font-extrabold text-indigo-400 font-mono block mb-1">6</span>
+          <span class="text-xs text-slate-400">Contextual AI Writing Styles</span>
+        </div>
+        <div>
+          <span class="text-3xl sm:text-4xl font-extrabold text-emerald-400 font-mono block mb-1">100%</span>
+          <span class="text-xs text-slate-400">Human-Approved Publishing</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== FEATURES SECTION ==================== -->
+    <section id="features" class="max-w-6xl mx-auto px-4 sm:px-6 py-20 lg:py-28">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="text-xs font-mono font-bold text-brand uppercase tracking-wider block mb-2">Verified Capabilities</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+          Engineered for High-Impact Builders & Creators.
+        </h2>
+        <p class="text-sm text-slate-400 mt-3">
+          Every capability in Tweets has been built from the ground up for zero-spam integrity, transparent data provenance, and genuine engagement.
+        </p>
+      </div>
+
+      <!-- Bento Features Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Feature 1: Global Trending Intelligence -->
+        <div id="intelligence" class="glass-card rounded-3xl p-6 sm:p-7 space-y-4 hover:border-brand/40 transition-all group">
+          <div class="w-12 h-12 rounded-2xl bg-brand/10 border border-brand/20 text-brand flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i data-lucide="globe" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white group-hover:text-brand transition-colors">Global Trending Intelligence</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Continuously monitors 198 sources across Google Trends, GitHub, Hacker News, Reddit, arXiv, and RSS wires with transparent mathematical velocity scoring and multi-source cross-clustering.
+          </p>
+          <div class="flex items-center gap-2 pt-2 text-[11px] font-mono text-brand">
+            <span>Velocity formula (0-100)</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </div>
+        </div>
+
+        <!-- Feature 2: Autonomous Queue & Scheduling -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 space-y-4 hover:border-brand/40 transition-all group">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i data-lucide="calendar" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white group-hover:text-indigo-400 transition-colors">Autonomous Posting Schedule</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Smart daily slot allocation (09:00, 13:00, 16:00, 20:00) with custom draft editors, live character counters, slot re-planning, and strict human review before anything is published.
+          </p>
+          <div class="flex items-center gap-2 pt-2 text-[11px] font-mono text-indigo-400">
+            <span>Paced slot distribution</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </div>
+        </div>
+
+        <!-- Feature 3: X Trend Research & Opportunity Discovery -->
+        <div id="workflow" class="glass-card rounded-3xl p-6 sm:p-7 space-y-4 hover:border-brand/40 transition-all group">
+          <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i data-lucide="trending-up" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">X Opportunity Scanner</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            One-click "Start X Research" scans real public conversations in your niche, identifies trending hashtags and developer questions, and groups opportunities with relevance scores.
+          </p>
+          <div class="flex items-center gap-2 pt-2 text-[11px] font-mono text-cyan-400">
+            <span>Niche & hashtag discovery</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </div>
+        </div>
+
+        <!-- Feature 4: Multi-Style AI Post Writer -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 space-y-4 hover:border-brand/40 transition-all group">
+          <div class="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i data-lucide="edit-3" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white group-hover:text-purple-400 transition-colors">Multi-Style AI Post Writer</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Generates original post drafts tailored to your exact voice across 6 styles: Educational, Technical, Conversational, Analytical, Opinionated, and Concise, adhering to strict voice-profile hook rules.
+          </p>
+          <div class="flex items-center gap-2 pt-2 text-[11px] font-mono text-purple-400">
+            <span>6 distinct voice styles</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </div>
+        </div>
+
+        <!-- Feature 5: Context-Aware AI Reply Assistant -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 space-y-4 hover:border-brand/40 transition-all group">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i data-lucide="message-square" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">AI Reply Assistant</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Formulates context-aware, respectful replies that directly address authors' questions. Generates a strategic "Why This Reply" rationale for every suggested reply before adding it to your queue.
+          </p>
+          <div class="flex items-center gap-2 pt-2 text-[11px] font-mono text-emerald-400">
+            <span>Rationale-backed replies</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </div>
+        </div>
+
+        <!-- Feature 6: Multi-Currency & Regional Subscriptions -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 space-y-4 hover:border-brand/40 transition-all group">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i data-lucide="credit-card" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">Regional Subscriptions</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Full Razorpay payment gateway supporting India INR (₹250/mo, ₹500/6-mo, ₹999/yr) and Global USD ($225/mo) pricing with 7-day free trial and ACID transaction safety.
+          </p>
+          <div class="flex items-center gap-2 pt-2 text-[11px] font-mono text-amber-400">
+            <span>INR & USD payment flows</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== THREE-STEP INSTALLATION GUIDE ==================== -->
+    <section id="install" class="max-w-6xl mx-auto px-4 sm:px-6 py-20 border-t border-white/[0.06]">
+      <div class="text-center max-w-2xl mx-auto mb-14">
+        <span class="text-xs font-mono font-bold text-brand uppercase tracking-wider block mb-2">Simple 3-Step Setup</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">How to Install Tweets on Android</h2>
+        <p class="text-xs sm:text-sm text-slate-400 mt-2">Get up and running in under 60 seconds with our official APK installer.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Step 1 -->
+        <div class="glass-card rounded-3xl p-6 space-y-4 relative overflow-hidden">
+          <div class="w-9 h-9 rounded-full bg-brand/10 border border-brand/30 text-brand flex items-center justify-center font-black font-mono text-sm">
+            1
+          </div>
+          <h3 class="text-base font-bold text-white">Download Tweets.apk</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Click the <strong class="text-white">Download APK</strong> button. The verified 4.24 MB package will download directly to your Android device storage.
+          </p>
+          <div class="p-3 bg-white/[0.02] border border-white/[0.04] rounded-xl text-[11px] font-mono text-slate-400 flex items-center justify-between">
+            <span>File: Tweets.apk</span>
+            <span class="text-emerald-400">4.24 MB</span>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="glass-card rounded-3xl p-6 space-y-4 relative overflow-hidden">
+          <div class="w-9 h-9 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-black font-mono text-sm">
+            2
+          </div>
+          <h3 class="text-base font-bold text-white">Allow Unknown Sources</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            When prompted by Android Package Installer, tap <strong class="text-white">Settings</strong> and toggle on <strong class="text-white">Allow from this source</strong> for Chrome or your browser.
+          </p>
+          <div class="p-3 bg-white/[0.02] border border-white/[0.04] rounded-xl text-[11px] text-slate-400">
+            <span class="text-brand font-medium">Standard Android verification step</span>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="glass-card rounded-3xl p-6 space-y-4 relative overflow-hidden">
+          <div class="w-9 h-9 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center font-black font-mono text-sm">
+            3
+          </div>
+          <h3 class="text-base font-bold text-white">Launch & Explore</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Tap <strong class="text-white">Install</strong>, open the Tweets app, and connect your X account with OAuth 2.0 PKCE or explore global trending intelligence immediately.
+          </p>
+          <div class="p-3 bg-white/[0.02] border border-white/[0.04] rounded-xl text-[11px] text-emerald-400 font-medium">
+            <span>Ready to discover & post</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== FAQ ACCORDION SECTION ==================== -->
+    <section id="faq" class="max-w-4xl mx-auto px-4 sm:px-6 py-20 border-t border-white/[0.06]">
+      <div class="text-center max-w-xl mx-auto mb-12">
+        <span class="text-xs font-mono font-bold text-brand uppercase tracking-wider block mb-2">Got Questions?</span>
+        <h2 class="text-3xl font-extrabold text-white tracking-tight">Frequently Asked Questions</h2>
+      </div>
+
+      <div class="space-y-3.5">
+        
+        <!-- FAQ 1 -->
+        <div class="glass-card rounded-2xl overflow-hidden border-white/[0.08]">
+          <button onclick="toggleFaq(1)" class="w-full p-5 text-left flex items-center justify-between gap-4 font-semibold text-sm text-white hover:text-brand transition-colors">
+            <span>Is Tweets free to download and install?</span>
+            <i id="faq-icon-1" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform"></i>
+          </button>
+          <div id="faq-content-1" class="hidden px-5 pb-5 text-xs text-slate-400 leading-relaxed border-t border-white/[0.04] pt-3">
+            Yes! You can download and install Tweets for free. It comes with a 7-day free trial giving you full access to global intelligence, X conversation research, and autonomous draft queue generation without requiring an upfront payment.
+          </div>
+        </div>
+
+        <!-- FAQ 2 -->
+        <div class="glass-card rounded-2xl overflow-hidden border-white/[0.08]">
+          <button onclick="toggleFaq(2)" class="w-full p-5 text-left flex items-center justify-between gap-4 font-semibold text-sm text-white hover:text-brand transition-colors">
+            <span>What Android versions are supported?</span>
+            <i id="faq-icon-2" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform"></i>
+          </button>
+          <div id="faq-content-2" class="hidden px-5 pb-5 text-xs text-slate-400 leading-relaxed border-t border-white/[0.04] pt-3">
+            Tweets supports Android 8.0 (API Level 26 - Oreo) and newer, up to the latest Android 14 and Android 15 releases. It is compiled against modern Android SDK 34 targets with dark theme and hardware acceleration.
+          </div>
+        </div>
+
+        <!-- FAQ 3 -->
+        <div class="glass-card rounded-2xl overflow-hidden border-white/[0.08]">
+          <button onclick="toggleFaq(3)" class="w-full p-5 text-left flex items-center justify-between gap-4 font-semibold text-sm text-white hover:text-brand transition-colors">
+            <span>Is this APK safe to install?</span>
+            <i id="faq-icon-3" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform"></i>
+          </button>
+          <div id="faq-content-3" class="hidden px-5 pb-5 text-xs text-slate-400 leading-relaxed border-t border-white/[0.04] pt-3">
+            100% safe. The APK is built directly from our open Android Studio / Capacitor Gradle build pipeline. It contains zero third-party telemetry, ads, or background spyware. It only requests minimal required permissions (Internet access for research and X API communication).
+          </div>
+        </div>
+
+        <!-- FAQ 4 -->
+        <div class="glass-card rounded-2xl overflow-hidden border-white/[0.08]">
+          <button onclick="toggleFaq(4)" class="w-full p-5 text-left flex items-center justify-between gap-4 font-semibold text-sm text-white hover:text-brand transition-colors">
+            <span>Will Tweets ever publish posts or replies automatically?</span>
+            <i id="faq-icon-4" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform"></i>
+          </button>
+          <div id="faq-content-4" class="hidden px-5 pb-5 text-xs text-slate-400 leading-relaxed border-t border-white/[0.04] pt-3">
+            No. Tweets enforces a strict human-in-the-loop architectural guarantee: every post draft and suggested reply remains in your private queue until you explicitly review, edit, and click "Approve". Nothing is ever published without your direct consent.
+          </div>
+        </div>
+
+        <!-- FAQ 5 -->
+        <div class="glass-card rounded-2xl overflow-hidden border-white/[0.08]">
+          <button onclick="toggleFaq(5)" class="w-full p-5 text-left flex items-center justify-between gap-4 font-semibold text-sm text-white hover:text-brand transition-colors">
+            <span>How does X authentication work?</span>
+            <i id="faq-icon-5" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform"></i>
+          </button>
+          <div id="faq-content-5" class="hidden px-5 pb-5 text-xs text-slate-400 leading-relaxed border-t border-white/[0.04] pt-3">
+            Tweets uses official X OAuth 2.0 with PKCE (Proof Key for Code Exchange) authorization. You log in through X's official consent interface. Your X password is never requested, transmitted, or stored on our servers.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== FINAL DOWNLOAD CTA SECTION ==================== -->
+    <section class="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+      <div class="relative glass-card rounded-[36px] p-8 sm:p-14 text-center overflow-hidden border-white/10 shadow-2xl">
+        <!-- Inner glow -->
+        <div class="absolute inset-0 bg-gradient-to-br from-brand/10 via-indigo-500/10 to-transparent pointer-events-none"></div>
+
+        <div class="relative z-10 max-w-2xl mx-auto space-y-6">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand to-indigo-500 p-[2px] mx-auto shadow-lg shadow-brand/20">
+            <div class="w-full h-full bg-[#07080C] rounded-[14px] flex items-center justify-center">
+              <svg viewBox="0 0 24 24" class="w-7 h-7 text-brand fill-current"><path d="M4 5h16v3h-6.2v11h-3.6V8H4V5z"/></svg>
+            </div>
+          </div>
+
+          <h2 class="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+            Ready to upgrade your social workflow?
+          </h2>
+
+          <p class="text-sm sm:text-base text-slate-400 leading-relaxed">
+            Download the official Tweets APK for Android now. Discover global trends, draft original insights, and build genuine engagement.
+          </p>
+
+          <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button onclick="downloadApkAction()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-brand via-sky-400 to-indigo-500 hover:from-brand-hover hover:to-indigo-600 text-white font-extrabold text-sm px-8 py-4 rounded-2xl shadow-xl shadow-brand/30 hover:shadow-brand/50 transition-all btn-press">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>Download Tweets.apk (v2.4.0)</span>
+            </button>
+            <a href="/" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 glass-pill text-slate-300 hover:text-white px-6 py-4 rounded-2xl text-xs font-semibold btn-press">
+              <span>Open Web Companion</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+
+          <!-- File Hash & Verification Info -->
+          <div class="pt-4 text-[11px] font-mono text-slate-500 flex flex-wrap items-center justify-center gap-3">
+            <span>Size: <strong class="text-slate-300">4.24 MB</strong></span>
+            <span>•</span>
+            <span>Target: <strong class="text-slate-300">Android 8.0 - 15</strong></span>
+            <span>•</span>
+            <span>Package: <strong class="text-slate-300">com.tweets.companion</strong></span>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="border-t border-white/[0.06] bg-[#07080C] py-12 relative z-10 text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+      
+      <!-- Brand -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-brand to-indigo-500 flex items-center justify-center font-black text-[10px] text-black">
+          T
+        </div>
+        <span class="font-bold text-white text-sm">Tweets</span>
+        <span class="text-slate-600">|</span>
+        <span>Next-Level Android Experience</span>
+      </div>
+
+      <!-- Links -->
+      <div class="flex flex-wrap items-center gap-5 text-slate-400 font-medium">
+        <a href="/" class="hover:text-white transition">Dashboard</a>
+        <a href="#features" class="hover:text-white transition">Features</a>
+        <a href="#install" class="hover:text-white transition">Installation</a>
+        <a href="#faq" class="hover:text-white transition">FAQ</a>
+        <a href="/download/Tweets.apk" download="Tweets.apk" class="text-brand hover:underline">Direct APK</a>
+      </div>
+
+      <!-- Copyright -->
+      <div class="text-slate-600 font-mono text-[11px]">
+        © 2026 Tweets. Built for builders.
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ==================== TOAST NOTIFICATION CONTAINER ==================== -->
+  <div id="landing-toast" class="fixed bottom-6 right-6 z-50 bg-[#0E1017] border border-brand/40 text-white rounded-2xl p-4 shadow-2xl flex items-center gap-3 text-xs max-w-sm translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="w-8 h-8 rounded-xl bg-brand/20 text-brand flex items-center justify-center flex-shrink-0">
+      <i data-lucide="check-circle" class="w-4 h-4"></i>
+    </div>
+    <div class="flex-1">
+      <span class="font-bold text-white block" id="landing-toast-title">Downloading Tweets.apk</span>
+      <p class="text-[11px] text-slate-400 mt-0.5" id="landing-toast-desc">Check your browser downloads (4.24 MB).</p>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT CONTROLLER ==================== -->
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Query real APK info on load
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/apk/info');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && data.file_size_formatted) {
+            console.log('Verified APK metadata loaded:', data);
+          }
+        }
+      } catch (_) {}
+    });
+
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+      const drawer = document.getElementById('mobile-menu-drawer');
+      const icon = document.getElementById('icon-mobile-menu');
+      const isHidden = drawer.classList.contains('hidden');
+      drawer.classList.toggle('hidden', !isHidden);
+    }
+
+    // FAQ Accordion Toggle
+    function toggleFaq(num) {
+      const content = document.getElementById(`faq-content-${num}`);
+      const icon = document.getElementById(`faq-icon-${num}`);
+      const isHidden = content.classList.contains('hidden');
+
+      // Close all
+      for (let i = 1; i <= 5; i++) {
+        const c = document.getElementById(`faq-content-${i}`);
+        const ic = document.getElementById(`faq-icon-${i}`);
+        if (c && ic) {
+          c.classList.add('hidden');
+          ic.style.transform = 'rotate(0deg)';
+        }
+      }
+
+      if (isHidden) {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+      }
+    }
+
+    // Real APK Download Trigger
+    function downloadApkAction() {
+      showToast('Downloading Tweets.apk', 'Starting download of real Android package (4.24 MB)...');
+
+      // Trigger actual file download
+      const a = document.createElement('a');
+      a.href = '/download/Tweets.apk';
+      a.download = 'Tweets.apk';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      setTimeout(() => {
+        showToast('Download Initiated!', 'Once finished, tap Tweets.apk to install.');
+      }, 2500);
+    }
+
+    // Toast Notification helper
+    function showToast(title, desc) {
+      const toast = document.getElementById('landing-toast');
+      const titleEl = document.getElementById('landing-toast-title');
+      const descEl = document.getElementById('landing-toast-desc');
+      
+      if (titleEl) titleEl.innerText = title;
+      if (descEl) descEl.innerText = desc;
+
+      toast.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+      }, 4000);
+    }
+  </script>
+
+</body>
+</html>

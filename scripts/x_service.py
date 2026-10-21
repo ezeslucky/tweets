@@ -65,7 +65,7 @@ def get_x_connection_info(user_id: str = "default") -> Dict[str, Any]:
         "ok": True,
         "is_connected": is_connected,
         "connection_mode": connection_mode,
-        "username": username or (os.getenv("X_DEFAULT_HANDLE") or "ezeslucky"),
+        "username": username or (os.getenv("X_DEFAULT_HANDLE") or "tweets"),
         "display_name": display_name or "T Builder",
         "profile_image_url": profile_image or "",
         "scopes": account.get("scopes", "tweet.read tweet.write users.read offline.access") if account else "tweet.read tweet.write users.read offline.access",
